@@ -1,13 +1,13 @@
 {
-  "name": "eventuate-nodejs-client",
-  "version": "1.0.7",
-  "description": "NodeJS-based client the Eventuate Platform",
+  "name": "@eventuateinc/eventuate-nodejs-client",
+  "version": "1.0.8",
+  "description": "NodeJS-based client for the Eventuate Platform",
   "main": "modules/es.js",
   "scripts": {
     "test": "mocha --reporter spec --ui bdd test/structure-spec.js test/specialChars-spec.js test/esClient-spec.js test/subscribe1-spec.js test/subscribe2-spec.js test/subscribe3-spec.js  "
   },
   "author": "",
-  "license": "ISC",
+  "license": "Apache License, Version 2",
   "dependencies": {
     "agentkeepalive": "^2.0.2",
     "promise": "^6.1.0",

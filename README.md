@@ -11,7 +11,7 @@ npm install es-node-js-client
   * Persist events for a new entity of the specified type.
   * Retrieves the events for the specified entity.
   * Updates events for an existing entity
-  * Subscribe to events particular types
+  * Subscribe to events of particular types
 
 # Configuration
 
