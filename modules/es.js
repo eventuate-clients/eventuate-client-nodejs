@@ -24,7 +24,7 @@ function Client(options) {
   this.spaceName = options.spaceName || false;
   this.baseUrlPath = '/entity';
 
-  this.httpKeepAlive = options.httpKeepAlive || false;
+  this.httpKeepAlive = isTrue(options.httpKeepAlive);
 
   if (this.urlObj.protocol == 'https:') {
     this.httpClient = https;
@@ -663,5 +663,10 @@ function _request(path, method, apiKey, jsonData, client, callback) {
 
   return req;
 }
+
+function isTrue(val) {
+  return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
+}
+
 
 module.exports.Client = Client;

@@ -18,8 +18,8 @@ var esClientOpts = {
     port: process.env.EVENT_STORE_STOMP_SERVER_PORT || 10001
   },
   apiKey: apiKey,
-  httpKeepAlive: true,
-  spaceName: 'esClientTest'
+  httpKeepAlive: process.env.HTTP_KEEP_ALIVE || false,
+  spaceName: process.env.EVENT_STORE_SPACE_NAME || false
 };
 
 var esClient = new es.Client(esClientOpts);
