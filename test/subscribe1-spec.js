@@ -14,17 +14,16 @@ var apiKey = {
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("", "Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
 }
 
 var esClientOpts = {
-  url: process.env.EVENT_STORE_URL || "http://es.cersandbox.com:1998",
+  url: process.env.EVENT_STORE_URL,
   stomp: {
-    host: process.env.EVENT_STORE_STOMP_SERVER_HOST || "es.cersandbox.com",
-    port: process.env.EVENT_STORE_STOMP_SERVER_PORT || 10001
+    host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
+    port: process.env.EVENT_STORE_STOMP_SERVER_PORT
   },
   apiKey: apiKey,
-  httpKeepAlive: process.env.HTTP_KEEP_ALIVE || false,
   spaceName: process.env.EVENT_STORE_SPACE_NAME || false
 };
 var esClient = new es.Client(esClientOpts);

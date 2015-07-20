@@ -24,12 +24,17 @@ function Client(options) {
   this.spaceName = options.spaceName || false;
   this.baseUrlPath = '/entity';
 
-  this.httpKeepAlive = isTrue(options.httpKeepAlive);
 
   if (this.urlObj.protocol == 'https:') {
     this.httpClient = https;
   } else {
     this.httpClient = http;
+  }
+
+  if (typeof options.httpKeepAlive === 'undefined') {
+    this.httpKeepAlive = true;
+  } else {
+    this.httpKeepAlive = isTrue(options.httpKeepAlive);
   }
 
   if (this.httpKeepAlive ) {
