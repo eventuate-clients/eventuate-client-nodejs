@@ -67,7 +67,9 @@ function Client(options) {
 }
 
 
-Client.prototype.create = function (entityTypeName, _events, callback) {
+Client.prototype.create = function (entityTypeName, _events, entityId, callback) {
+
+  callback = callback || entityId;
 
   //check input params
   if (entityTypeName && _events && (_events instanceof Array) && (_events.length > 0) && _checkEvents(_events)) {
@@ -77,6 +79,10 @@ Client.prototype.create = function (entityTypeName, _events, callback) {
       entityTypeName: entityTypeName,
       events: events
     };
+
+    if (entityId) {
+      jsonData.entityId = entityId;
+    }
 
     var path = this.baseUrlPath;
     path = this.urlSpaceName(path);

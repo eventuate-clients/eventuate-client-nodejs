@@ -5,7 +5,7 @@ For background information on event sourcing please see this [blog post](http://
 
 # Installation
 
-npm install es-node-js-client
+npm i @eventuateinc/eventuate-nodejs-client
 
 # Features
   * Persist events for a new entity of the specified type.
