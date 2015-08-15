@@ -5,7 +5,7 @@ For background information on event sourcing please see this [blog post](http://
 
 # Installation
 
-npm install es-node-js-client
+npm i @eventuateinc/eventuate-nodejs-client
 
 # Features
   * Persist events for a new entity of the specified type.
@@ -22,6 +22,8 @@ Setup environment variables:
     EVENT_STORE_URL
     EVENT_STORE_STOMP_SERVER_HOST
     EVENT_STORE_STOMP_SERVER_PORT
+    EVENT_STORE_SPACE_NAME
+    HTTP_KEEP_ALIVE
 
 # Usage
 

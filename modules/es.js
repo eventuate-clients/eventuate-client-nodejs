@@ -24,12 +24,17 @@ function Client(options) {
   this.spaceName = options.spaceName || false;
   this.baseUrlPath = '/entity';
 
-  this.httpKeepAlive = options.httpKeepAlive || false;
 
   if (this.urlObj.protocol == 'https:') {
     this.httpClient = https;
   } else {
     this.httpClient = http;
+  }
+
+  if (typeof options.httpKeepAlive === 'undefined') {
+    this.httpKeepAlive = true;
+  } else {
+    this.httpKeepAlive = isTrue(options.httpKeepAlive);
   }
 
   if (this.httpKeepAlive ) {
@@ -62,7 +67,9 @@ function Client(options) {
 }
 
 
-Client.prototype.create = function (entityTypeName, _events, callback) {
+Client.prototype.create = function (entityTypeName, _events, entityId, callback) {
+
+  callback = callback || entityId;
 
   //check input params
   if (entityTypeName && _events && (_events instanceof Array) && (_events.length > 0) && _checkEvents(_events)) {
@@ -72,6 +79,10 @@ Client.prototype.create = function (entityTypeName, _events, callback) {
       entityTypeName: entityTypeName,
       events: events
     };
+
+    if (entityId) {
+      jsonData.entityId = entityId;
+    }
 
     var path = this.baseUrlPath;
     path = this.urlSpaceName(path);
@@ -663,5 +674,10 @@ function _request(path, method, apiKey, jsonData, client, callback) {
 
   return req;
 }
+
+function isTrue(val) {
+  return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
+}
+
 
 module.exports.Client = Client;
