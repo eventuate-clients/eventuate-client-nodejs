@@ -1,6 +1,6 @@
 {
   "name": "@eventuateinc/eventuate-nodejs-client",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "NodeJS-based client for the Eventuate Platform",
   "main": "modules/es.js",
   "scripts": {
@@ -16,7 +16,8 @@
     "underscore": "^1.8.3"
   },
   "devDependencies": {
+    "mocha": "^2.1.0",
     "should": "^4.6.3",
-    "mocha": "^2.1.0"
+    "uuid": "^2.0.1"
   }
 }

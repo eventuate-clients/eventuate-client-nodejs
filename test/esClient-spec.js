@@ -1,6 +1,7 @@
 var es = require('../modules/es');
 var should = require('should');
 var helpers = require('./helpers');
+var uuid = require('uuid');
 
 var apiKey = {
   id: process.env.EVENT_STORE_USER_ID,
@@ -50,7 +51,7 @@ describe('ES Node.js Client: function create()', function () {
       describe('ES Node.js Client: function update()', function () {
         this.timeout(timeout);
 
-        it('function update() should entity and return entityAndEventInfo object', function (done) {
+        it('function update() should update entity and return entityAndEventInfo object', function (done) {
 
           var entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
           var entityId = entityIdTypeAndVersion.entityId;
@@ -72,7 +73,7 @@ describe('ES Node.js Client: function create()', function () {
               it('should return loadedEvents array of EventIdTypeAndData', function (done) {
 
                 var entityId = updatedEntityAndEventInfo.entityIdTypeAndVersion.entityId;
-                esClient.loadEvents(entityTypeName, entityId, function (err, loadedEvents) {
+                esClient.loadEvents(entityTypeName, entityId, { a: 1, b: 2, c: 3 }, function (err, loadedEvents) {
 
                   if (err) {
                     throw err;
@@ -119,4 +120,26 @@ describe('ES Node.js Client: function create()', function () {
       });
     });
   });
+});
+
+describe('ES Node.js Client: function create() custom entityId', function () {
+  it('function create() should create new Entity with custom entityId return entityAndEventInfo object', function (done) {
+    var entityId = uuid.v1().replace(/-/g, '');
+
+    var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Bob' } } ];
+
+    var options = { entityId: entityId };
+    esClient.create(entityTypeName, createEvents, options, function (err, createdEntityAndEventInfo) {
+
+      if (err) {
+        console.error(err);
+        throw err;
+      }
+
+      helpers.expectCommandResult(createdEntityAndEventInfo);
+
+      createdEntityAndEventInfo.entityIdTypeAndVersion.entityId.should.equal(entityId);
+      done();
+    });
+  })
 });
