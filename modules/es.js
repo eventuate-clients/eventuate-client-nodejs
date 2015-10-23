@@ -401,7 +401,7 @@ Client.prototype.connectToStompServer = function (opts) {
         //call message callback;
         self.subscriptions[subscriberId].messageCallback( body, headers);
       } else {
-        console.error('Can\'t find massageCallback fo subscriber: ' + subscriberId);
+        console.error("Can't find massageCallback for subscriber: " + subscriberId);
       }
     });
 
