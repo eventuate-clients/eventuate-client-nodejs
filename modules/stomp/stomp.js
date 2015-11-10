@@ -217,6 +217,32 @@ Stomp.prototype.setupListeners = function () {
 
   });
 
+  this.socket.on('secureConnect', function () {
+    self.log.debug('ON secureConnect');
+
+    if (self.socket.connectCallbackInvoked) {
+      return;
+    }
+
+    self.socket.connectCallbackInvoked = true;
+
+    if (self.socket.connectCallbackInvoked) {
+      return;
+    }
+
+    self.socket.connectCallbackInvoked = true;
+
+    if (self.socket.authorized) {
+
+      console.log('Connected to Server');
+      self.emit('socketConnected');
+      self.sendConnectFrame();
+
+    } else {
+      self.log.debug('unauthorized');
+    }
+  });
+
   this.socket.on('drain', function () {
     self.log.debug('on drain');
   });
