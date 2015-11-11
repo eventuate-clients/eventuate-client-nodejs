@@ -23,6 +23,7 @@ function Client(options) {
   this.apiKey = options.apiKey;
   this.spaceName = options.spaceName || false;
   this.baseUrlPath = '/entity';
+  this.debug = options.debug;
 
 
   if (this.urlObj.protocol == 'https:') {
@@ -347,7 +348,7 @@ Client.prototype.connectToStompServer = function (opts) {
       host: self.stompHost,
       login: self.apiKey.id,
       passcode: self.apiKey.secret,
-      debug: false,
+      debug: self.debug,
       heartBeat: [5000, 5000],
       timeout: 50000,
       keepAlive: false
