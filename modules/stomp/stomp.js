@@ -209,12 +209,41 @@ Stomp.prototype.setupListeners = function () {
 
   this.socket.on('connect', function () {
     self.log.debug('ON CONNECT');
+
+    if (self.socket.connectCallbackInvoked) {
+      return;
+    }
+
+    self.socket.connectCallbackInvoked = true;
+
     self.emit('socketConnected');
 
     self.log.debug('Connected to Server');
 
     self.sendConnectFrame();
 
+  });
+
+  this.socket.on('secureConnect', function () {
+    self.log.debug('ON secureConnect');
+
+    if (self.socket.connectCallbackInvoked) {
+      return;
+    }
+
+    self.socket.connectCallbackInvoked = true;
+
+    self.log.debug('Connected to Server');
+
+    if (self.socket.authorized) {
+
+      self.log.debug('Authorized');
+      self.emit('socketConnected');
+      self.sendConnectFrame();
+
+    } else {
+      self.log.debug('Usnauthorized');
+    }
   });
 
   this.socket.on('drain', function () {

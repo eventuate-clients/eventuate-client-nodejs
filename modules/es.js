@@ -23,6 +23,7 @@ function Client(options) {
   this.apiKey = options.apiKey;
   this.spaceName = options.spaceName || false;
   this.baseUrlPath = '/entity';
+  this.debug = options.debug;
 
 
   if (this.urlObj.protocol == 'https:') {
@@ -67,9 +68,9 @@ function Client(options) {
 }
 
 
-Client.prototype.create = function (entityTypeName, _events, entityId, callback) {
+Client.prototype.create = function (entityTypeName, _events, options, callback) {
 
-  callback = callback || entityId;
+  callback = callback || options;
 
   //check input params
   if (entityTypeName && _events && (_events instanceof Array) && (_events.length > 0) && _checkEvents(_events)) {
@@ -80,9 +81,7 @@ Client.prototype.create = function (entityTypeName, _events, entityId, callback)
       events: events
     };
 
-    if (entityId) {
-      jsonData.entityId = entityId;
-    }
+    addBodyOptions(jsonData, options);
 
     var path = this.baseUrlPath;
     path = this.urlSpaceName(path);
@@ -135,13 +134,20 @@ Client.prototype.create = function (entityTypeName, _events, entityId, callback)
   }
 };
 
-Client.prototype.loadEvents = function (entityTypeName, entityId, callback){
+Client.prototype.loadEvents = function (entityTypeName, entityId, options, callback) {
+
+  callback = callback || options;
 
   //check input params
   if (entityTypeName && entityId) {
 
     var path = this.baseUrlPath + '/' + entityTypeName + '/' + entityId;
+
     path = this.urlSpaceName(path);
+
+    if (typeof  options == 'object') {
+      path += '?' + serialiseObject(options);
+    }
 
     _request(path, 'GET', this.apiKey, null, this, function (err, httpResponse, body) {
 
@@ -174,14 +180,21 @@ Client.prototype.loadEvents = function (entityTypeName, entityId, callback){
   }
 };
 
-Client.prototype.update = function (entityTypeName, entityId, entityVersion, _events, callback) {
+Client.prototype.update = function (entityTypeName, entityId, entityVersion, _events, options, callback) {
+
+
+  callback = callback || options;
 
   //check input params
   if (entityTypeName && entityId && entityVersion
     && _events && _events instanceof Array && _events.length > 0  && _checkEvents(_events)) {
 
+
     var events = _prepareEvents(_events);
     var jsonData = { entityId: entityId, entityVersion: entityVersion, events: events };
+
+
+    addBodyOptions(jsonData, options);
 
     var path = this.baseUrlPath + '/' + entityTypeName + '/' + entityId;
     path = this.urlSpaceName(path);
@@ -335,7 +348,7 @@ Client.prototype.connectToStompServer = function (opts) {
       host: self.stompHost,
       login: self.apiKey.id,
       passcode: self.apiKey.secret,
-      debug: false,
+      debug: self.debug,
       heartBeat: [5000, 5000],
       timeout: 50000,
       keepAlive: false
@@ -389,7 +402,7 @@ Client.prototype.connectToStompServer = function (opts) {
         //call message callback;
         self.subscriptions[subscriberId].messageCallback( body, headers);
       } else {
-        console.error('Can\'t find massageCallback fo subscriber: ' + subscriberId);
+        console.error("Can't find massageCallback for subscriber: " + subscriberId);
       }
     });
 
@@ -679,5 +692,25 @@ function isTrue(val) {
   return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
 }
 
+function serialiseObject(obj) {
+  var pairs = [];
+  for (var prop in obj) {
+    if (obj.hasOwnProperty(prop)) {
+      pairs.push(prop + '=' + obj[prop]);
+    }
+  }
+  return pairs.join('&');
+}
+
+
+function addBodyOptions (jsonData, options) {
+  if (typeof options == 'object') {
+    for (var option in options) {
+      if (options.hasOwnProperty(option)) {
+        jsonData[option] = options[option];
+      }
+    }
+  }
+}
 
 module.exports.Client = Client;
