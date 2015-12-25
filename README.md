@@ -1,7 +1,7 @@
 NodeJS-based client for the Eventuate Platform
 ======================
 
-For background information on event sourcing please see this [blog post](http://plainoldobjects.com/2015/01/04/example-application-for-my-qconsf-presentation-about-building-microservices-with-event-sourcing-and-cqrs/)
+This is the NodeJS client for the [Eventuate Platform](http://eventuate.io/).
 
 # Installation
 
@@ -56,7 +56,7 @@ esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', cre
     console.error(err);
     throw err;
   }
-  
+
   console.log(createdEntityAndEventInfo);
 
 });
@@ -71,10 +71,10 @@ First install mocha:
 Run the tests:
 
     npm test
-    
+
 or
 
     make test
-    
+
 
 # License
