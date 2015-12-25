@@ -1,6 +1,6 @@
 {
   "name": "@eventuateinc/eventuate-nodejs-client",
-  "version": "0.10.0",
+  "version": "1.0.10",
   "description": "NodeJS-based client for the Eventuate Platform",
   "main": "modules/es.js",
   "scripts": {
