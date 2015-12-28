@@ -40,3 +40,32 @@ exports.expectSubscribe = function (subscribe, done) {
   }
 
 };
+
+exports.expectEvent = function (event, done) {
+
+  event.should.be.an.Object;
+
+  event.should.be.have.property('eventId');
+  event.eventId.should.be.a.String;
+  event.eventId.should.be.not.empty;
+
+  event.should.be.have.property('entityId');
+  event.entityId.should.be.a.String;
+  event.eventId.should.be.not.empty;
+
+  event.should.be.have.property('eventType');
+  event.eventType.should.be.a.String;
+  event.eventId.should.be.not.empty;
+
+  event.should.be.have.property('ack');
+  event.ack.should.be.an.Object;
+  event.eventId.should.be.not.empty;
+
+  event.should.be.have.property('eventData');
+  event.eventData.should.be.an.Object;
+  event.eventId.should.be.not.empty;
+
+  if (typeof(done) == 'function') {
+    done();
+  }
+};

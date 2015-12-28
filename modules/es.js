@@ -10,7 +10,7 @@ var _ = require('underscore');
 var Agent = require('agentkeepalive');
 var HttpsAgent = require('agentkeepalive').HttpsAgent;
 var url = require('url');
-
+var util = require('util');
 
 var http = require('http');
 var https = require('https');
@@ -263,21 +263,16 @@ Client.prototype.subscribe = function (subscriberId, entityTypesAndEvents, callb
           observer.onError(error);
         }
 
-        body.forEach(function (eventDataStr) {
-          try {
-            var eventData = JSON.parse(eventDataStr);
-            var event = {
-              eventId: eventData.id,
-              eventType: eventData.eventType,
-              eventData: eventData.eventData,
-              entityId: eventData.entityId,
-              ack: ack
-            };
-            observer.onNext(event);
+        body.forEach(function (eventStr) {
+
+          var result = self.makeEvent(eventStr, ack);
+
+          if (result.error) {
+            observer.onError(result.error);
+            return;
           }
-          catch (err) {
-            observer.onError(err);
-          }
+
+          observer.onNext(result.event);
         });
       };
 
@@ -512,6 +507,34 @@ Client.prototype.doClientSubscribe = function (subscriberId) {
   } else {
     console.error(new Error('Can\t find subscription fo subscriber ' + subscriberId));
   }
+};
+
+Client.prototype.makeEvent = function (eventStr, ack) {
+
+  try {
+
+    var parsedEvent = JSON.parse(eventStr);
+
+    try {
+
+      var event = {
+        eventId: parsedEvent.id,
+        eventType: parsedEvent.eventType,
+        entityId: parsedEvent.entityId,
+        ack: ack
+      };
+
+      event.eventData = JSON.parse(parsedEvent.eventData);
+
+      return { event: event };
+
+    } catch (err) {
+      return { error: err };
+    }
+  } catch (err) {
+    return { error: err };
+  }
+
 };
 
 function _prepareEvents(events) {
