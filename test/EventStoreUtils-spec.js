@@ -24,7 +24,7 @@ var WorkflowEvents = require('../modules/WorkflowEvents.js');
 
 var esUtil = new EventStoreUtils();
 
-var timeout = 15000;
+var timeout = 20000;
 
 var createTimestamp;
 var updateTimestamp;
@@ -72,74 +72,102 @@ describe('EventStoreUtils: function createEntity()', function () {
 
             helpers.expectCommandResult(updatedEntityAndEventInfo, done);
 
-
-            describe('WorkflowEvents: function startWorkflow()', function () {
-
+            describe('EventStoreUtils.js: function loadEvents()', function () {
               this.timeout(timeout);
 
-              it('test startWorkflow()', function (done) {
+              it('function loadEvents() should load events', function (done) {
 
-                var eventCnt = 0;
-                var expectedEventCnt = 2;
+                var entity = new EntityClass();
 
-                //Defube event handlers
-                var eventHandlers = {};
-                eventHandlers[MyEntityWasCreatedEvent] = handleMyEntityWasCreatedEvent;
-                eventHandlers[MyEntityWasUpdatedEvent] = handleMyEntityWasUpdatedEvent;
+                esUtil.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
 
-                function handleMyEntityWasCreatedEvent(event) {
-
-                  helpers.expectEvent(event);
-
-                  if (event.eventData.timestamp == createTimestamp) {
-                    eventCnt++;
+                  if (err) {
+                    done(err);
+                    return;
                   }
 
-                  if(eventCnt == expectedEventCnt) {
-                    done();
-                  }
+                  helpers.expectLoadedEvents(loadedEvents);
 
-                  return Promise.resolve();
-                }
+                  loadedEvents.length.should.be.equal(2);
+                  loadedEvents[0].eventData.timestamp.should.be.equal(createTimestamp);
+                  loadedEvents[1].eventData.timestamp.should.be.equal(updateTimestamp);
 
-                function handleMyEntityWasUpdatedEvent(event) {
+                  done();
 
-                  helpers.expectEvent(event);
+                  describe('WorkflowEvents: function startWorkflow()', function () {
 
-                  if (event.eventData.timestamp == updateTimestamp) {
-                    eventCnt++;
-                  }
+                    this.timeout(timeout);
 
-                  if(eventCnt == expectedEventCnt) {
-                    done();
-                  }
+                    it('test startWorkflow()', function (done) {
 
-                  return Promise.resolve();
-                }
+                      var eventCnt = 0;
+                      var expectedEventCnt = 2;
 
-                function getEventHandler (eventType) {
-                  if (typeof eventHandlers[eventType] != 'undefined') {
-                    return eventHandlers[eventType]
-                  }
-                }
+                      //Define event handlers
+                      var eventHandlers = {};
+                      eventHandlers[MyEntityWasCreatedEvent] = handleMyEntityWasCreatedEvent;
+                      eventHandlers[MyEntityWasUpdatedEvent] = handleMyEntityWasUpdatedEvent;
 
-                //Define subscriptions
-                var subscriptions = [
-                  {
-                    subscriberId: 'test-EventStoreUtils',
-                    entityTypesAndEvents: entityTypesAndEvents
-                  }
-                ];
+                      function handleMyEntityWasCreatedEvent(event) {
 
-                //Create WorkflowEvents instance
-                var workflow = new WorkflowEvents({ subscriptions: subscriptions, getEventHandler: getEventHandler });
+                        helpers.expectEvent(event);
 
-                //Run workflow
-                workflow.startWorkflow();
+                        if (event.eventData.timestamp == createTimestamp) {
+                          eventCnt++;
+                        }
+
+                        return Promise.resolve();
+                      }
+
+                      function handleMyEntityWasUpdatedEvent(event) {
+
+                        helpers.expectEvent(event);
+
+                        if (event.eventData.timestamp == updateTimestamp) {
+                          eventCnt++;
+                        }
+
+                        if(eventCnt == expectedEventCnt) {
+                          done();
+                        }
+
+                        return Promise.resolve();
+                      }
+
+                      function getEventHandler (eventType) {
+                        if (typeof eventHandlers[eventType] != 'undefined') {
+                          return eventHandlers[eventType]
+                        }
+                      }
+
+                      //Define subscriptions
+                      var subscriptions = [
+                        {
+                          subscriberId: 'test-EventStoreUtils',
+                          entityTypesAndEvents: entityTypesAndEvents
+                        }
+                      ];
+
+                      //Create WorkflowEvents instance
+                      var workflow = new WorkflowEvents({ subscriptions: subscriptions, getEventHandler: getEventHandler });
+
+                      //Run workflow
+                      workflow.startWorkflow();
+
+                    });
+
+                  });
+
+                });
+
+
+
 
               });
 
             });
+
+
 
 
           });

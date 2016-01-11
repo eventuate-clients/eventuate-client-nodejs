@@ -69,3 +69,19 @@ exports.expectEvent = function (event, done) {
     done();
   }
 };
+
+exports.expectLoadedEvents = function (loadedEvents, done) {
+  loadedEvents.should.be.an.Array;
+  loadedEvents.should.be.not.empty;
+
+  loadedEvents.forEach(function (event) {
+    event.should.be.an.Object;
+    event.should.be.have.property('id');
+    event.should.be.have.property('eventType');
+    event.should.be.have.property('eventData');
+  });
+
+  if (typeof(done) == 'function') {
+    done();
+  }
+};

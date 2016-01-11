@@ -10,7 +10,7 @@ let defaultLogger = {
 
 const result = class WorkflowEvents {
 
-  constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {} }) {
+  constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {}, apiKey = {} } = {}) {
 
     if (!logger) {
       logger = defaultLogger;
@@ -19,28 +19,31 @@ const result = class WorkflowEvents {
     Object.assign(this, { getEventHandler, subscriptions, logger, worker });
 
 
-    const apiKey = {
-      id: process.env.EVENT_STORE_USER_ID,
-      secret: process.env.EVENT_STORE_PASSWORD
-    };
+    if (!apiKey.id) {
+      apiKey.id = process.env.EVENTUATE_API_KEY_ID || process.env.EVENT_STORE_USER_ID;
+    }
+
+    if (!apiKey.secret) {
+      apiKey.secret = process.env.EVENTUATE_API_KEY_SECRET || process.env.EVENT_STORE_PASSWORD;
+    }
 
     if (!apiKey.id || !apiKey.secret) {
-      throw new Error('Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set Event Store auth data');
+      throw new Error('Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set Event Store auth data');
     }
 
     let esClientOpts = {
-      url: process.env.EVENT_STORE_URL,
+      url: process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || "https://api.eventuate.io",
       stomp: {
-        host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
-        port: process.env.EVENT_STORE_STOMP_SERVER_PORT
+        host: process.env.EVENTUATE_STOMP_SERVER_HOST || 'api.eventuate1.io',
+        port: process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614
       },
       apiKey: apiKey,
       httpKeepAlive: true,
-      spaceName: process.env.EVENT_STORE_SPACE_NAME
+      spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
     if (!esClientOpts.url || !esClientOpts.stomp.host || !esClientOpts.stomp.port) {
-      throw new Error('Use `EVENT_STORE_URL`, `EVENT_STORE_STOMP_SERVER_HOST` and `EVENT_STORE_STOMP_SERVER_PORT` to connect Event Store');
+      throw new Error('Use `EVENTUATE_URL`, `EVENTUATE_STOMP_SERVER_HOST` and `EVENTUATE_STOMP_SERVER_PORT` to connect Event Store');
     }
 
     this.esClient = new Es.Client(esClientOpts);

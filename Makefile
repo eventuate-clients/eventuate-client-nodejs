@@ -10,5 +10,6 @@ test:
 		test/subscribe1-spec.js \
 		test/subscribe2-spec.js \
 		test/subscribe3-spec.js \
+		test/EventStoreUtils-spec.js \
 
 .PHONY: test

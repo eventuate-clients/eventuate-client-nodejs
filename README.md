@@ -17,31 +17,31 @@ npm i @eventuateinc/eventuate-nodejs-client
 
 Setup environment variables:
 
-    EVENT_STORE_USER_ID
-    EVENT_STORE_PASSWORD
-    EVENT_STORE_URL
-    EVENT_STORE_STOMP_SERVER_HOST
-    EVENT_STORE_STOMP_SERVER_PORT
-    EVENT_STORE_SPACE_NAME
+    EVENTUATE_API_KEY_ID
+    EVENTUATE_API_KEY_SECRET
+    EVENTUATE_URL
+    EVENTUATE_STOMP_SERVER_HOST
+    EVENTUATE_STOMP_SERVER_PORT
+    EVENTUATE_SPACE_NAME
     HTTP_KEEP_ALIVE
 
 # Usage
 
 ```javascript
 var apiKey = {
-  id: process.env.EVENT_STORE_USER_ID,
-  secret: process.env.EVENT_STORE_PASSWORD
+  id: process.env.EVENTUATE_API_KEY_ID,
+  secret: process.env.EVENTUATE_API_KEY_SECRET
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("", "Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("", "Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
 var esClientOpts = {
-  url: process.env.EVENT_STORE_URL,
+  url: process.env.EVENTUATE_URL,
   stomp: {
-    host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
-    port: process.env.EVENT_STORE_STOMP_SERVER_PORT
+    host: process.env.EVENTUATE_STOMP_SERVER_HOST,
+    port: process.env.EVENTUATE_STOMP_SERVER_PORT
   },
   apiKey: apiKey
 };
@@ -61,6 +61,23 @@ esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', cre
 
 });
 ```
+
+#High level client
+
+For an example of usage, please look at `test/EventStoreUtils-spec.js`
+
+Don't edit `modules/EventStoreUtils.js` and `modules/WorkflowEvents.js`. These files are generated with Babel.
+
+The source code files are:
+
+    src/EventStoreUtils.js
+    src/WorkflowEvents.js
+    
+These modules are written in ES6. If you are modifying these files you can use this command to recompile:
+    
+    npm run compile    
+    
+
 
 # Test
 
