@@ -42,8 +42,7 @@ describe('ES Node.js Client: function create()', function () {
     esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
 
       if (err) {
-        console.error(err);
-        throw err;
+        return done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo, done);
@@ -63,7 +62,7 @@ describe('ES Node.js Client: function create()', function () {
           esClient.update(entityTypeName, entityId, entityVersion, updateEvents, function (err, updatedEntityAndEventInfo) {
 
             if (err) {
-              throw err;
+              return done(err);
             }
             
             helpers.expectCommandResult(updatedEntityAndEventInfo, done);
@@ -76,7 +75,7 @@ describe('ES Node.js Client: function create()', function () {
                 esClient.loadEvents(entityTypeName, entityId, { a: 1, b: 2, c: 3 }, function (err, loadedEvents) {
 
                   if (err) {
-                    throw err;
+                    return done(err);
                   }
 
 
@@ -132,8 +131,28 @@ describe('ES Node.js Client: function create() custom entityId', function () {
     esClient.create(entityTypeName, createEvents, options, function (err, createdEntityAndEventInfo) {
 
       if (err) {
-        console.error(err);
-        throw err;
+        return done(err);
+      }
+
+      helpers.expectCommandResult(createdEntityAndEventInfo);
+
+      createdEntityAndEventInfo.entityIdTypeAndVersion.entityId.should.equal(entityId);
+      done();
+    });
+  })
+});
+
+describe('ES Node.js Client: function create() eventData contains unicode string', function () {
+  it('function create() should return entityAndEventInfo object', function (done) {
+    var entityId = uuid.v1().replace(/-/g, '');
+
+    var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Крис Ричардсон' } } ];
+
+    var options = { entityId: entityId };
+    esClient.create(entityTypeName, createEvents, options, function (err, createdEntityAndEventInfo) {
+
+      if (err) {
+        return done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
