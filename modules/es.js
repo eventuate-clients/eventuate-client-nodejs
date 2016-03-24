@@ -641,7 +641,7 @@ function _request(path, method, apiKey, jsonData, client, callback) {
   if (method == 'POST') {
     var postData = JSON.stringify(jsonData);
     headers['Content-Type'] = 'application/json';
-    headers['Content-Length'] = postData.length;
+    headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
   }
 
   var options = {
