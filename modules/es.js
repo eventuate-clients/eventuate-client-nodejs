@@ -10,21 +10,22 @@ var _ = require('underscore');
 var Agent = require('agentkeepalive');
 var HttpsAgent = require('agentkeepalive').HttpsAgent;
 var url = require('url');
-var util = require('util');
+
 
 var http = require('http');
 var https = require('https');
 
 function Client(options) {
-  this.url = options.url;
-  this.urlObj = url.parse(options.url);
-  this.stompHost = options.stomp.host;
-  this.stompPort = options.stomp.port;
+  this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
+  this.stompHost = process.env.EVENTUATE_STOMP_SERVER_HOST || process.env.EVENT_STORE_STOMP_SERVER_HOST || 'api.eventuate.io';
+  this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
+
   this.apiKey = options.apiKey;
   this.spaceName = options.spaceName || false;
+
+  this.urlObj = url.parse(this.url);
   this.baseUrlPath = '/entity';
   this.debug = options.debug;
-
 
   if (this.urlObj.protocol == 'https:') {
     this.httpClient = https;

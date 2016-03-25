@@ -13,17 +13,24 @@ npm i @eventuateinc/eventuate-nodejs-client
   * Updates events for an existing entity
   * Subscribe to events of particular types
 
+
+#Available environment variables:
+
+    EVENTUATE_API_KEY_ID
+    EVENTUATE_API_KEY_SECRET
+    EVENTUATE_URL(default https://api.eventuate.io)
+    EVENTUATE_STOMP_SERVER_HOST(default api.eventuate.io)
+    EVENTUATE_STOMP_SERVER_PORT(default 61614)
+    EVENTUATE_SPACE_NAME
+    HTTP_KEEP_ALIVE(default true)
+        
 # Configuration
 
 Setup environment variables:
 
     EVENTUATE_API_KEY_ID
     EVENTUATE_API_KEY_SECRET
-    EVENTUATE_URL
-    EVENTUATE_STOMP_SERVER_HOST
-    EVENTUATE_STOMP_SERVER_PORT
-    EVENTUATE_SPACE_NAME
-    HTTP_KEEP_ALIVE
+    
 
 # Usage
 
@@ -38,11 +45,6 @@ if (!apiKey.id || !apiKey.secret) {
 }
 
 var esClientOpts = {
-  url: process.env.EVENTUATE_URL,
-  stomp: {
-    host: process.env.EVENTUATE_STOMP_SERVER_HOST,
-    port: process.env.EVENTUATE_STOMP_SERVER_PORT
-  },
   apiKey: apiKey
 };
 

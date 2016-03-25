@@ -32,19 +32,10 @@ const result = class WorkflowEvents {
     }
 
     let esClientOpts = {
-      url: process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || "https://api.eventuate.io",
-      stomp: {
-        host: process.env.EVENTUATE_STOMP_SERVER_HOST || 'api.eventuate1.io',
-        port: process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614
-      },
       apiKey: apiKey,
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
-
-    if (!esClientOpts.url || !esClientOpts.stomp.host || !esClientOpts.stomp.port) {
-      throw new Error('Use `EVENTUATE_URL`, `EVENTUATE_STOMP_SERVER_HOST` and `EVENTUATE_STOMP_SERVER_PORT` to connect Event Store');
-    }
 
     this.esClient = new Es.Client(esClientOpts);
   }

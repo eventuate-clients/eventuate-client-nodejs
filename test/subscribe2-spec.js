@@ -17,11 +17,6 @@ if (!apiKey.id || !apiKey.secret) {
 }
 
 var esClientOpts = {
-  url: process.env.EVENTUATE_URL,
-  stomp: {
-    host: process.env.EVENTUATE_STOMP_SERVER_HOST,
-    port: process.env.EVENTUATE_STOMP_SERVER_PORT
-  },
   apiKey: apiKey,
   spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
