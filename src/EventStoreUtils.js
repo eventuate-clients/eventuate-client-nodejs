@@ -3,7 +3,8 @@ import Es from './es.js';
 
 let EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
-const EventStoreUtils = class {
+class EventStoreUtils {
+
   constructor({ apiKey = {} } = {}) {
 
     if (!apiKey.id) {
@@ -27,29 +28,41 @@ const EventStoreUtils = class {
     this.esClient = new Es.Client(esClientOpts);
 
     this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, function(EntityClass, entityId, command, callback) {
-      var entity = new EntityClass(),
+      let entity = new EntityClass(),
         self = this;
       
-      self.esClient.loadEvents(entity.entityTypeName, entityId, function(err, loadedEvents){
+      self.esClient.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
         if (err) {
           callback(err);
         } else {
 
           if (loadedEvents.length > 0) {
-            var entityVersion = loadedEvents[loadedEvents.length - 1].id;
+
+            const entityVersion = loadedEvents[loadedEvents.length - 1].id;
 
             //iterate through the events calling entity.applyEvent(..)
-            for (var prop in loadedEvents) {
+            for (let prop in loadedEvents) {
+
               if (Object.prototype.hasOwnProperty.call(loadedEvents, prop)) {
-                entity = entity.applyEvent(loadedEvents[prop]);
+
+                let event = loadedEvents[prop];
+
+                let type = event.eventType.split('.').pop();
+
+                let applyMethod = getEntityMethodName(entity, 'apply', type, 'applyEvent');
+                //console.log(`Calling "${applyMethod}" for eventType: ${event.eventType}`);
+
+                entity[applyMethod](event);
               }
             }
+
+            let processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
 
             self.esClient.update(
               entity.entityTypeName,
               entityId,
               entityVersion,
-              entity.processCommand(command),
+              entity[processCommandMethod](command),
               function(error, updatedEntityAndEventInfo) {
                 if (error) {
                   callback(error);
@@ -71,7 +84,7 @@ const EventStoreUtils = class {
 
   retryNTimes(times, fn, _errConditionFn, ctx) {
 
-    var errConditionFn;
+    let errConditionFn;
     if (typeof (_errConditionFn) !== 'function') {
       ctx = _errConditionFn;
       errConditionFn = function(err) { return err; };
@@ -80,15 +93,15 @@ const EventStoreUtils = class {
     }
 
     return function() {
-      var count = times;
-      var innerCtx = this || ctx;
+      let count = times;
+      let innerCtx = this || ctx;
 
-      var args = [].slice.call(arguments);
-      var worker = function(){
+      let args = [].slice.call(arguments);
+      let worker = function(){
         fn.apply(innerCtx, args);
       };
 
-      var oldCb = args.pop();
+      let oldCb = args.pop();
       if (typeof oldCb !== 'function') {
         throw new TypeError('Last parameter is expected to be a function');
       }
@@ -115,7 +128,9 @@ const EventStoreUtils = class {
 
     let entity = new EntityClass();
 
-    let events = entity.processCommand(command);
+    let processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
+
+    let events = entity[processCommandMethod](command);
     this.esClient.create(entity.entityTypeName, events, (err, createdEntityAndEventInfo) => {
       if (err) {
         callback(err);
@@ -139,7 +154,24 @@ const EventStoreUtils = class {
 
     });
   }
-};
+}
+
+
+function getEntityMethodName(entity, prefix, type, defaultMethod) {
+
+  let specificMethod = prefix + type;
+
+  if (typeof entity[specificMethod] != 'undefined') {
+
+    return specificMethod;
+  } else if (typeof entity[defaultMethod] != 'undefined') {
+
+    return defaultMethod;
+  } else {
+
+    throw new Error(`Entity does not have method to ${prefix} for ${type}: `)
+  }
+}
 
 export default EventStoreUtils;
 

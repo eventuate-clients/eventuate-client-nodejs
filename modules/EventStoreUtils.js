@@ -1,6 +1,6 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -20,7 +20,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
-var EventStoreUtils = (function () {
+var EventStoreUtils = function () {
   function EventStoreUtils() {
     var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -59,16 +59,28 @@ var EventStoreUtils = (function () {
         } else {
 
           if (loadedEvents.length > 0) {
+
             var entityVersion = loadedEvents[loadedEvents.length - 1].id;
 
             //iterate through the events calling entity.applyEvent(..)
             for (var prop in loadedEvents) {
+
               if (Object.prototype.hasOwnProperty.call(loadedEvents, prop)) {
-                entity = entity.applyEvent(loadedEvents[prop]);
+
+                var event = loadedEvents[prop];
+
+                var type = event.eventType.split('.').pop();
+
+                var applyMethod = getEntityMethodName(entity, 'apply', type, 'applyEvent');
+                //console.log(`Calling "${applyMethod}" for eventType: ${event.eventType}`);
+
+                entity[applyMethod](event);
               }
             }
 
-            self.esClient.update(entity.entityTypeName, entityId, entityVersion, entity.processCommand(command), function (error, updatedEntityAndEventInfo) {
+            var processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
+
+            self.esClient.update(entity.entityTypeName, entityId, entityVersion, entity[processCommandMethod](command), function (error, updatedEntityAndEventInfo) {
               if (error) {
                 callback(error);
                 return;
@@ -90,7 +102,7 @@ var EventStoreUtils = (function () {
     key: 'retryNTimes',
     value: function retryNTimes(times, fn, _errConditionFn, ctx) {
 
-      var errConditionFn;
+      var errConditionFn = void 0;
       if (typeof _errConditionFn !== 'function') {
         ctx = _errConditionFn;
         errConditionFn = function errConditionFn(err) {
@@ -136,7 +148,9 @@ var EventStoreUtils = (function () {
 
       var entity = new EntityClass();
 
-      var events = entity.processCommand(command);
+      var processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
+
+      var events = entity[processCommandMethod](command);
       this.esClient.create(entity.entityTypeName, events, function (err, createdEntityAndEventInfo) {
         if (err) {
           callback(err);
@@ -162,7 +176,23 @@ var EventStoreUtils = (function () {
   }]);
 
   return EventStoreUtils;
-})();
+}();
+
+function getEntityMethodName(entity, prefix, type, defaultMethod) {
+
+  var specificMethod = prefix + type;
+
+  if (typeof entity[specificMethod] != 'undefined') {
+
+    return specificMethod;
+  } else if (typeof entity[defaultMethod] != 'undefined') {
+
+    return defaultMethod;
+  } else {
+
+    throw new Error('Entity does not have method to ' + prefix + ' for ' + type + ': ');
+  }
+}
 
 exports.default = EventStoreUtils;
 module.exports = exports['default'];

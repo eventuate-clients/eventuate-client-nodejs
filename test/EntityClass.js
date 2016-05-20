@@ -7,8 +7,8 @@ var entityTypeName = eventConfig.entityTypeName;
 
 
 //commands
-var CreateEntityCommand = 'CreateEntity';
-var UpdateEntityCommand = 'UpdateEntity';
+var CreateEntityCommand = 'CreateEntityCommand';
+var UpdateEntityCommand = 'UpdateEntityCommand';
 
 var EntityClass = (function(){
 
@@ -20,6 +20,17 @@ var EntityClass = (function(){
 
   EntityClass.prototype.entityTypeName = entityTypeName;
 
+  EntityClass.prototype.applyMyEntityWasCreatedEvent = function (event) {
+
+    return this;
+  };
+
+  EntityClass.prototype.applyMyEntityWasUpdatedEvent = function (event) {
+
+    return this;
+  };
+
+
   EntityClass.prototype.applyEvent = function (event) {
     var eventType = event.eventType;
 
@@ -29,6 +40,27 @@ var EntityClass = (function(){
     }
 
     return this
+  };
+
+  EntityClass.prototype.processCreateEntityCommand = function (command) {
+    return [
+      {
+        eventType: MyEntityWasCreatedEvent,
+        eventData: {
+          timestamp: command.createTimestamp
+        }
+      }
+    ];
+  };
+
+  EntityClass.prototype.processUpdateEntityCommand = function (command) {
+    return [
+      {
+        eventType: MyEntityWasUpdatedEvent,
+        eventData: {
+          timestamp: command.updateTimestamp
+        }
+      }];
   };
 
   EntityClass.prototype.processCommand = function (command) {
