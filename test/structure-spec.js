@@ -3,17 +3,17 @@ var should = require('should');
 var helpers = require('./helpers');
 
 var apiKey = {
-  id: process.env.EVENT_STORE_USER_ID,
-  secret: process.env.EVENT_STORE_PASSWORD
+  id: process.env.EVENTUATE_API_KEY_ID,
+  secret: process.env.EVENTUATE_API_KEY_SECRET
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
 var esClientOpts = {
   apiKey: apiKey,
-  spaceName: process.env.EVENT_STORE_SPACE_NAME || false
+  spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
 
 
