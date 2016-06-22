@@ -19,6 +19,7 @@ var CreateEntityCommand = EntityClass.CreateEntityCommand;
 var UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 var EventStoreUtils = require('../modules/EventStoreUtils.js');
+
 var WorkflowEvents = require('../modules/WorkflowEvents.js');
 
 
@@ -94,6 +95,8 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                   done();
 
+
+
                   describe('WorkflowEvents: function startWorkflow()', function () {
 
                     this.timeout(timeout);
@@ -154,6 +157,45 @@ describe('EventStoreUtils: function createEntity()', function () {
                       //Run workflow
                       workflow.startWorkflow();
 
+                    });
+
+                  });
+
+
+                  describe('Test getApplyMethod() method', function () {
+
+                    it('should return a function', function () {
+
+                      loadedEvents.forEach(function (event) {
+
+                        var type = event.eventType.split('.').pop();
+                        var applyMethod = esUtil.getApplyMethod(entity, type);
+
+                        applyMethod.should.be.a.function;
+                      });
+
+                      //check default applyEvent() method
+                      var type = 'UnknownEventType';
+                      var applyMethod = esUtil.getApplyMethod(entity, type);
+                      applyMethod.should.be.a.function;
+                    });
+
+                  });
+
+
+                  describe('Test getProcessCommandMethod() method', function () {
+
+                    it('should return a function', function () {
+
+                      var processCommandMethod = esUtil.getProcessCommandMethod(entity, CreateEntityCommand);
+                      processCommandMethod.should.be.a.function;
+
+                      processCommandMethod = esUtil.getProcessCommandMethod(entity, UpdateEntityCommand);
+                      processCommandMethod.should.be.a.function;
+
+                      //check default processCommand() method
+                      processCommandMethod = esUtil.getProcessCommandMethod(entity, 'unknownCommand');
+                      processCommandMethod.should.be.a.function;
                     });
 
                   });

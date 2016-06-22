@@ -71,16 +71,17 @@ var EventStoreUtils = function () {
 
                 var type = event.eventType.split('.').pop();
 
-                var applyMethod = getEntityMethodName(entity, 'apply', type, 'applyEvent');
-                //console.log(`Calling "${applyMethod}" for eventType: ${event.eventType}`);
+                var applyMethod = self.getApplyMethod(entity, type);
 
-                entity[applyMethod](event);
+                applyMethod.call(entity, event);
               }
             }
 
-            var processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
+            var processCommandMethod = self.getProcessCommandMethod(entity, command.commandType);
 
-            self.esClient.update(entity.entityTypeName, entityId, entityVersion, entity[processCommandMethod](command), function (error, updatedEntityAndEventInfo) {
+            var events = processCommandMethod.call(entity, command);
+
+            self.esClient.update(entity.entityTypeName, entityId, entityVersion, events, function (error, updatedEntityAndEventInfo) {
               if (error) {
                 callback(error);
                 return;
@@ -148,9 +149,10 @@ var EventStoreUtils = function () {
 
       var entity = new EntityClass();
 
-      var processCommandMethod = getEntityMethodName(entity, 'process', command.commandType, 'processCommand');
+      var processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
 
-      var events = entity[processCommandMethod](command);
+      var events = processCommandMethod.call(entity, command);
+
       this.esClient.create(entity.entityTypeName, events, function (err, createdEntityAndEventInfo) {
         if (err) {
           callback(err);
@@ -173,26 +175,46 @@ var EventStoreUtils = function () {
         callback(null, loadedEvents);
       });
     }
+  }, {
+    key: 'getApplyMethod',
+    value: function getApplyMethod(entity, eventType) {
+
+      var defaultMethod = 'applyEvent';
+      var methodName = 'apply' + eventType;
+
+      if (typeof entity[methodName] == 'function') {
+
+        return entity[methodName];
+      } else if (typeof entity[defaultMethod] == 'function') {
+
+        return entity[defaultMethod];
+      } else {
+
+        throw new Error('Entity does not have method to ' + prefix + ' for ' + eventType + ': ');
+      }
+    }
+  }, {
+    key: 'getProcessCommandMethod',
+    value: function getProcessCommandMethod(entity, commandType) {
+
+      var defaultMethod = 'processCommand';
+      var methodName = 'process' + commandType;
+
+      if (typeof entity[methodName] == 'function') {
+
+        return entity[methodName];
+      } else if (typeof entity[defaultMethod] == 'function') {
+
+        return entity[defaultMethod];
+      } else {
+
+        throw new Error('Entity does not have method to ' + prefix + ' for ' + commandType + ': ');
+      }
+    }
   }]);
 
   return EventStoreUtils;
 }();
-
-function getEntityMethodName(entity, prefix, type, defaultMethod) {
-
-  var specificMethod = prefix + type;
-
-  if (typeof entity[specificMethod] != 'undefined') {
-
-    return specificMethod;
-  } else if (typeof entity[defaultMethod] != 'undefined') {
-
-    return defaultMethod;
-  } else {
-
-    throw new Error('Entity does not have method to ' + prefix + ' for ' + type + ': ');
-  }
-}
 
 exports.default = EventStoreUtils;
 module.exports = exports['default'];

@@ -21,12 +21,12 @@ var EntityClass = (function(){
   EntityClass.prototype.entityTypeName = entityTypeName;
 
   EntityClass.prototype.applyMyEntityWasCreatedEvent = function (event) {
-
+    console.log('applyMyEntityWasCreatedEvent()');
     return this;
   };
 
   EntityClass.prototype.applyMyEntityWasUpdatedEvent = function (event) {
-
+    console.log('applyMyEntityWasUpdatedEvent()');
     return this;
   };
 
