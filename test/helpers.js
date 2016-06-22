@@ -1,3 +1,4 @@
+var uuid = require('uuid');
 var should = require('should');
 
 exports.removeEventsArrProperty = function (eventsArr, propertyName) {
@@ -84,4 +85,9 @@ exports.expectLoadedEvents = function (loadedEvents, done) {
   if (typeof(done) == 'function') {
     done();
   }
+};
+
+exports.getUniqueID = function () {
+
+  return uuid.v1().replace(new RegExp('-', 'g'), '');
 };

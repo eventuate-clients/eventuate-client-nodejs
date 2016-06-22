@@ -15,7 +15,8 @@
     "promise": "^6.1.0",
     "rx": "^2.4.1",
     "stomp": "^0.1.1",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "uuid": "^2.0.2"
   },
   "devDependencies": {
     "babel-plugin-add-module-exports": "^0.1.2",

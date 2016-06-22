@@ -28,18 +28,18 @@ var timeStamp = new Date().getTime();
 
 var esClient = new es.Client(esClientOpts);
 
-var subscriberId1 = 'subscriber1-' + timeStamp;
+var subscriberId1 = 'subscriber-' + helpers.getUniqueID();
 
-var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity1-' + timeStamp;
+var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents1 = {};
 entityTypesAndEvents1[entityTypeName1] = [
   'net.chrisrichardson.eventstore.example.MyEntityWasCreated1'
 ];
 
-var subscriberId2 = 'subscriber2-' + timeStamp;
+var subscriberId2 = 'subscriber-' + helpers.getUniqueID();
 
-var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity2-' + timeStamp;
+var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents2 = {};
 entityTypesAndEvents2[entityTypeName2] = [

@@ -10,6 +10,7 @@ var _ = require('underscore');
 var Agent = require('agentkeepalive');
 var HttpsAgent = require('agentkeepalive').HttpsAgent;
 var url = require('url');
+var uuid = require('uuid');
 
 
 var http = require('http');
@@ -454,8 +455,6 @@ Client.prototype.reconnectStompServer = function (interval) {
 
 Client.prototype.addSubscription = function (subscriberId, entityTypesAndEvents, messageCallback, clientSubscribeCallback) {
 
-  var timestamp = new Date().getTime();
-
   //add new subscription if not exists
   if (typeof this.subscriptions[subscriberId] == 'undefined') {
    this.subscriptions[subscriberId] = {};
@@ -477,14 +476,15 @@ Client.prototype.addSubscription = function (subscriberId, entityTypesAndEvents,
 
   destination = specialChars.escape(JSON.stringify(destination));
 
-  var id = 'subscription-id' + timestamp;
-  var receipt = 'receipt-id' + timestamp;
+  var uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
+  var subscriptionId = 'subscription-id-' + uniqueId;
+  var receipt = 'receipt-id-' + uniqueId;
 
   //add to receipts
   this.addReceipt(receipt, clientSubscribeCallback);
 
   subscription.headers = {
-    id: id,
+    id: subscriptionId,
     receipt: receipt,
     destination: destination
   };

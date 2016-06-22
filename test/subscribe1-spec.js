@@ -24,11 +24,9 @@ var esClientOpts = {
 
 var esClient = new es.Client(esClientOpts);
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity'  + new Date().getTime();
+var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-'  + helpers.getUniqueID();
 
-var timeStamp = new Date().getTime();
-
-var subscriberId = 'subscriber' + timeStamp;
+var subscriberId = 'subscriber-' + helpers.getUniqueID();
 var entityTypesAndEvents = {};
 entityTypesAndEvents[entityTypeName] = [
   'net.chrisrichardson.eventstore.example.MyEntityWasCreated',

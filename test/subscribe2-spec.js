@@ -22,11 +22,10 @@ var esClientOpts = {
 };
 
 var esClient = new es.Client(esClientOpts);
-var timeStamp = new Date().getTime();
 
-var subscriberId = 'subscriber' + timeStamp;
+var subscriberId = 'subscriber-' + helpers.getUniqueID();
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity' + timeStamp;
+var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents = {};
 entityTypesAndEvents[entityTypeName] = [
