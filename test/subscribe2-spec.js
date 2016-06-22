@@ -96,6 +96,9 @@ describe('Create ' + createEvents.length + ' events and subscribe for them', fun
           processedMessagesNumber++;
 
           subscribe.acknowledge(event.ack);
+
+          (typeof event.eventData).should.equal('object');
+
           if (processedMessagesNumber == shouldBeProcessedNumber) {
             done();
           }

@@ -88,6 +88,9 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             processedMessagesNumber++;
 
             subscribe.acknowledge(event.ack);
+
+            (typeof event.eventData).should.equal('object');
+
             if (processedMessagesNumber == shouldBeProcessedNumber) {
               done();
             }

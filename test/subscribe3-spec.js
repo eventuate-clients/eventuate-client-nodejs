@@ -114,6 +114,9 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                 subscribe1.observable.subscribe(
                   function (event) {
                     processedMessagesNumber1++;
+
+                    (typeof event.eventData).should.equal('object');
+
                     //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
 
                     if (event.ack.receiptHandle.subscriberId != subscriberId1) {
@@ -158,7 +161,10 @@ describe('Create First Entity: ' + entityTypeName1, function () {
 
                 subscribe2.observable.subscribe(
                   function (event) {
+
                     processedMessagesNumber2++;
+
+                    (typeof event.eventData).should.equal('object');
 
                     if (event.ack.receiptHandle.subscriberId != subscriberId2) {
                       done(new Error('Wrong subscriber: ' + event.ack.receiptHandle.subscriberId));
