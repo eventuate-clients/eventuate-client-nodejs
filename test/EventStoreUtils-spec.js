@@ -100,8 +100,8 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                     it('test startWorkflow()', function (done) {
 
-                      var eventCnt = 0;
-                      var expectedEventCnt = 2;
+                      var eventCount = 0;
+                      var expectedEventCount = 2;
 
                       //Define event handlers
                       var eventHandlers = {};
@@ -113,7 +113,7 @@ describe('EventStoreUtils: function createEntity()', function () {
                         helpers.expectEvent(event);
 
                         if (event.eventData.timestamp == createTimestamp) {
-                          eventCnt++;
+                          eventCount++;
                         }
 
                         return Promise.resolve();
@@ -124,10 +124,10 @@ describe('EventStoreUtils: function createEntity()', function () {
                         helpers.expectEvent(event);
 
                         if (event.eventData.timestamp == updateTimestamp) {
-                          eventCnt++;
+                          eventCount++;
                         }
 
-                        if(eventCnt == expectedEventCnt) {
+                        if(eventCount == expectedEventCount) {
                           done();
                         }
 
