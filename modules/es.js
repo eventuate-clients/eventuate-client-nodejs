@@ -10,21 +10,23 @@ var _ = require('underscore');
 var Agent = require('agentkeepalive');
 var HttpsAgent = require('agentkeepalive').HttpsAgent;
 var url = require('url');
+var uuid = require('uuid');
 
 
 var http = require('http');
 var https = require('https');
 
 function Client(options) {
-  this.url = options.url;
-  this.urlObj = url.parse(options.url);
-  this.stompHost = options.stomp.host;
-  this.stompPort = options.stomp.port;
+  this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
+  this.stompHost = process.env.EVENTUATE_STOMP_SERVER_HOST || process.env.EVENT_STORE_STOMP_SERVER_HOST || 'api.eventuate.io';
+  this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
+
   this.apiKey = options.apiKey;
   this.spaceName = options.spaceName || false;
+
+  this.urlObj = url.parse(this.url);
   this.baseUrlPath = '/entity';
   this.debug = options.debug;
-
 
   if (this.urlObj.protocol == 'https:') {
     this.httpClient = https;
@@ -263,21 +265,16 @@ Client.prototype.subscribe = function (subscriberId, entityTypesAndEvents, callb
           observer.onError(error);
         }
 
-        body.forEach(function (eventDataStr) {
-          try {
-            var eventData = JSON.parse(eventDataStr);
-            var event = {
-              eventId: eventData.id,
-              eventType: eventData.eventType,
-              eventData: eventData.eventData,
-              entityId: eventData.entityId,
-              ack: ack
-            };
-            observer.onNext(event);
+        body.forEach(function (eventStr) {
+
+          var result = self.makeEvent(eventStr, ack);
+
+          if (result.error) {
+            observer.onError(result.error);
+            return;
           }
-          catch (err) {
-            observer.onError(err);
-          }
+
+          observer.onNext(result.event);
         });
       };
 
@@ -458,8 +455,6 @@ Client.prototype.reconnectStompServer = function (interval) {
 
 Client.prototype.addSubscription = function (subscriberId, entityTypesAndEvents, messageCallback, clientSubscribeCallback) {
 
-  var timestamp = new Date().getTime();
-
   //add new subscription if not exists
   if (typeof this.subscriptions[subscriberId] == 'undefined') {
    this.subscriptions[subscriberId] = {};
@@ -481,14 +476,15 @@ Client.prototype.addSubscription = function (subscriberId, entityTypesAndEvents,
 
   destination = specialChars.escape(JSON.stringify(destination));
 
-  var id = 'subscription-id' + timestamp;
-  var receipt = 'receipt-id' + timestamp;
+  var uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
+  var subscriptionId = 'subscription-id-' + uniqueId;
+  var receipt = 'receipt-id-' + uniqueId;
 
   //add to receipts
   this.addReceipt(receipt, clientSubscribeCallback);
 
   subscription.headers = {
-    id: id,
+    id: subscriptionId,
     receipt: receipt,
     destination: destination
   };
@@ -512,6 +508,34 @@ Client.prototype.doClientSubscribe = function (subscriberId) {
   } else {
     console.error(new Error('Can\t find subscription fo subscriber ' + subscriberId));
   }
+};
+
+Client.prototype.makeEvent = function (eventStr, ack) {
+
+  try {
+
+    var parsedEvent = JSON.parse(eventStr);
+
+    try {
+
+      var event = {
+        eventId: parsedEvent.id,
+        eventType: parsedEvent.eventType,
+        entityId: parsedEvent.entityId,
+        ack: ack
+      };
+
+      event.eventData = JSON.parse(parsedEvent.eventData);
+
+      return { event: event };
+
+    } catch (err) {
+      return { error: err };
+    }
+  } catch (err) {
+    return { error: err };
+  }
+
 };
 
 function _prepareEvents(events) {

@@ -11,40 +11,35 @@ var helpers = require('./helpers');
 var timeout = 25000;
 
 var apiKey = {
-  id: process.env.EVENT_STORE_USER_ID,
-  secret: process.env.EVENT_STORE_PASSWORD
+  id: process.env.EVENTUATE_API_KEY_ID,
+  secret: process.env.EVENTUATE_API_KEY_SECRET
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
 var esClientOpts = {
-  url: process.env.EVENT_STORE_URL,
-  stomp: {
-    host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
-    port: process.env.EVENT_STORE_STOMP_SERVER_PORT
-  },
   apiKey: apiKey,
-  spaceName: process.env.EVENT_STORE_SPACE_NAME || false
+  spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
 
 var timeStamp = new Date().getTime();
 
 var esClient = new es.Client(esClientOpts);
 
-var subscriberId1 = 'subscriber1-' + timeStamp;
+var subscriberId1 = 'subscriber-' + helpers.getUniqueID();
 
-var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity1-' + timeStamp;
+var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents1 = {};
 entityTypesAndEvents1[entityTypeName1] = [
   'net.chrisrichardson.eventstore.example.MyEntityWasCreated1'
 ];
 
-var subscriberId2 = 'subscriber2-' + timeStamp;
+var subscriberId2 = 'subscriber-' + helpers.getUniqueID();
 
-var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity2-' + timeStamp;
+var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents2 = {};
 entityTypesAndEvents2[entityTypeName2] = [
@@ -119,6 +114,9 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                 subscribe1.observable.subscribe(
                   function (event) {
                     processedMessagesNumber1++;
+
+                    (typeof event.eventData).should.equal('object');
+
                     //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
 
                     if (event.ack.receiptHandle.subscriberId != subscriberId1) {
@@ -163,7 +161,10 @@ describe('Create First Entity: ' + entityTypeName1, function () {
 
                 subscribe2.observable.subscribe(
                   function (event) {
+
                     processedMessagesNumber2++;
+
+                    (typeof event.eventData).should.equal('object');
 
                     if (event.ack.receiptHandle.subscriberId != subscriberId2) {
                       done(new Error('Wrong subscriber: ' + event.ack.receiptHandle.subscriberId));

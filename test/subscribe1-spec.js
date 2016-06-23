@@ -9,30 +9,24 @@ var helpers = require('./helpers');
 
 
 var apiKey = {
-  id: process.env.EVENT_STORE_USER_ID,
-  secret: process.env.EVENT_STORE_PASSWORD
+  id: process.env.EVENTUATE_API_KEY_ID,
+  secret: process.env.EVENTUATE_API_KEY_SECRET
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
 var esClientOpts = {
-  url: process.env.EVENT_STORE_URL,
-  stomp: {
-    host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
-    port: process.env.EVENT_STORE_STOMP_SERVER_PORT
-  },
   apiKey: apiKey,
-  spaceName: process.env.EVENT_STORE_SPACE_NAME || false
+  spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
+
 var esClient = new es.Client(esClientOpts);
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity'  + new Date().getTime();
+var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-'  + helpers.getUniqueID();
 
-var timeStamp = new Date().getTime();
-
-var subscriberId = 'subscriber' + timeStamp;
+var subscriberId = 'subscriber-' + helpers.getUniqueID();
 var entityTypesAndEvents = {};
 entityTypesAndEvents[entityTypeName] = [
   'net.chrisrichardson.eventstore.example.MyEntityWasCreated',
@@ -94,6 +88,9 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             processedMessagesNumber++;
 
             subscribe.acknowledge(event.ack);
+
+            (typeof event.eventData).should.equal('object');
+
             if (processedMessagesNumber == shouldBeProcessedNumber) {
               done();
             }

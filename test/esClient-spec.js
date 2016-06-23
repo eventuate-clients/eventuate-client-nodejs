@@ -4,22 +4,17 @@ var helpers = require('./helpers');
 var uuid = require('uuid');
 
 var apiKey = {
-  id: process.env.EVENT_STORE_USER_ID,
-  secret: process.env.EVENT_STORE_PASSWORD
+  id: process.env.EVENTUATE_API_KEY_ID,
+  secret: process.env.EVENTUATE_API_KEY_SECRET
 };
 
 if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENT_STORE_USER_ID` and `EVENT_STORE_PASSWORD` to set auth data");
+  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
 var esClientOpts = {
-  url: process.env.EVENT_STORE_URL,
-  stomp: {
-    host: process.env.EVENT_STORE_STOMP_SERVER_HOST,
-    port: process.env.EVENT_STORE_STOMP_SERVER_PORT
-  },
   apiKey: apiKey,
-  spaceName: process.env.EVENT_STORE_SPACE_NAME || false
+  spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
 
 var esClient = new es.Client(esClientOpts);
