@@ -51,17 +51,21 @@ var events = require('events'),
   exceptions = require('./stomp-exceptions'),
   stompUtils = new stomp_utils.StompUtils();
 
+var EOL = '\n';
+var BODY_SEPARATOR = EOL + EOL;
+var FRAMES_SEPARATOR_REGEXP = /\u0000[\n]*/;
+
 
 function parse_command(data) {
   var command,
     this_string = data.toString('utf8', 0, data.length);
-  command = this_string.split('\n');
+  command = this_string.split(EOL);
   return command[0];
 }
 
 function parse_headers(raw_headers) {
   var headers = {},
-    headers_split = raw_headers.split('\n'),
+    headers_split = raw_headers.split(EOL),
     i;
 
   for (i = 0; i < headers_split.length; i++) {
@@ -89,7 +93,7 @@ function parse_frame(chunk) {
   data = chunk.slice(command.length + 1, chunk.length);
   data = data.toString('utf8', 0, data.length);
 
-  var the_rest = data.split('\n\n');
+  var the_rest = data.split(BODY_SEPARATOR);
   headers = parse_headers(the_rest[0]);
   body = the_rest.slice(1, the_rest.length);
 
@@ -200,6 +204,7 @@ Stomp.prototype.connect = function () {
 
   this.setSocketTimeout(this.connectConfig.timeout);
   this.setupListeners();
+  this.buffer = '';
 
 };
 
@@ -250,53 +255,28 @@ Stomp.prototype.setupListeners = function () {
     self.log.debug('on drain');
   });
 
-  var buffer = '';
   this.socket.on('data', function (chunk) {
-
-    //heart-beat frame
-    if (chunk.toString() == '\n') {
-      chunk = '';
-    }
-
-    buffer += chunk;
-    var frames = buffer.split('\0\n');
-
-    if (frames.length == 1) {
-      frames = buffer.split('\0');
-    }
-
-    if (frames.length == 1) {
-      return;
-    }
-
-    buffer = frames.pop();
-
-    var parsed_frame = null;
-    var _frame;
-    while (_frame = frames.shift()) {
-      parsed_frame = parse_frame(_frame);
-      self.handle_new_frame(parsed_frame);
-    }
+    self.onData(chunk);
   });
 
   this.socket.on('error', function (error) {
-    self.log.debug('ON ERROR');
-    self.log.error(error.stack + 'error name: ' + error.name);
-    self.emit('error', error);
-    self.disconnect();
+    this.log.debug('ON ERROR');
+    this.log.error(error.stack + 'error name: ' + error.name);
+    this.emit('error', error);
+    this.disconnect();
   });
 
   this.socket.on('close', function (error) {
-    self.log.debug('disconnected');
+    this.log.debug('disconnected');
     if (error) {
-      self.log.error('Disconnected with error: ' + error);
+      this.log.error('Disconnected with error: ' + error);
     }
-    self.emit("disconnected", error);
+    this.emit("disconnected", error);
   });
 
   this.socket.on('timeout', function () {
-    self.log.debug('ON TIMEOUT');
-    self.disconnect();
+    this.log.debug('ON TIMEOUT');
+    this.disconnect();
   });
 };
 
@@ -370,6 +350,8 @@ Stomp.prototype.handle_new_frame = function (this_frame) {
   switch (this_frame.command) {
     case "MESSAGE":
       if (this.is_a_message(this_frame)) {
+        /*this.log.debug('MESSAGE');
+        this.log.debug(util.inspect(this_frame));*/
         this.should_run_message_callback(this_frame);
         this.emit('message', this_frame);
       }
@@ -546,5 +528,73 @@ Stomp.prototype.parseServerHeartBeat = function (headers) {
     return false;
   }
 };
+
+Stomp.prototype.isHeartBeat = function (chunk) {
+  return chunk == EOL;
+};
+
+Stomp.prototype.onData = function (chunk) {
+  this.log.debug('ON DATA');
+
+  chunk = chunk.toString();
+  this.log.debug('chunk:');
+  this.log.debug(util.inspect(chunk));
+
+  this.log.debug('------------------------------------------------------------');
+  this.log.debug('buffer:');
+  this.log.debug(util.inspect(this.buffer));
+  this.log.debug('------------------------------------------------------------');
+
+  if (this.isHeartBeat(chunk)) {
+    this.log.debug('heart-beat');
+    //chunk = '';
+    return;
+  }
+
+  var frames = this.parseStompFrames(chunk);
+
+  if (!frames) {
+    this.log.debug('no frames parsed');
+    return;
+  }
+
+  var parsed_frame = null;
+  var _frame;
+
+  while (_frame = frames.shift()) {
+    parsed_frame = parse_frame(_frame);
+    this.handle_new_frame(parsed_frame);
+  }
+};
+
+Stomp.prototype.parseStompFrames = function (chunk) {
+
+  this.buffer += chunk;
+
+  if (hasCompleteFrames(this.buffer)) {
+
+    var frames = this.buffer.split(FRAMES_SEPARATOR_REGEXP);
+
+    this.log.debug('---------------------------------------------------------');
+    this.log.debug('frames:');
+    this.log.debug(util.inspect(frames));
+    this.log.debug('---------------------------------------------------------');
+
+
+    this.buffer = frames.pop();
+
+    this.log.debug('------------------------------------------------------------');
+    this.log.debug('new buffer:');
+    this.log.debug(util.inspect(this.buffer));
+    this.log.debug('------------------------------------------------------------');
+
+    return frames;
+  }
+
+};
+
+function hasCompleteFrames(str) {
+  return FRAMES_SEPARATOR_REGEXP.test(str);
+}
 
 module.exports.Stomp = Stomp;
