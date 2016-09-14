@@ -91,3 +91,10 @@ exports.getUniqueID = function () {
 
   return uuid.v1().replace(new RegExp('-', 'g'), '');
 };
+
+exports.expectParsedFrame = function (frame) {
+
+  frame.should.have.property('command');
+  frame.should.have.property('headers');
+  frame.should.have.property('body');
+};

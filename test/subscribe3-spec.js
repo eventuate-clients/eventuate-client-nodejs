@@ -104,9 +104,6 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                     console.log(err);
                     throw err;
                   }
-                  console.log('The subscription has been established');
-                  console.log('receipt-id:', receiptId, '\n');
-
                 });
 
                 helpers.expectSubscribe(subscribe1);
@@ -153,8 +150,7 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                     console.error(err);
                     throw err;
                   }
-                  console.log('The subscription has been established');
-                  console.log('receipt-id:', receiptId, '\n');
+
                 });
 
                 helpers.expectSubscribe(subscribe2);

@@ -108,6 +108,7 @@ function parse_frame(chunk) {
   };
 
   var this_frame = new frame.Frame();
+
   return this_frame.build_frame(args);
 
 }
@@ -540,14 +541,8 @@ Stomp.prototype.onData = function (chunk) {
   this.log.debug('chunk:');
   this.log.debug(util.inspect(chunk));
 
-  this.log.debug('------------------------------------------------------------');
-  this.log.debug('buffer:');
-  this.log.debug(util.inspect(this.buffer));
-  this.log.debug('------------------------------------------------------------');
-
   if (this.isHeartBeat(chunk)) {
     this.log.debug('heart-beat');
-    //chunk = '';
     return;
   }
 
@@ -575,18 +570,10 @@ Stomp.prototype.parseStompFrames = function (chunk) {
 
     var frames = this.buffer.split(FRAMES_SEPARATOR_REGEXP);
 
-    this.log.debug('---------------------------------------------------------');
     this.log.debug('frames:');
     this.log.debug(util.inspect(frames));
-    this.log.debug('---------------------------------------------------------');
-
 
     this.buffer = frames.pop();
-
-    this.log.debug('------------------------------------------------------------');
-    this.log.debug('new buffer:');
-    this.log.debug(util.inspect(this.buffer));
-    this.log.debug('------------------------------------------------------------');
 
     return frames;
   }
@@ -596,5 +583,9 @@ Stomp.prototype.parseStompFrames = function (chunk) {
 function hasCompleteFrames(str) {
   return FRAMES_SEPARATOR_REGEXP.test(str);
 }
+
+module.exports.parseStompFrames = Stomp.prototype.parseStompFrames;
+
+module.exports.parse_frame = parse_frame;
 
 module.exports.Stomp = Stomp;
