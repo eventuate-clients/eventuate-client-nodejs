@@ -530,9 +530,11 @@ Client.prototype.makeEvent = function (eventStr, ack) {
       return { event: event };
 
     } catch (err) {
+      console.error('Bad event string:', util.inspect(eventStr));
       return { error: err };
     }
   } catch (err) {
+    console.error('Bad event string:', util.inspect(eventStr));
     return { error: err };
   }
 

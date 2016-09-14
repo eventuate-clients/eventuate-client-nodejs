@@ -73,8 +73,6 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             console.log(err);
             throw err;
           }
-          console.log('The subscription has been established');
-          console.log('receipt-id:', receiptId, '\n');
         });
 
         subscribe.should.be.have.property('acknowledge');

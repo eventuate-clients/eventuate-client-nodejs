@@ -82,8 +82,6 @@ describe('Create ' + createEvents.length + ' events and subscribe for them', fun
           console.log(err);
           throw err;
         }
-        console.log('The subscription has been established');
-        console.log('receipt-id:', receiptId, '\n');
       });
 
       subscribe.should.be.have.property('acknowledge');
