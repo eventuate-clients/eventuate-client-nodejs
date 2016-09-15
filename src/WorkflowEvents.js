@@ -1,6 +1,9 @@
 import 'babel-polyfill';
-import Es from './es.js';
 import Rx from 'rx';
+import async from 'async';
+import util from 'util';
+
+import Es from './es.js';
 
 let defaultLogger = {
   debug: (process.env.LOG_LEVEL == 'DEBUG')? console.log: function(){},
@@ -40,23 +43,45 @@ const result = class WorkflowEvents {
     this.esClient = new Es.Client(esClientOpts);
   }
 
-  startWorkflow() {
+  startWorkflow(callback) {
+
+    this.logger.info('Subscribe to: ', util.inspect(this.subscriptions, false, 10));
+
+    let functions = [];
 
 
     this.subscriptions.forEach(({subscriberId, entityTypesAndEvents}) => {
-      let logger = this.logger;
-      const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
-        if (err) {
-          logger.error('subscribe callback error', err);
-          return;
-        }
-        logger.info(`The subscription has been established
-        receipt-id:${receiptId}
-        `);
-      });
 
-      this.runProcessEvents(subscribe);
+      const logger = this.logger;
+
+      let receipts = [];
+
+      functions.push(cb => {
+        const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
+
+          if (err) {
+            logger.error('subscribe callback error', err);
+            cb(err);
+            return;
+          }
+
+          logger.info(`The subscription has been established receipt-id: ${receiptId}`);
+
+          if (receipts.indexOf(receiptId) < 0) {
+            receipts.push(receiptId);
+            cb(null, receiptId);
+          }
+
+        });
+
+        this.runProcessEvents(subscribe);
+
+      });
     });
+
+
+    async.parallel(functions, callback);
+
   }
 
   runProcessEvents(subscription) {
@@ -98,14 +123,11 @@ function createObservable(getEventHandler) {
           observer.onCompleted();
         },
         (error) => {
-          observer.onNext();
-           observer.onCompleted();
+          observer.onError(error);
         }
       );
     } else {
-      this.logger.debug('No handler for eventType: ', event.eventType);
-      observer.onNext();
-      observer.onCompleted();
+      observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
     }
   });
 
