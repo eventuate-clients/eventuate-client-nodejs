@@ -11,6 +11,7 @@
   "license": "Apache License, Version 2",
   "dependencies": {
     "agentkeepalive": "^2.0.2",
+    "async": "^2.0.1",
     "babel-polyfill": "^6.3.14",
     "promise": "^6.1.0",
     "rx": "^2.4.1",
