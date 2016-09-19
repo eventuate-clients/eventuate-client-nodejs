@@ -1,4 +1,4 @@
-var es = require('../modules/es');
+var EsClient = require('../dist');
 var should = require('should');
 var helpers = require('./helpers');
 
@@ -17,7 +17,7 @@ var esClientOpts = {
 };
 
 
-var esClient = new es.Client(esClientOpts);
+var esClient = new EsClient(esClientOpts);
 
 describe('Test static API ', function () {
 

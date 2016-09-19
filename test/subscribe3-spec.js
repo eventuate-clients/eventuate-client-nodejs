@@ -3,7 +3,7 @@
  Each subscriber should receive only its own events.
  */
 
-var es = require('../modules/es');
+var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./helpers');
@@ -26,7 +26,7 @@ var esClientOpts = {
 
 var timeStamp = new Date().getTime();
 
-var esClient = new es.Client(esClientOpts);
+var esClient = new EsClient(esClientOpts);
 
 var subscriberId1 = 'subscriber-' + helpers.getUniqueID();
 

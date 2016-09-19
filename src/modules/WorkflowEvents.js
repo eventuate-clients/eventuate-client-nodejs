@@ -1,5 +1,5 @@
 import 'babel-polyfill';
-import Es from './es.js';
+import EsClient from './EsClient';
 import Rx from 'rx';
 
 let defaultLogger = {
@@ -37,7 +37,7 @@ const result = class WorkflowEvents {
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
-    this.esClient = new Es.Client(esClientOpts);
+    this.esClient = new EsClient(esClientOpts);
   }
 
   startWorkflow() {

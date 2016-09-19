@@ -2,7 +2,7 @@
  This test creates uniquely named entity with many events and subscribes to them
 */
 
-var es = require('../modules/es');
+var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./helpers');
@@ -21,7 +21,7 @@ var esClientOpts = {
   spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
 
-var esClient = new es.Client(esClientOpts);
+var esClient = new EsClient(esClientOpts);
 
 var subscriberId = 'subscriber-' + helpers.getUniqueID();
 

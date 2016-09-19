@@ -1,5 +1,5 @@
 var should = require('should');
-var specialChars = require('../modules/specialChars');
+var specialChars = require('../dist/modules/specialChars');
 
 describe('Module specialChars', function () {
   it('should be have property function escape()', function () {

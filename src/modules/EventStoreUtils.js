@@ -1,5 +1,5 @@
 import util from 'util';
-import Es from './es.js';
+import EsClient from './EsClient';
 
 let EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
@@ -25,7 +25,7 @@ export default class EventStoreUtils {
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
-    this.esClient = new Es.Client(esClientOpts);
+    this.esClient = new EsClient(esClientOpts);
 
     this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, function (EntityClass, entityId, command, callback) {
       let entity = new EntityClass(),

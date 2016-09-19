@@ -1,4 +1,5 @@
-var es = require('../modules/es');
+var EsClient = require('../dist');
+//import EsClient from '../src/modules/EsClient';
 var should = require('should');
 var helpers = require('./helpers');
 var uuid = require('uuid');
@@ -17,13 +18,13 @@ var esClientOpts = {
   spaceName: process.env.EVENTUATE_SPACE_NAME || false
 };
 
-var esClient = new es.Client(esClientOpts);
+var esClient = new EsClient(esClientOpts);
 
 var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
 var eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
 var eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEntityNameChanged';
 
-var timeout = 15000;
+var timeout = 20000;
 
 describe('ES Node.js Client: function create()', function () {
 
@@ -138,6 +139,9 @@ describe('ES Node.js Client: function create() custom entityId', function () {
 });
 
 describe('ES Node.js Client: function create() eventData contains unicode string', function () {
+
+  this.timeout(timeout);
+
   it('function create() should return entityAndEventInfo object', function (done) {
     var entityId = uuid.v1().replace(/-/g, '');
 

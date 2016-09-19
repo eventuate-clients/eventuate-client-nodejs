@@ -10,9 +10,9 @@ Object.defineProperty(exports, "__esModule", {
 
 require('babel-polyfill');
 
-var _es = require('./es.js');
+var _EsClient = require('./EsClient');
 
-var _es2 = _interopRequireDefault(_es);
+var _EsClient2 = _interopRequireDefault(_EsClient);
 
 var _rx = require('rx');
 
@@ -68,7 +68,7 @@ var result = function () {
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
-    this.esClient = new _es2.default.Client(esClientOpts);
+    this.esClient = new _EsClient2.default(esClientOpts);
   }
 
   _createClass(WorkflowEvents, [{

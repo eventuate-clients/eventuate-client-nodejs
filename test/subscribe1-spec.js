@@ -2,7 +2,8 @@
   This test creates and updates one uniquely named entity with one event and subscribes to it
 */
 
-var es = require('../modules/es');
+//import EsClient from '../src/modules/EsClient';
+var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./helpers');
@@ -19,10 +20,11 @@ if (!apiKey.id || !apiKey.secret) {
 
 var esClientOpts = {
   apiKey: apiKey,
-  spaceName: process.env.EVENTUATE_SPACE_NAME || false
+  spaceName: process.env.EVENTUATE_SPACE_NAME || false,
+  debug: false
 };
 
-var esClient = new es.Client(esClientOpts);
+var esClient = new EsClient(esClientOpts);
 
 var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-'  + helpers.getUniqueID();
 

@@ -18,9 +18,9 @@ var EntityClass = require('./EntityClass');
 var CreateEntityCommand = EntityClass.CreateEntityCommand;
 var UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
-var EventStoreUtils = require('../modules/EventStoreUtils.js');
-
-var WorkflowEvents = require('../modules/WorkflowEvents.js');
+//var EventStoreUtils = require('../src/modules/EventStoreUtils.js');
+var EventStoreUtils = require('../dist').EventStoreUtils;
+var WorkflowEvents = require('../dist').WorkflowEvents;
 
 
 var esUtil = new EventStoreUtils();
