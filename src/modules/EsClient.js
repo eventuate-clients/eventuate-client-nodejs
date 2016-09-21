@@ -8,8 +8,7 @@ import http from 'http';
 import https from 'https';
 import path from 'path';
 
-import stomp from './stomp/stomp';
-import frame from './stomp/frame';
+import Stomp from './stomp/Stomp';
 import specialChars from './specialChars';
 import EsServerError from './EsServerError';
 
@@ -246,46 +245,51 @@ export default class EsClient {
     }
   }
 
+  getObservableCreateFn(subscriberId, entityTypesAndEvents, callback) {
+
+    return observer => {
+
+      const messageCallback = (body, headers) => {
+
+        let ack;
+        try {
+          ack = JSON.parse(specialChars.unescape(headers.ack));
+        } catch (error) {
+          observer.onError(error);
+        }
+
+        body.forEach(eventStr => {
+
+          const result = this.makeEvent(eventStr, ack);
+
+          if (result.error) {
+            observer.onError(result.error);
+            return;
+          }
+
+          observer.onNext(result.event);
+        });
+      };
+
+      this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
+
+      this.connectToStompServer().then(
+        () => {
+          this.doClientSubscribe(subscriberId);
+        },
+          error => {
+          callback(error);
+        }
+      );
+    };
+  }
+
   subscribe(subscriberId, entityTypesAndEvents, callback) {
     if (subscriberId && Object.keys(entityTypesAndEvents).length !== 0) {
 
-      const createFn = observer => {
+      const createFn = this.getObservableCreateFn(subscriberId, entityTypesAndEvents, callback);
 
-        const messageCallback = (body, headers) => {
-
-          let ack;
-          try {
-            ack = JSON.parse(specialChars.unescape(headers.ack));
-          } catch (error) {
-            observer.onError(error);
-          }
-
-          body.forEach(eventStr => {
-
-            const result = this.makeEvent(eventStr, ack);
-
-            if (result.error) {
-              observer.onError(result.error);
-              return;
-            }
-
-            observer.onNext(result.event);
-          });
-        };
-
-        this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
-
-        this.connectToStompServer().then(
-          () => {
-            this.doClientSubscribe(subscriberId);
-          },
-          error => {
-            callback(error);
-          }
-        );
-      };
-
-      const obs = Rx.Observable.create(createFn);
+      const observable = Rx.Observable.create(createFn);
 
       const acknowledge = ack => {
         if (typeof (ack) == 'object') {
@@ -298,8 +302,8 @@ export default class EsClient {
       };
 
       return {
-        acknowledge: acknowledge,
-        observable: obs
+        acknowledge,
+        observable
       };
     } else {
       callback(new Error('Incorrect input parameters'));
@@ -352,7 +356,7 @@ export default class EsClient {
           stompArgs.ssl = true;
         }
 
-        this.stompClient = new stomp.Stomp(stompArgs);
+        this.stompClient = new Stomp(stompArgs);
         this.stompClient.connect();
 
         this.stompClient.on('socketConnected', () => {
@@ -371,12 +375,13 @@ export default class EsClient {
           this.stompClient = null;
           this._connPromise = null;
 
-          if (this.reconnectInterval < 16000) {
-            this.reconnectInterval = this.reconnectInterval * 2;
-          }
-
           // Do not reconnect if self-invoked
           if (!this.closed) {
+
+            if (this.reconnectInterval < 16000) {
+              this.reconnectInterval = this.reconnectInterval * 2;
+            }
+
             this.reconnectStompServer(this.reconnectInterval);
           }
 

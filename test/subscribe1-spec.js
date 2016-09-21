@@ -45,8 +45,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
     var createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
     esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
       if (err) {
-        console.error(err);
-        throw err;
+        done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
@@ -61,7 +60,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
       esClient.update(entityTypeName, entityId, entityVersion, updateEvents, function (err, updatedEntityAndEventInfo) {
         if (err) {
-          throw err;
+          done(err);
         }
 
         helpers.expectCommandResult(updatedEntityAndEventInfo);
@@ -96,8 +95,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             }
           },
           function (err) {
-            console.log(err);
-            throw err;
+            done(err);
           },
           function () {
             console.log('Completed');
