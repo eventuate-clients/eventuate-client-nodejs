@@ -2,7 +2,7 @@ var should = require('should');
 var Stomp = require('../dist/modules/stomp/Stomp');
 var chunks = require('./data/chunks').chunks;
 var expectedFramesNumber = require('./data/chunks').framesNumber;
-var helpers = require('./helpers');
+var helpers = require('./lib/helpers');
 
 var stomp = new Stomp({});
 var frames = [];

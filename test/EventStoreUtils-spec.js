@@ -1,8 +1,8 @@
 require('should');
 var Promise = require('promise');
-var helpers = require('./helpers');
+var helpers = require('./lib/helpers');
 
-var eventConfig = require('./eventConfig');
+var eventConfig = require('./lib/eventConfig');
 var entityTypeName = eventConfig.entityTypeName;
 var MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 var MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
@@ -14,7 +14,7 @@ entityTypesAndEvents[entityTypeName] = [
 ];
 
 
-var EntityClass = require('./EntityClass');
+var EntityClass = require('./lib/EntityClass');
 var CreateEntityCommand = EntityClass.CreateEntityCommand;
 var UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 

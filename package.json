@@ -12,6 +12,7 @@
   "dependencies": {
     "agentkeepalive": "^2.0.2",
     "babel-polyfill": "^6.3.14",
+    "chai": "^3.5.0",
     "rx": "^2.4.1",
     "stomp": "^0.1.1",
     "underscore": "^1.8.3",

@@ -9,8 +9,11 @@ import https from 'https';
 import path from 'path';
 
 import Stomp from './stomp/Stomp';
+import AckOrderTracker from './stomp/AckOrderTracker';
 import specialChars from './specialChars';
 import EsServerError from './EsServerError';
+
+const ackOrderTracker = new AckOrderTracker();
 
 export default class EsClient {
 
@@ -251,6 +254,8 @@ export default class EsClient {
 
       const messageCallback = (body, headers) => {
 
+        ackOrderTracker.add(headers.ack);
+
         let ack;
         try {
           ack = JSON.parse(specialChars.unescape(headers.ack));
@@ -292,12 +297,13 @@ export default class EsClient {
       const observable = Rx.Observable.create(createFn);
 
       const acknowledge = ack => {
+
         if (typeof (ack) == 'object') {
           ack = JSON.stringify(ack);
           ack = specialChars.escape(ack);
         }
 
-        this.stompClient.ack(ack);
+        ackOrderTracker.ack(ack).forEach(ack => this.stompClient.ack);
 
       };
 

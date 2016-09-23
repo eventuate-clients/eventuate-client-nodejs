@@ -48,6 +48,10 @@ var _Stomp = require('./stomp/Stomp');
 
 var _Stomp2 = _interopRequireDefault(_Stomp);
 
+var _AckOrderTracker = require('./stomp/AckOrderTracker');
+
+var _AckOrderTracker2 = _interopRequireDefault(_AckOrderTracker);
+
 var _specialChars = require('./specialChars');
 
 var _specialChars2 = _interopRequireDefault(_specialChars);
@@ -59,6 +63,8 @@ var _EsServerError2 = _interopRequireDefault(_EsServerError);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ackOrderTracker = new _AckOrderTracker2.default();
 
 var EsClient = function () {
   function EsClient(_ref) {
@@ -304,6 +310,8 @@ var EsClient = function () {
 
         var messageCallback = function messageCallback(body, headers) {
 
+          ackOrderTracker.add(headers.ack);
+
           var ack = void 0;
           try {
             ack = JSON.parse(_specialChars2.default.unescape(headers.ack));
@@ -345,12 +353,15 @@ var EsClient = function () {
         var observable = _rx2.default.Observable.create(createFn);
 
         var acknowledge = function acknowledge(ack) {
+
           if ((typeof ack === 'undefined' ? 'undefined' : _typeof(ack)) == 'object') {
             ack = JSON.stringify(ack);
             ack = _specialChars2.default.escape(ack);
           }
 
-          _this2.stompClient.ack(ack);
+          ackOrderTracker.ack(ack).forEach(function (ack) {
+            return _this2.stompClient.ack;
+          });
         };
 
         return {

@@ -6,7 +6,7 @@
 var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
-var helpers = require('./helpers');
+var helpers = require('./lib/helpers');
 
 var timeout = 25000;
 

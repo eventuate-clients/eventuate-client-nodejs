@@ -1,13 +1,8 @@
 var EsClient = require('../dist');
 var EventStoreUtils = require('../dist').EventStoreUtils;
 var WorkflowEvents = require('../dist').WorkflowEvents;
-
-console.log('EsClient:', EsClient);
-console.log('EventStoreUtils', EventStoreUtils);
-console.log('WorkflowEvents:', WorkflowEvents);
-//import EsClient from '../src/modules/EsClient';
 var should = require('should');
-var helpers = require('./helpers');
+var helpers = require('./lib/helpers');
 var uuid = require('uuid');
 
 var apiKey = {
