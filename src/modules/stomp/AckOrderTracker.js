@@ -13,24 +13,27 @@ export default class AckOrderTracker {
   ack(ah) {
 
     let pendingHeader = this.pendingHeaders.find(({ acked, ackHeader }) => {
-      return acked === false && ackHeader === ah;
+      return !acked && ackHeader === ah;
     });
 
-    if (pendingHeader) {
-      pendingHeader.acked = true;
-
-      return this.pendingHeaders
-        .filter(({ acked }, index, arr) => {
-          if (acked == true) {
-            arr.splice(index, 1);
-            return true;
-          }
-        })
-        .map(({ ackHeader }) => ackHeader);
-    } else {
+    if (!pendingHeader) {
       console.error(`Didn't find ${ah}`);
       return [];
     }
+
+    pendingHeader.acked = true;
+    const ackedHeaders = [];
+
+    for (let { acked, ackHeader } of this.pendingHeaders) {
+      if (!acked) {
+        break;
+      }
+      ackedHeaders.push(ackHeader);
+    }
+
+    this.pendingHeaders.splice(0, ackedHeaders.length);
+
+    return ackedHeaders;
   }
 
   getPendingHeaders() {

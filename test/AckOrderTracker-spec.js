@@ -1,36 +1,60 @@
-import AckOrderTracker from '../src/modules/stomp/AckOrderTracker';
-import { expect } from 'chai';
+const AckOrderTracker =require('../dist/modules/stomp/AckOrderTracker');
+const expect = require('chai').expect;
 
-const ackOrderTracker = new AckOrderTracker();
 
-const ackHeaders = [
-  '{"serverId"\\c"000001575714cf72-0242ac1100f60000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated","eventId"\\c"000001575714c2c5-0242ac1100f70002","receiptHandle"\\c{"subscriberId"\\c"subscriber-adab49e1818b11e6bc50df46bd5f23e8","eventIdAndType"\\c{"id"\\c"000001575714c2c5-0242ac1100f70002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated"},"sender"\\c{"entityId"\\c"000001575714c2c4-0242ac1100960000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-adab49e0818b11e6bc50df46bd5f23e8"},"providerHandle"\\c"000001575714cf72-0242ac1100f60000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-adab49e0818b11e6bc50df46bd5f23e8\\c7\\c0","eventId"\\c"000001575714c2c5-0242ac1100f70002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}}',
-  '{"serverId"\\c"000001575714cf72-0242ac1100f60000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityNameChanged","eventId"\\c"000001575714c8b5-0242ac1100f70002","receiptHandle"\\c{"subscriberId"\\c"subscriber-adab49e1818b11e6bc50df46bd5f23e8","eventIdAndType"\\c{"id"\\c"000001575714c8b5-0242ac1100f70002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityNameChanged"},"sender"\\c{"entityId"\\c"000001575714c2c4-0242ac1100960000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-adab49e0818b11e6bc50df46bd5f23e8"},"providerHandle"\\c"000001575714cf72-0242ac1100f60000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-adab49e0818b11e6bc50df46bd5f23e8\\c7\\c1","eventId"\\c"000001575714c8b5-0242ac1100f70002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityNameChanged"}}',
-  '{"serverId"\\c"000001575715766a-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1","eventId"\\c"0000015757156bfd-0242ac1100d50002","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab5330818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156bfd-0242ac1100d50002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"},"sender"\\c{"entityId"\\c"0000015757156bfc-0242ac1100ac0000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060"},"providerHandle"\\c"000001575715766a-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060\\c3\\c0","eventId"\\c"0000015757156bfd-0242ac1100d50002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"}}',
-  '{"serverId"\\c"000001575715766a-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1","eventId"\\c"0000015757156bfd-0242ac1100d50003","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab5330818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156bfd-0242ac1100d50003","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"},"sender"\\c{"entityId"\\c"0000015757156bfc-0242ac1100ac0000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060"},"providerHandle"\\c"000001575715766a-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060\\c3\\c1","eventId"\\c"0000015757156bfd-0242ac1100d50003","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"}}',
-  '{"serverId"\\c"000001575715766a-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1","eventId"\\c"0000015757156bfd-0242ac1100d50004","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab5330818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156bfd-0242ac1100d50004","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"},"sender"\\c{"entityId"\\c"0000015757156bfc-0242ac1100ac0000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060"},"providerHandle"\\c"000001575715766a-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab5331818b11e6964dbb014fc58060\\c3\\c2","eventId"\\c"0000015757156bfd-0242ac1100d50004","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated1"}}',
-  '{"serverId"\\c"0000015757157877-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2","eventId"\\c"0000015757156f9a-0242ac1100d50002","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab7a40818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156f9a-0242ac1100d50002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"},"sender"\\c{"entityId"\\c"0000015757156f9e-0242ac1100460000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060"},"providerHandle"\\c"0000015757157877-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060\\c0\\c0","eventId"\\c"0000015757156f9a-0242ac1100d50002","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"}}',
-  '{"serverId"\\c"0000015757157877-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2","eventId"\\c"0000015757156f9a-0242ac1100d50003","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab7a40818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156f9a-0242ac1100d50003","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"},"sender"\\c{"entityId"\\c"0000015757156f9e-0242ac1100460000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060"},"providerHandle"\\c"0000015757157877-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060\\c0\\c1","eventId"\\c"0000015757156f9a-0242ac1100d50003","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"}}',
-  '{"serverId"\\c"0000015757157877-0242ac1100840000","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2","eventId"\\c"0000015757156f9a-0242ac1100d50004","receiptHandle"\\c{"subscriberId"\\c"subscriber-c7ab7a40818b11e6964dbb014fc58060","eventIdAndType"\\c{"id"\\c"0000015757156f9a-0242ac1100d50004","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"},"sender"\\c{"entityId"\\c"0000015757156f9e-0242ac1100460000","entityType"\\c"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060"},"providerHandle"\\c"0000015757157877-0242ac1100840000\\cd6bfa47c283f4fcfb23c49b2df8c10ed_SLASH_default_SLASH_net.chrisrichardson.eventstore.example.MyEntity-c7ab7a41818b11e6964dbb014fc58060\\c0\\c2","eventId"\\c"0000015757156f9a-0242ac1100d50004","eventType"\\c"net.chrisrichardson.eventstore.example.MyEntityWasCreated2"}}'
-];
 
 describe('AckOrderTracker', () => {
 
-  it('should fill pendingHeaders arr', () => {
+  it('should reorder', () => {
 
-    //Fill Ack Order Tracker
-    ackHeaders.forEach(ackHeader => {
-      ackOrderTracker.add(ackHeader);
-    });
+    const ackOrderTracker = new AckOrderTracker();
 
-    expect(ackOrderTracker.pendingHeaders.length).equal(ackHeaders.length);
+    ackOrderTracker.add('a');
+    ackOrderTracker.add('b');
+    ackOrderTracker.add('c');
 
-    let acked = ackOrderTracker.ack(ackHeaders[1]);
-    expect(acked).to.be.Array;
-    expect(acked.length).equal(1);
+    expect(ackOrderTracker.pendingHeaders.length).equal(3);
 
-    acked = ackOrderTracker.ack('bad ack');
-    expect(acked).to.be.Array;
-    expect(acked.length).to.be.empty;
+    expect(ackOrderTracker.ack('b')).to.deep.equal([]);
+    expect(ackOrderTracker.ack('a')).to.deep.equal(['a', 'b']);
+    expect(ackOrderTracker.ack('c')).to.deep.equal(['c']);
+  });
+
+  it('should work with right ack order', () => {
+    const ackOrderTracker = new AckOrderTracker();
+
+    ackOrderTracker.add('a');
+    ackOrderTracker.add('b');
+    ackOrderTracker.add('c');
+
+    expect(ackOrderTracker.ack('a')).to.deep.equal(['a']);
+    expect(ackOrderTracker.ack('b')).to.deep.equal(['b']);
+    expect(ackOrderTracker.ack('c')).to.deep.equal(['c']);
+  });
+
+  it('should work with reverse ack order', () => {
+    const ackOrderTracker = new AckOrderTracker();
+
+    ackOrderTracker.add('a');
+    ackOrderTracker.add('b');
+    ackOrderTracker.add('c');
+
+    expect(ackOrderTracker.ack('c')).to.deep.equal([]);
+    expect(ackOrderTracker.ack('b')).to.deep.equal([]);
+    expect(ackOrderTracker.ack('a')).to.deep.equal(['a', 'b', 'c']);
+    expect(ackOrderTracker.pendingHeaders).to.be.empty;
+  });
+
+  it('should reorder 2', () => {
+    const ackOrderTracker = new AckOrderTracker();
+
+    ackOrderTracker.add('a');
+    ackOrderTracker.add('b');
+    ackOrderTracker.add('c');
+
+    expect(ackOrderTracker.ack('c')).to.deep.equal([]);
+    expect(ackOrderTracker.ack('a')).to.deep.equal(['a']);
+    expect(ackOrderTracker.ack('b')).to.deep.equal(['b', 'c']);
+    expect(ackOrderTracker.pendingHeaders).to.be.empty;
   });
 });

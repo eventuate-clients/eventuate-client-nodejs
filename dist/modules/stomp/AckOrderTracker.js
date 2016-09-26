@@ -29,27 +29,50 @@ var AckOrderTracker = function () {
         var acked = _ref.acked;
         var ackHeader = _ref.ackHeader;
 
-        return acked === false && ackHeader === ah;
+        return !acked && ackHeader === ah;
       });
 
-      if (pendingHeader) {
-        pendingHeader.acked = true;
-
-        return this.pendingHeaders.filter(function (_ref2, index, arr) {
-          var acked = _ref2.acked;
-
-          if (acked == true) {
-            arr.splice(index, 1);
-            return true;
-          }
-        }).map(function (_ref3) {
-          var ackHeader = _ref3.ackHeader;
-          return ackHeader;
-        });
-      } else {
+      if (!pendingHeader) {
         console.error("Didn't find " + ah);
         return [];
       }
+
+      pendingHeader.acked = true;
+      var ackedHeaders = [];
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = this.pendingHeaders[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var _step$value = _step.value;
+          var acked = _step$value.acked;
+          var ackHeader = _step$value.ackHeader;
+
+          if (!acked) {
+            break;
+          }
+          ackedHeaders.push(ackHeader);
+        }
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
+        try {
+          if (!_iteratorNormalCompletion && _iterator.return) {
+            _iterator.return();
+          }
+        } finally {
+          if (_didIteratorError) {
+            throw _iteratorError;
+          }
+        }
+      }
+
+      this.pendingHeaders.splice(0, ackedHeaders.length);
+
+      return ackedHeaders;
     }
   }, {
     key: "getPendingHeaders",
