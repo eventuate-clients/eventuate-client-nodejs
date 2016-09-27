@@ -116,8 +116,10 @@ describe('Create First Entity: ' + entityTypeName1, function () {
 
                     //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
 
-                    if (event.ack.receiptHandle.subscriberId != subscriberId1) {
-                      done(new Error('Wrong subscriber: ' + event.ack.receiptHandle.subscriberId));
+                    var ack = helpers.parseAck(event, done);
+
+                    if (ack.receiptHandle.subscriberId != subscriberId1) {
+                      done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
                     }
 
                     subscribe1.acknowledge(event.ack);
@@ -162,8 +164,10 @@ describe('Create First Entity: ' + entityTypeName1, function () {
 
                     (typeof event.eventData).should.equal('object');
 
-                    if (event.ack.receiptHandle.subscriberId != subscriberId2) {
-                      done(new Error('Wrong subscriber: ' + event.ack.receiptHandle.subscriberId));
+                    var ack = helpers.parseAck(event, done);
+
+                    if (ack.receiptHandle.subscriberId != subscriberId2) {
+                      done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
                     }
 
                     subscribe2.acknowledge(event.ack);

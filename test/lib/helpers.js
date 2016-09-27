@@ -1,5 +1,6 @@
 var uuid = require('uuid');
 var should = require('should');
+var specialChars = require('../../dist/modules/specialChars');
 
 exports.removeEventsArrProperty = function (eventsArr, propertyName) {
   return eventsArr.map(function (item) {
@@ -97,4 +98,12 @@ exports.expectParsedFrame = function (frame) {
   frame.should.have.property('command');
   frame.should.have.property('headers');
   frame.should.have.property('body');
+};
+
+exports.parseAck = function (event, done) {
+  try {
+    return JSON.parse(specialChars.unescape(event.ack));
+  } catch (error) {
+    done(error);
+  }
 };

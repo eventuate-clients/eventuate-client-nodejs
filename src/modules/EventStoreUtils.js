@@ -1,7 +1,7 @@
 import util from 'util';
 import EsClient from './EsClient';
 
-let EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
+const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
 export default class EventStoreUtils {
 

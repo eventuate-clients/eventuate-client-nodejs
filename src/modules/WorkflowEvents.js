@@ -8,7 +8,7 @@ let defaultLogger = {
   error: console.error
 };
 
-const result = class WorkflowEvents {
+export default class WorkflowEvents {
 
   constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {}, apiKey = {} } = {}) {
 
@@ -110,6 +110,3 @@ function createObservable(getEventHandler) {
   });
 
 }
-
-
-export default result;

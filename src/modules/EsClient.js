@@ -1,12 +1,13 @@
+import 'babel-polyfill';
 import util from 'util';
 import Rx from 'rx';
-import _ from 'underscore';
 import Agent, { HttpsAgent } from 'agentkeepalive';
 import url from 'url';
 import uuid from 'uuid';
 import http from 'http';
 import https from 'https';
 import path from 'path';
+import invariant from 'invariant';
 
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
@@ -28,7 +29,7 @@ export default class EsClient {
 
     this.urlObj = url.parse(this.url);
 
-    this.defineHttpProtocol();
+    this.determineIfSecure();
     this.setupHttpClient();
     this.setupKeepAliveAgent(httpKeepAlive);
 
@@ -48,7 +49,7 @@ export default class EsClient {
     this._connPromise = null;
   }
 
-  defineHttpProtocol() {
+  determineIfSecure() {
     this.useHttps = (this.urlObj.protocol == 'https:');
   }
 
@@ -65,7 +66,7 @@ export default class EsClient {
     if (typeof httpKeepAlive === 'undefined') {
       this.httpKeepAlive = true;
     } else {
-      this.httpKeepAlive = isTrue(httpKeepAlive);
+      this.httpKeepAlive = parseIsTrue(httpKeepAlive);
     }
 
     if (this.httpKeepAlive ) {
@@ -92,55 +93,58 @@ export default class EsClient {
     callback = callback || options;
 
     //check input params
-    if (entityTypeName && _events && (_events instanceof Array) && (_events.length > 0) && _checkEvents(_events)) {
+    if(!entityTypeName || !_checkEvents(_events)) {
+      return callback(new Error('Incorrect input parameters'));
+    }
 
-      const events = _prepareEvents(_events);
-      const jsonData = {
-        entityTypeName,
-        events
-      };
+    const events = _prepareEvents(_events);
+    const jsonData = {
+      entityTypeName,
+      events
+    };
 
-      addBodyOptions(jsonData, options);
+    addBodyOptions(jsonData, options);
 
-      const urlPath = this.urlSpaceName(this.baseUrlPath);
+    const urlPath = this.urlSpaceName(this.baseUrlPath);
 
-      return _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+    return _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+
+      if (err) {
+        return callback(err);
+      }
+
+      if (httpResponse.statusCode != 200) {
+        const error = new EsServerError({
+          error: `Server returned status code ${httpResponse.statusCode}`,
+          statusCode: httpResponse.statusCode,
+          message: body
+        });
+
+        return callback(error);
+      }
+
+      _toJSON(body, (err, jsonBody) => {
 
         if (err) {
           return callback(err);
         }
 
-        if (httpResponse.statusCode != 200) {
-          const error = new EsServerError({
-            error  : 'Server returned status code ' + httpResponse.statusCode,
+        const { entityId, entityVersion, eventIds} = jsonBody;
+
+        if (!entityId || !entityVersion || !eventIds) {
+          return callback(new EsServerError({
+            error: 'Bad server response',
             statusCode: httpResponse.statusCode,
             message: body
-          });
-
-          return callback(error);
+          }));
         }
 
-        _toJSON(body, (err, jsonBody) => {
-
-          if (err) {
-            return callback(err);
-          }
-
-          const entityAndEventInfo = {
-            entityIdTypeAndVersion: {
-              entityId: jsonBody.entityId,
-              entityVersion: jsonBody.entityVersion
-            },
-            eventIds: jsonBody.eventIds
-          };
-
-          callback(null, entityAndEventInfo);
+        callback(null, {
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
         });
       });
-
-    } else {
-      callback(new Error('Incorrect input parameters'));
-    }
+    });
   }
 
   loadEvents(entityTypeName, entityId, options, callback) {
@@ -148,44 +152,44 @@ export default class EsClient {
     callback = callback || options;
 
     //check input params
-    if (entityTypeName && entityId) {
+    if (!entityTypeName || !entityId) {
+      return callback(new Error('Incorrect input parameters'));
+    }
 
-      let urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+    let urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
-      if (typeof  options == 'object') {
-        urlPath += '?' + serialiseObject(options);
+    if (typeof  options == 'object') {
+      urlPath += '?' + serialiseObject(options);
+    }
+
+    _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
+
+      if (err) {
+        return callback(err);
       }
 
-      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
+      if (httpResponse.statusCode != 200) {
+        const error = new EsServerError({
+          error: `Server returned status code ${httpResponse.statusCode}`,
+          statusCode: httpResponse.statusCode,
+          message: body
+        });
 
-        if (!err) {
-          if (httpResponse.statusCode == 200) {
-            _toJSON(body, (err, jsonBody) => {
+        return callback(error);
+      }
 
-              if (!err) {
-                const events = _eventDataToObject(jsonBody.events);
-                callback(null, events);
-              } else {
-                callback(err);
-              }
-            });
+      _toJSON(body, (err, jsonBody) => {
 
-          } else {
-
-            const error = new EsServerError({
-              error: `Server returned status code ${httpResponse.statusCode}`,
-              message: body
-            });
-            callback(error);
-          }
-        } else {
-          callback(err);
+        if (err) {
+          return callback(err);
         }
 
+        const events = _eventDataToObject(jsonBody.events);
+        callback(null, events);
+
       });
-    } else {
-      callback(new Error('Incorrect input parameters'));
-    }
+
+    });
   }
 
   update(entityTypeName, entityId, entityVersion, _events, options, callback) {
@@ -193,59 +197,58 @@ export default class EsClient {
     callback = callback || options;
 
     //check input params
-    if (entityTypeName && entityId && entityVersion
-      && _events && _events instanceof Array && _events.length > 0  && _checkEvents(_events)) {
+    if (!entityTypeName || !entityId || !entityVersion || !_checkEvents(_events)) {
+      return callback(new Error('Incorrect input parameters'));
+    }
 
+    const events = _prepareEvents(_events);
+    const jsonData = {
+      entityId,
+      entityVersion,
+      events
+    };
 
-      const events = _prepareEvents(_events);
-      const jsonData = {
-        entityId,
-        entityVersion,
-        events
-      };
+    addBodyOptions(jsonData, options);
 
-      addBodyOptions(jsonData, options);
+    const urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
-      const urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+    _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+      if (err) {
+        return callback(err);
+      }
 
+      if (httpResponse.statusCode != 200) {
+        const error = new EsServerError({
+          error: `Server returned status code ${httpResponse.statusCode}`,
+          statusCode: httpResponse.statusCode,
+          message: body
+        });
+
+        return callback(error);
+      }
+
+      _toJSON(body, (err, jsonBody) => {
         if (err) {
           return callback(err);
         }
 
-        if (httpResponse.statusCode == 200) {
-          _toJSON(body, (err, jsonBody) => {
-            if (err) {
-              callback(err);
-            } else {
-              const entityAndEventInfo = {
-                entityIdTypeAndVersion: {
-                  entityId: jsonBody.entityId,
-                  entityVersion: jsonBody.entityVersion
-                },
-                eventIds: jsonBody.eventIds
-              };
+        const { entityId, entityVersion, eventIds} = jsonBody;
 
-              callback(null, entityAndEventInfo);
-
-            }
-          });
-        } else {
-
-          console.log('body:', body);
-
-          const error = new EsServerError({
-            error: 'Server returned status code ' + httpResponse.statusCode,
+        if (!entityId || !entityVersion || !eventIds) {
+          return callback(new EsServerError({
+            error: 'Bad server response',
             statusCode: httpResponse.statusCode,
             message: body
-          });
-          callback(error);
+          }));
         }
+
+        callback(null, {
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
+        });
       });
-    } else {
-      callback(new Error('Incorrect input parameters'));
-    }
+    });
   }
 
   getObservableCreateFn(subscriberId, entityTypesAndEvents, callback) {
@@ -256,20 +259,12 @@ export default class EsClient {
 
         ackOrderTracker.add(headers.ack);
 
-        let ack;
-        try {
-          ack = JSON.parse(specialChars.unescape(headers.ack));
-        } catch (error) {
-          observer.onError(error);
-        }
-
         body.forEach(eventStr => {
 
-          const result = this.makeEvent(eventStr, ack);
+          const result = this.makeEvent(eventStr, headers.ack);
 
           if (result.error) {
-            observer.onError(result.error);
-            return;
+            return observer.onError(result.error);
           }
 
           observer.onNext(result.event);
@@ -282,61 +277,49 @@ export default class EsClient {
         () => {
           this.doClientSubscribe(subscriberId);
         },
-          error => {
-          callback(error);
-        }
+        callback
       );
     };
   }
 
   subscribe(subscriberId, entityTypesAndEvents, callback) {
-    if (subscriberId && Object.keys(entityTypesAndEvents).length !== 0) {
 
-      const createFn = this.getObservableCreateFn(subscriberId, entityTypesAndEvents, callback);
-
-      const observable = Rx.Observable.create(createFn);
-
-      const acknowledge = ack => {
-
-        if (typeof (ack) == 'object') {
-          ack = JSON.stringify(ack);
-          ack = specialChars.escape(ack);
-        }
-
-        ackOrderTracker.ack(ack).forEach(ack => this.stompClient.ack);
-
-      };
-
-      return {
-        acknowledge,
-        observable
-      };
-    } else {
-      callback(new Error('Incorrect input parameters'));
+    if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
+      return callback(new Error('Incorrect input parameters'));
     }
+
+    const createFn = this.getObservableCreateFn(subscriberId, entityTypesAndEvents, callback);
+
+    const observable = Rx.Observable.create(createFn);
+
+    const acknowledge = ack => {
+      ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
+    };
+
+    return {
+      acknowledge,
+      observable
+    };
   }
 
   disconnect() {
     this.closed = true;
 
-    if (this._connPromise) {
+    invariant(this._connPromise, 'Disconnect without connection promise spotted.');
 
-      this._connPromise.then(conn => {
-        conn.disconnect();
-        if (this.stompClient) {
-          try {
-            this.stompClient.disconnect();
-          } catch (e) {
-            console.error(e);
-          }
+    this._connPromise.then(conn => {
+      conn.disconnect();
+      if (this.stompClient) {
+        try {
+          this.stompClient.disconnect();
+        } catch (e) {
+          console.error(e);
         }
-      });
-    } else {
-      console.log('Debug info: Client::disconnect without connection promise spotted.');
-    }
+      }
+    });
   };
 
-  connectToStompServer(opts) {
+  connectToStompServer() {
 
     return this._connPromise || (this._connPromise = new Promise((resolve, reject) => {
 
@@ -345,22 +328,14 @@ export default class EsClient {
           return reject();
         }
 
-        //Create stomp
-        let stompArgs = {
-          port: this.stompPort,
-          host: this.stompHost,
-          login: this.apiKey.id,
-          passcode: this.apiKey.secret,
-          debug: this.debug,
-          heartBeat: [5000, 5000],
-          timeout: 50000,
-          keepAlive: false
-        };
+        const { stompPort: port, stompHost: host, useHttps: ssl, debug } = this;
+        const { id: login, secret: passcode } = this.apiKey;
+        const heartBeat = [5000, 5000];
+        const timeout = 50000;
+        const keepAlive = false;
 
-        const httpsPatt = /^https/ig;
-        if ((typeof(this.url) != 'undefined') && httpsPatt.test(this.url)) {
-          stompArgs.ssl = true;
-        }
+        invariant(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
+        const stompArgs = { port, host, login, passcode, heartBeat, timeout, keepAlive, ssl, debug };
 
         this.stompClient = new Stomp(stompArgs);
         this.stompClient.connect();
@@ -465,81 +440,82 @@ export default class EsClient {
       this.subscriptions[subscriberId] = {};
     }
 
-    let subscription = {
-      subscriberId,
+    const destinationObj = {
       entityTypesAndEvents,
-      messageCallback
-    };
-
-    let destination = {
-      entityTypesAndEvents: subscription.entityTypesAndEvents,
       subscriberId
     };
 
     if (this.spaceName) {
-      destination.space = this.spaceName;
+      destinationObj.space = this.spaceName;
     }
 
-    destination = specialChars.escape(JSON.stringify(destination));
+    const destination = specialChars.escape(JSON.stringify(destinationObj));
 
     const uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
-    const subscriptionId = `subscription-id-${uniqueId}`;
+    const id = `subscription-id-${uniqueId}`;
     const receipt = `receipt-id-${uniqueId}`;
 
     //add to receipts
     this.addReceipt(receipt, clientSubscribeCallback);
 
-    subscription.headers = {
-      id: subscriptionId,
-      receipt,
-      destination
+    this.subscriptions[subscriberId] = {
+      subscriberId,
+      entityTypesAndEvents,
+      messageCallback,
+      headers: {
+        id,
+        receipt,
+        destination
+      }
     };
-
-    this.subscriptions[subscriberId] = subscription;
   };
 
   addReceipt(receipt, clientSubscribeCallback) {
-    if (typeof this.receipts[receipt] == 'undefined') {
-      this.receipts[receipt] = {};
+
+    let receiptObj = this.receipts[receipt];
+
+    if (typeof receiptObj == 'undefined') {
+      receiptObj = {};
     }
-    this.receipts[receipt].clientSubscribeCallback = clientSubscribeCallback;
+
+    receiptObj.clientSubscribeCallback = clientSubscribeCallback;
   };
 
   doClientSubscribe(subscriberId) {
 
-    if (this.subscriptions.hasOwnProperty(subscriberId)) {
-      const subscription = this.subscriptions[subscriberId];
-
-      this.stompClient.subscribe(subscription.headers);
-    } else {
-      console.error(new Error('Can\t find subscription fo subscriber ' + subscriberId));
+    if (!this.subscriptions.hasOwnProperty(subscriberId)) {
+      return console.error(new Error(`Can't find subscription for subscriber ${subscriberId}`));
     }
+
+    const subscription = this.subscriptions[subscriberId];
+
+    this.stompClient.subscribe(subscription.headers);
   };
 
   makeEvent(eventStr, ack) {
 
     try {
 
-      const parsedEvent = JSON.parse(eventStr);
+      const {id: eventId, eventType, entityId, eventData: eventDataStr } = JSON.parse(eventStr);
 
       try {
 
+        let eventData = JSON.parse(eventDataStr);
+
         const event = {
-          eventId: parsedEvent.id,
-          eventType: parsedEvent.eventType,
-          entityId: parsedEvent.entityId,
-          ack
+          eventId,
+          eventType,
+          entityId,
+          ack,
+          eventData
         };
 
-        event.eventData = JSON.parse(parsedEvent.eventData);
-
-        return { event: event };
-
-      } catch (err) {
-        return { error: err };
+        return { event };
+      } catch (error) {
+        return { error };
       }
-    } catch (err) {
-      return { error: err };
+    } catch (error) {
+      return { error };
     }
 
   };
@@ -547,7 +523,7 @@ export default class EsClient {
   urlSpaceName(urlPath) {
 
     if (this.spaceName) {
-      return urlPath.replace(new RegExp('^' + this.baseUrlPath.replace('/', '\/')), this.baseUrlPath + '/' + this.spaceName);
+      return urlPath.replace(new RegExp('^' + this.baseUrlPath.replace('/', '\/')), `${this.baseUrlPath}/${this.spaceName}`);
     } else {
       return urlPath;
     }
@@ -558,21 +534,21 @@ function _eventDataToObject(events) {
 
   return events.map(e => {
 
-    let event = _.clone(e);
+    const event = Object.assign({}, e);
 
-    if (typeof event.eventData == 'string') {
-      try {
-        event.eventData = JSON.parse(event.eventData);
-      } catch (err) {
-        console.error('Can not parse eventData');
-        console.error(err);
-        event.eventData = {};
-      }
-
-      return event;
-    } else {
+    if (typeof event.eventData != 'string') {
       return event;
     }
+
+    try {
+      event.eventData = JSON.parse(event.eventData);
+    } catch (err) {
+      console.error('Can not parse eventData');
+      console.error(err);
+      event.eventData = {};
+    }
+
+    return event;
   });
 }
 
@@ -587,28 +563,25 @@ function _eventDataToObject(events) {
 //TODO: write test
 function _checkEvents (events) {
 
-  return events.every(event => {
+  if (!Array.isArray(events) || !events.length) {
+    return false;
+  }
 
-    if (!event.hasOwnProperty('eventType')) {
+  return events.every(({ eventType, eventData }) => {
+
+    if (!eventType || !eventData) {
       return false;
     }
 
-    if (!event.hasOwnProperty('eventData')) {
-      return false;
-    }
-
-    if (typeof event.eventData != 'object') {
-
-      event.eventData = String(event.eventData);
-      //parse string
+    if (typeof eventData != 'object') {
       try {
-        event.eventData = JSON.parse(event.eventData);
+        JSON.parse(eventData);
       } catch(e) {
         return false;
       }
     }
 
-    if (Object.keys(event.eventData).length === 0 ) {
+    if (Object.keys(eventData).length === 0 ) {
       return false;
     }
 
@@ -617,7 +590,7 @@ function _checkEvents (events) {
   });
 }
 
-function isTrue(val) {
+function parseIsTrue(val) {
   return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
 }
 
@@ -625,32 +598,32 @@ function isTrue(val) {
 function serialiseObject(obj) {
 
   return Object.keys(obj)
-    .reduce((str, key) => {
-      return `${str}${(str?'&':'')}${key}=${obj[key]}`
-    }, '');
+    .map(key => {
+      return `${key}=${obj[key]}`;
+    })
+    .join('&');
 }
 
 //TODO: write test
 function addBodyOptions (jsonData, options) {
 
-  if (typeof options == 'object') {
-    Object.keys(options).forEach(key => {
-      jsonData[key] = options[key];
-    });
-  }
+  Object.keys(options).reduce((jsonData, key) => {
+    return jsonData[key] = options[key];
+  }, jsonData);
 }
 
 function _prepareEvents(events) {
 
-  return events.map(event => {
+  return events.map(({ eventData, ...rest } = event) => {
 
-    let preparedEvent = _.clone(event);
-
-    if (typeof event.eventData == 'object') {
-      preparedEvent.eventData = JSON.stringify(preparedEvent.eventData);
+    if (typeof eventData == 'object') {
+      eventData = JSON.stringify(eventData);
     }
 
-    return preparedEvent;
+    return {
+      ...rest,
+      eventData
+    };
   });
 }
 
@@ -673,9 +646,9 @@ function _toJSON(variable, callback) {
 
 function _request(path, method, apiKey, jsonData, client, callback) {
 
-  const auth = 'Basic ' + new Buffer(apiKey.id + ":" + apiKey.secret).toString("base64");
+  const auth = `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`;
 
-  let headers = {
+  const headers = {
     'Authorization' : auth
   };
 
@@ -686,7 +659,7 @@ function _request(path, method, apiKey, jsonData, client, callback) {
     headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
   }
 
-  let options = {
+  const options = {
     host: client.urlObj.hostname,
     port: client.urlObj.port,
     path,
@@ -701,7 +674,7 @@ function _request(path, method, apiKey, jsonData, client, callback) {
 
   //console.log('request options:', options);
 
-  let req = client.httpClient.request(options, res => {
+  const req = client.httpClient.request(options, res => {
 
     res.setEncoding('utf8');
 

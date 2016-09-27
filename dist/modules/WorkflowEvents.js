@@ -28,7 +28,7 @@ var defaultLogger = {
   error: console.error
 };
 
-var result = function () {
+var WorkflowEvents = function () {
   function WorkflowEvents() {
     var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -115,6 +115,9 @@ var result = function () {
   return WorkflowEvents;
 }();
 
+exports.default = WorkflowEvents;
+;
+
 function logEventTime(event) {
   var _event$eventId$split = event.eventId.split('-');
 
@@ -151,6 +154,4 @@ function createObservable(getEventHandler) {
     });
   };
 }
-
-exports.default = result;
 module.exports = exports['default'];

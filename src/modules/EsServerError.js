@@ -8,13 +8,16 @@ export default class EsServerError extends Error {
     this.name = 'ES Server Error';
 
     if (typeof (jsonBody) == 'object') {
-      this.timestamp = jsonBody.timestamp;
-      this.status = jsonBody.status;
-      this.statusCode = jsonBody.statusCode;
-      this.error = jsonBody.error;
-      this.exception = jsonBody.exception;
 
-      if (typeof jsonBody.message == 'object') {
+      const { timestamp, status, statusCode, error, exception, message } = jsonBody;
+
+      this.timestamp = timestamp;
+      this.status = status;
+      this.statusCode = statusCode;
+      this.error = error;
+      this.exception = exception;
+
+      if (typeof message == 'object') {
         jsonBody.message = JSON.stringify(jsonBody.message);
       }
 
@@ -22,12 +25,7 @@ export default class EsServerError extends Error {
       this.path = jsonBody.path;
 
     } else {
-
       this.message = jsonBody;
     }
-
-
   }
 }
-
-export default EsServerError;
