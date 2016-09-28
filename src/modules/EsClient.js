@@ -93,17 +93,17 @@ export default class EsClient {
     callback = callback || options;
 
     //check input params
-    if(!entityTypeName || !_checkEvents(_events)) {
+    if(!entityTypeName || !this.checkEvents(_events)) {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    const events = _prepareEvents(_events);
+    const events = this.prepareEvents(_events);
     const jsonData = {
       entityTypeName,
       events
     };
 
-    addBodyOptions(jsonData, options);
+    this.addBodyOptions(jsonData, options);
 
     const urlPath = this.urlSpaceName(this.baseUrlPath);
 
@@ -123,7 +123,7 @@ export default class EsClient {
         return callback(error);
       }
 
-      _toJSON(body, (err, jsonBody) => {
+      toJSON(body, (err, jsonBody) => {
 
         if (err) {
           return callback(err);
@@ -159,7 +159,7 @@ export default class EsClient {
     let urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
     if (typeof  options == 'object') {
-      urlPath += '?' + serialiseObject(options);
+      urlPath += '?' + this.serialiseObject(options);
     }
 
     _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
@@ -178,13 +178,13 @@ export default class EsClient {
         return callback(error);
       }
 
-      _toJSON(body, (err, jsonBody) => {
+      toJSON(body, (err, jsonBody) => {
 
         if (err) {
           return callback(err);
         }
 
-        const events = _eventDataToObject(jsonBody.events);
+        const events = this.eventDataToObject(jsonBody.events);
         callback(null, events);
 
       });
@@ -197,18 +197,18 @@ export default class EsClient {
     callback = callback || options;
 
     //check input params
-    if (!entityTypeName || !entityId || !entityVersion || !_checkEvents(_events)) {
+    if (!entityTypeName || !entityId || !entityVersion || !this.checkEvents(_events)) {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    const events = _prepareEvents(_events);
+    const events = this.prepareEvents(_events);
     const jsonData = {
       entityId,
       entityVersion,
       events
     };
 
-    addBodyOptions(jsonData, options);
+    this.addBodyOptions(jsonData, options);
 
     const urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
@@ -228,7 +228,7 @@ export default class EsClient {
         return callback(error);
       }
 
-      _toJSON(body, (err, jsonBody) => {
+      toJSON(body, (err, jsonBody) => {
         if (err) {
           return callback(err);
         }
@@ -528,115 +528,124 @@ export default class EsClient {
       return urlPath;
     }
   }
-}
 
-function _eventDataToObject(events) {
+  serialiseObject(obj) {
 
-  return events.map(e => {
-
-    const event = Object.assign({}, e);
-
-    if (typeof event.eventData != 'string') {
-      return event;
-    }
-
-    try {
-      event.eventData = JSON.parse(event.eventData);
-    } catch (err) {
-      console.error('Can not parse eventData');
-      console.error(err);
-      event.eventData = {};
-    }
-
-    return event;
-  });
-}
-
-/**
- * Checks that events have all needed properties
- * Checks eventData
- * @param {Object[]} events - Events
- * @param {string} events[].eventType - The type of event
- * @param {string|Object} events[].eventData - The event data
- * @returns {Boolean}
- */
-//TODO: write test
-function _checkEvents (events) {
-
-  if (!Array.isArray(events) || !events.length) {
-    return false;
+    return Object.keys(obj)
+      .map(key => {
+        return `${key}=${obj[key]}`;
+      })
+      .join('&');
   }
 
-  return events.every(({ eventType, eventData }) => {
+  addBodyOptions (jsonData, options) {
 
-    if (!eventType || !eventData) {
+    Object.keys(options).reduce((jsonData, key) => {
+
+      jsonData[key] = options[key];
+
+      return jsonData;
+    }, jsonData);
+  }
+
+  prepareEvents(events) {
+
+    return events.map(({ eventData, ...rest } = event) => {
+
+      if (typeof eventData == 'object') {
+        eventData = JSON.stringify(eventData);
+      }
+
+      return {
+        ...rest,
+        eventData
+      };
+    });
+  }
+
+  eventDataToObject(events) {
+
+    return events.map(e => {
+
+      const event = Object.assign({}, e);
+
+      if (typeof event.eventData != 'string') {
+        return event;
+      }
+
+      try {
+        event.eventData = JSON.parse(event.eventData);
+      } catch (err) {
+        console.error('Can not parse eventData');
+        console.error(err);
+        event.eventData = {};
+      }
+
+      return event;
+    });
+  }
+
+  /**
+   * Checks that events have all needed properties
+   * Checks eventData
+   * @param {Object[]} events - Events
+   * @param {string} events[].eventType - The type of event
+   * @param {string|Object} events[].eventData - The event data
+   * @returns {Boolean}
+   */
+   checkEvents (events) {
+
+    if (!Array.isArray(events) || !events.length) {
       return false;
     }
 
-    if (typeof eventData != 'object') {
-      try {
-        JSON.parse(eventData);
-      } catch(e) {
+    return events.every(({ eventType, eventData }) => {
+
+      if (!eventType || !eventData) {
         return false;
       }
-    }
 
-    if (Object.keys(eventData).length === 0 ) {
-      return false;
-    }
+      let ed;
 
-    return true;
+      if (typeof eventData == 'string') {
 
-  });
+        ed = eventData;
+        //try to parse eventData
+        try {
+          ed = JSON.parse(ed);
+        } catch(e) {
+          return false;
+        }
+      } else if (typeof eventData == 'object') {
+        ed = Object.assign({}, eventData);
+      } else {
+        return false;
+      }
+
+      if (Object.keys(ed).length === 0 ) {
+        return false;
+      }
+
+      return true;
+
+    });
+  }
 }
 
 function parseIsTrue(val) {
   return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
 }
 
-//TODO: write test
-function serialiseObject(obj) {
+function toJSON(v, callback) {
 
-  return Object.keys(obj)
-    .map(key => {
-      return `${key}=${obj[key]}`;
-    })
-    .join('&');
-}
+  if (typeof (v) == 'object') {
 
-//TODO: write test
-function addBodyOptions (jsonData, options) {
-
-  Object.keys(options).reduce((jsonData, key) => {
-    return jsonData[key] = options[key];
-  }, jsonData);
-}
-
-function _prepareEvents(events) {
-
-  return events.map(({ eventData, ...rest } = event) => {
-
-    if (typeof eventData == 'object') {
-      eventData = JSON.stringify(eventData);
-    }
-
-    return {
-      ...rest,
-      eventData
-    };
-  });
-}
-
-function _toJSON(variable, callback) {
-
-  if (typeof (variable) == 'object') {
-
-    callback(null, variable);
+    callback(null, v);
 
   } else {
 
     try {
-      callback(null, JSON.parse(variable));
+      callback(null, JSON.parse(v));
     } catch (err) {
       callback(err);
     }

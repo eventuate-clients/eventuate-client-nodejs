@@ -156,17 +156,17 @@ var EsClient = function () {
       callback = callback || options;
 
       //check input params
-      if (!entityTypeName || !_checkEvents(_events)) {
+      if (!entityTypeName || !this.checkEvents(_events)) {
         return callback(new Error('Incorrect input parameters'));
       }
 
-      var events = _prepareEvents(_events);
+      var events = this.prepareEvents(_events);
       var jsonData = {
         entityTypeName: entityTypeName,
         events: events
       };
 
-      addBodyOptions(jsonData, options);
+      this.addBodyOptions(jsonData, options);
 
       var urlPath = this.urlSpaceName(this.baseUrlPath);
 
@@ -186,7 +186,7 @@ var EsClient = function () {
           return callback(error);
         }
 
-        _toJSON(body, function (err, jsonBody) {
+        toJSON(body, function (err, jsonBody) {
 
           if (err) {
             return callback(err);
@@ -215,6 +215,7 @@ var EsClient = function () {
   }, {
     key: 'loadEvents',
     value: function loadEvents(entityTypeName, entityId, options, callback) {
+      var _this = this;
 
       callback = callback || options;
 
@@ -226,7 +227,7 @@ var EsClient = function () {
       var urlPath = this.urlSpaceName(_path2.default.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
       if ((typeof options === 'undefined' ? 'undefined' : _typeof(options)) == 'object') {
-        urlPath += '?' + serialiseObject(options);
+        urlPath += '?' + this.serialiseObject(options);
       }
 
       _request(urlPath, 'GET', this.apiKey, null, this, function (err, httpResponse, body) {
@@ -245,13 +246,13 @@ var EsClient = function () {
           return callback(error);
         }
 
-        _toJSON(body, function (err, jsonBody) {
+        toJSON(body, function (err, jsonBody) {
 
           if (err) {
             return callback(err);
           }
 
-          var events = _eventDataToObject(jsonBody.events);
+          var events = _this.eventDataToObject(jsonBody.events);
           callback(null, events);
         });
       });
@@ -263,18 +264,18 @@ var EsClient = function () {
       callback = callback || options;
 
       //check input params
-      if (!entityTypeName || !entityId || !entityVersion || !_checkEvents(_events)) {
+      if (!entityTypeName || !entityId || !entityVersion || !this.checkEvents(_events)) {
         return callback(new Error('Incorrect input parameters'));
       }
 
-      var events = _prepareEvents(_events);
+      var events = this.prepareEvents(_events);
       var jsonData = {
         entityId: entityId,
         entityVersion: entityVersion,
         events: events
       };
 
-      addBodyOptions(jsonData, options);
+      this.addBodyOptions(jsonData, options);
 
       var urlPath = this.urlSpaceName(_path2.default.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
 
@@ -294,7 +295,7 @@ var EsClient = function () {
           return callback(error);
         }
 
-        _toJSON(body, function (err, jsonBody) {
+        toJSON(body, function (err, jsonBody) {
           if (err) {
             return callback(err);
           }
@@ -322,7 +323,7 @@ var EsClient = function () {
   }, {
     key: 'getObservableCreateFn',
     value: function getObservableCreateFn(subscriberId, entityTypesAndEvents, callback) {
-      var _this = this;
+      var _this2 = this;
 
       return function (observer) {
 
@@ -332,7 +333,7 @@ var EsClient = function () {
 
           body.forEach(function (eventStr) {
 
-            var result = _this.makeEvent(eventStr, headers.ack);
+            var result = _this2.makeEvent(eventStr, headers.ack);
 
             if (result.error) {
               return observer.onError(result.error);
@@ -342,17 +343,17 @@ var EsClient = function () {
           });
         };
 
-        _this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
+        _this2.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
 
-        _this.connectToStompServer().then(function () {
-          _this.doClientSubscribe(subscriberId);
+        _this2.connectToStompServer().then(function () {
+          _this2.doClientSubscribe(subscriberId);
         }, callback);
       };
     }
   }, {
     key: 'subscribe',
     value: function subscribe(subscriberId, entityTypesAndEvents, callback) {
-      var _this2 = this;
+      var _this3 = this;
 
       if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
         return callback(new Error('Incorrect input parameters'));
@@ -363,7 +364,7 @@ var EsClient = function () {
       var observable = _rx2.default.Observable.create(createFn);
 
       var acknowledge = function acknowledge(ack) {
-        ackOrderTracker.ack(ack).forEach(_this2.stompClient.ack.bind(_this2.stompClient));
+        ackOrderTracker.ack(ack).forEach(_this3.stompClient.ack.bind(_this3.stompClient));
       };
 
       return {
@@ -374,7 +375,7 @@ var EsClient = function () {
   }, {
     key: 'disconnect',
     value: function disconnect() {
-      var _this3 = this;
+      var _this4 = this;
 
       this.closed = true;
 
@@ -382,9 +383,9 @@ var EsClient = function () {
 
       this._connPromise.then(function (conn) {
         conn.disconnect();
-        if (_this3.stompClient) {
+        if (_this4.stompClient) {
           try {
-            _this3.stompClient.disconnect();
+            _this4.stompClient.disconnect();
           } catch (e) {
             console.error(e);
           }
@@ -394,20 +395,20 @@ var EsClient = function () {
   }, {
     key: 'connectToStompServer',
     value: function connectToStompServer() {
-      var _this4 = this;
+      var _this5 = this;
 
       return this._connPromise || (this._connPromise = new Promise(function (resolve, reject) {
 
         // Do not reconnect if self-invoked
-        if (_this4.closed) {
+        if (_this5.closed) {
           return reject();
         }
 
-        var port = _this4.stompPort;
-        var host = _this4.stompHost;
-        var ssl = _this4.useHttps;
-        var debug = _this4.debug;
-        var _apiKey = _this4.apiKey;
+        var port = _this5.stompPort;
+        var host = _this5.stompHost;
+        var ssl = _this5.useHttps;
+        var debug = _this5.debug;
+        var _apiKey = _this5.apiKey;
         var login = _apiKey.id;
         var passcode = _apiKey.secret;
 
@@ -418,37 +419,37 @@ var EsClient = function () {
         (0, _invariant2.default)(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
         var stompArgs = { port: port, host: host, login: login, passcode: passcode, heartBeat: heartBeat, timeout: timeout, keepAlive: keepAlive, ssl: ssl, debug: debug };
 
-        _this4.stompClient = new _Stomp2.default(stompArgs);
-        _this4.stompClient.connect();
+        _this5.stompClient = new _Stomp2.default(stompArgs);
+        _this5.stompClient.connect();
 
-        _this4.stompClient.on('socketConnected', function () {
+        _this5.stompClient.on('socketConnected', function () {
 
           //reset interval
-          _this4.reconnectInterval = _this4.reconnectIntervalStart;
+          _this5.reconnectInterval = _this5.reconnectIntervalStart;
         });
 
-        _this4.stompClient.on('connected', function () {
+        _this5.stompClient.on('connected', function () {
 
           resolve();
-          _this4.connectionCount++;
+          _this5.connectionCount++;
         });
 
-        _this4.stompClient.on('disconnected', function () {
-          _this4.stompClient = null;
-          _this4._connPromise = null;
+        _this5.stompClient.on('disconnected', function () {
+          _this5.stompClient = null;
+          _this5._connPromise = null;
 
           // Do not reconnect if self-invoked
-          if (!_this4.closed) {
+          if (!_this5.closed) {
 
-            if (_this4.reconnectInterval < 16000) {
-              _this4.reconnectInterval = _this4.reconnectInterval * 2;
+            if (_this5.reconnectInterval < 16000) {
+              _this5.reconnectInterval = _this5.reconnectInterval * 2;
             }
 
-            _this4.reconnectStompServer(_this4.reconnectInterval);
+            _this5.reconnectStompServer(_this5.reconnectInterval);
           }
         });
 
-        _this4.stompClient.on('message', function (frame) {
+        _this5.stompClient.on('message', function (frame) {
 
           var headers = frame.headers;
           var body = frame.body;
@@ -457,23 +458,23 @@ var EsClient = function () {
 
           var subscriberId = ack.receiptHandle.subscriberId;
 
-          if (_this4.subscriptions.hasOwnProperty(subscriberId)) {
+          if (_this5.subscriptions.hasOwnProperty(subscriberId)) {
             //call message callback;
-            _this4.subscriptions[subscriberId].messageCallback(body, headers);
+            _this5.subscriptions[subscriberId].messageCallback(body, headers);
           } else {
             console.error('Can\'t find massageCallback for subscriber: ' + subscriberId);
           }
         });
 
-        _this4.stompClient.on('receipt', function (receiptId) {
+        _this5.stompClient.on('receipt', function (receiptId) {
           //Run the callback function
-          if (_this4.receipts.hasOwnProperty(receiptId)) {
+          if (_this5.receipts.hasOwnProperty(receiptId)) {
             //call Client.subscribe callback;
-            _this4.receipts[receiptId].clientSubscribeCallback(null, receiptId);
+            _this5.receipts[receiptId].clientSubscribeCallback(null, receiptId);
           }
         });
 
-        _this4.stompClient.on('error', function (error) {
+        _this5.stompClient.on('error', function (error) {
           console.error('stompClient ERROR');
           console.error(error);
         });
@@ -482,27 +483,27 @@ var EsClient = function () {
   }, {
     key: 'reconnectStompServer',
     value: function reconnectStompServer(interval) {
-      var _this5 = this;
+      var _this6 = this;
 
       console.log('\nReconnecting...');
       console.log(interval);
 
       setTimeout(function () {
 
-        _this5.connectToStompServer().then(function () {
+        _this6.connectToStompServer().then(function () {
 
           //resubscribe
-          for (var subscriberId in _this5.subscriptions) {
-            if (_this5.subscriptions.hasOwnProperty(subscriberId)) {
-              _this5.doClientSubscribe(subscriberId);
+          for (var subscriberId in _this6.subscriptions) {
+            if (_this6.subscriptions.hasOwnProperty(subscriberId)) {
+              _this6.doClientSubscribe(subscriberId);
             }
           }
         }, function (error) {
 
           //run subscription callback
-          for (var receipt in _this5.receipts) {
-            if (_this5.receipts.hasOwnProperty(receipt)) {
-              _this5.receipts[receipt].clientSubscribeCallback(error);
+          for (var receipt in _this6.receipts) {
+            if (_this6.receipts.hasOwnProperty(receipt)) {
+              _this6.receipts[receipt].clientSubscribeCallback(error);
             }
           }
         });
@@ -613,6 +614,119 @@ var EsClient = function () {
         return urlPath;
       }
     }
+  }, {
+    key: 'serialiseObject',
+    value: function serialiseObject(obj) {
+
+      return Object.keys(obj).map(function (key) {
+        return key + '=' + obj[key];
+      }).join('&');
+    }
+  }, {
+    key: 'addBodyOptions',
+    value: function addBodyOptions(jsonData, options) {
+
+      Object.keys(options).reduce(function (jsonData, key) {
+
+        jsonData[key] = options[key];
+
+        return jsonData;
+      }, jsonData);
+    }
+  }, {
+    key: 'prepareEvents',
+    value: function prepareEvents(events) {
+
+      return events.map(function () {
+        var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? event : arguments[0];
+
+        var eventData = _ref2.eventData;
+
+        var rest = _objectWithoutProperties(_ref2, ['eventData']);
+
+        if ((typeof eventData === 'undefined' ? 'undefined' : _typeof(eventData)) == 'object') {
+          eventData = JSON.stringify(eventData);
+        }
+
+        return _extends({}, rest, {
+          eventData: eventData
+        });
+      });
+    }
+  }, {
+    key: 'eventDataToObject',
+    value: function eventDataToObject(events) {
+
+      return events.map(function (e) {
+
+        var event = Object.assign({}, e);
+
+        if (typeof event.eventData != 'string') {
+          return event;
+        }
+
+        try {
+          event.eventData = JSON.parse(event.eventData);
+        } catch (err) {
+          console.error('Can not parse eventData');
+          console.error(err);
+          event.eventData = {};
+        }
+
+        return event;
+      });
+    }
+
+    /**
+     * Checks that events have all needed properties
+     * Checks eventData
+     * @param {Object[]} events - Events
+     * @param {string} events[].eventType - The type of event
+     * @param {string|Object} events[].eventData - The event data
+     * @returns {Boolean}
+     */
+
+  }, {
+    key: 'checkEvents',
+    value: function checkEvents(events) {
+
+      if (!Array.isArray(events) || !events.length) {
+        return false;
+      }
+
+      return events.every(function (_ref3) {
+        var eventType = _ref3.eventType;
+        var eventData = _ref3.eventData;
+
+
+        if (!eventType || !eventData) {
+          return false;
+        }
+
+        var ed = void 0;
+
+        if (typeof eventData == 'string') {
+
+          ed = eventData;
+          //try to parse eventData
+          try {
+            ed = JSON.parse(ed);
+          } catch (e) {
+            return false;
+          }
+        } else if ((typeof eventData === 'undefined' ? 'undefined' : _typeof(eventData)) == 'object') {
+          ed = Object.assign({}, eventData);
+        } else {
+          return false;
+        }
+
+        if (Object.keys(ed).length === 0) {
+          return false;
+        }
+
+        return true;
+      });
+    }
   }]);
 
   return EsClient;
@@ -621,117 +735,20 @@ var EsClient = function () {
 exports.default = EsClient;
 
 
-function _eventDataToObject(events) {
-
-  return events.map(function (e) {
-
-    var event = Object.assign({}, e);
-
-    if (typeof event.eventData != 'string') {
-      return event;
-    }
-
-    try {
-      event.eventData = JSON.parse(event.eventData);
-    } catch (err) {
-      console.error('Can not parse eventData');
-      console.error(err);
-      event.eventData = {};
-    }
-
-    return event;
-  });
-}
-
-/**
- * Checks that events have all needed properties
- * Checks eventData
- * @param {Object[]} events - Events
- * @param {string} events[].eventType - The type of event
- * @param {string|Object} events[].eventData - The event data
- * @returns {Boolean}
- */
-//TODO: write test
-function _checkEvents(events) {
-
-  if (!Array.isArray(events) || !events.length) {
-    return false;
-  }
-
-  return events.every(function (_ref2) {
-    var eventType = _ref2.eventType;
-    var eventData = _ref2.eventData;
-
-
-    if (!eventType || !eventData) {
-      return false;
-    }
-
-    if ((typeof eventData === 'undefined' ? 'undefined' : _typeof(eventData)) != 'object') {
-      try {
-        JSON.parse(eventData);
-      } catch (e) {
-        return false;
-      }
-    }
-
-    if (Object.keys(eventData).length === 0) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
 function parseIsTrue(val) {
   return (/^(?:t(?:rue)?|yes?|1+)$/i.test(val)
   );
 }
 
-//TODO: write test
-function serialiseObject(obj) {
+function toJSON(v, callback) {
 
-  return Object.keys(obj).map(function (key) {
-    return key + '=' + obj[key];
-  }).join('&');
-}
+  if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) == 'object') {
 
-//TODO: write test
-function addBodyOptions(jsonData, options) {
-
-  Object.keys(options).reduce(function (jsonData, key) {
-    return jsonData[key] = options[key];
-  }, jsonData);
-}
-
-function _prepareEvents(events) {
-
-  return events.map(function () {
-    var _ref3 = arguments.length <= 0 || arguments[0] === undefined ? event : arguments[0];
-
-    var eventData = _ref3.eventData;
-
-    var rest = _objectWithoutProperties(_ref3, ['eventData']);
-
-    if ((typeof eventData === 'undefined' ? 'undefined' : _typeof(eventData)) == 'object') {
-      eventData = JSON.stringify(eventData);
-    }
-
-    return _extends({}, rest, {
-      eventData: eventData
-    });
-  });
-}
-
-function _toJSON(variable, callback) {
-
-  if ((typeof variable === 'undefined' ? 'undefined' : _typeof(variable)) == 'object') {
-
-    callback(null, variable);
+    callback(null, v);
   } else {
 
     try {
-      callback(null, JSON.parse(variable));
+      callback(null, JSON.parse(v));
     } catch (err) {
       callback(err);
     }

@@ -4,7 +4,7 @@ test:
 	NODE_ENV=test mocha \
 		--reporter $(REPORTER) \
 		--ui bdd \
-		test/structure-spec.js \
+		test/staticAPI-spec.js \
 		test/specialChars-spec.js \
 		test/esClient-spec.js \
 		test/subscribe1-spec.js \
