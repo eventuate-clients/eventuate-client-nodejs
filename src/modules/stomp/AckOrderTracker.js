@@ -10,30 +10,28 @@ export default class AckOrderTracker {
     this.pendingHeaders.push(pendingHeader);
   }
 
-  ack(ah) {
+  ack(ackHeader) {
 
-    let pendingHeader = this.pendingHeaders.find(({ acked, ackHeader }) => {
-      return !acked && ackHeader === ah;
+    const pendingHeader = this.pendingHeaders.find(({ acked, ackHeader: currentAckHeader }) => {
+      return ackHeader === currentAckHeader && !acked;
     });
 
     if (!pendingHeader) {
-      console.error(`Didn't find ${ah}`);
+      console.error(`Didn't find ${ackHeader}`);
       return [];
     }
 
     pendingHeader.acked = true;
-    const ackedHeaders = [];
 
-    for (let { acked, ackHeader } of this.pendingHeaders) {
-      if (!acked) {
-        break;
-      }
-      ackedHeaders.push(ackHeader);
+    let notAckedIndex = this.pendingHeaders.findIndex(({ acked }) => !acked );
+
+    if (notAckedIndex < 0) {
+      notAckedIndex = this.pendingHeaders.length;
     }
 
-    this.pendingHeaders.splice(0, ackedHeaders.length);
-
-    return ackedHeaders;
+    return this.pendingHeaders
+      .splice(0, notAckedIndex)
+      .map(({ ackHeader }) => ackHeader);
   }
 
   getPendingHeaders() {

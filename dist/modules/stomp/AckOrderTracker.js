@@ -23,56 +23,35 @@ var AckOrderTracker = function () {
     }
   }, {
     key: "ack",
-    value: function ack(ah) {
+    value: function ack(ackHeader) {
 
       var pendingHeader = this.pendingHeaders.find(function (_ref) {
         var acked = _ref.acked;
-        var ackHeader = _ref.ackHeader;
+        var currentAckHeader = _ref.ackHeader;
 
-        return !acked && ackHeader === ah;
+        return ackHeader === currentAckHeader && !acked;
       });
 
       if (!pendingHeader) {
-        console.error("Didn't find " + ah);
+        console.error("Didn't find " + ackHeader);
         return [];
       }
 
       pendingHeader.acked = true;
-      var ackedHeaders = [];
 
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+      var notAckedIndex = this.pendingHeaders.findIndex(function (_ref2) {
+        var acked = _ref2.acked;
+        return !acked;
+      });
 
-      try {
-        for (var _iterator = this.pendingHeaders[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var _step$value = _step.value;
-          var acked = _step$value.acked;
-          var ackHeader = _step$value.ackHeader;
-
-          if (!acked) {
-            break;
-          }
-          ackedHeaders.push(ackHeader);
-        }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
+      if (notAckedIndex < 0) {
+        notAckedIndex = this.pendingHeaders.length;
       }
 
-      this.pendingHeaders.splice(0, ackedHeaders.length);
-
-      return ackedHeaders;
+      return this.pendingHeaders.splice(0, notAckedIndex).map(function (_ref3) {
+        var ackHeader = _ref3.ackHeader;
+        return ackHeader;
+      });
     }
   }, {
     key: "getPendingHeaders",

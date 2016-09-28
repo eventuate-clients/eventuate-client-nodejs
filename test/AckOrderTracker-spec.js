@@ -13,11 +13,10 @@ describe('AckOrderTracker', () => {
     ackOrderTracker.add('b');
     ackOrderTracker.add('c');
 
-    expect(ackOrderTracker.pendingHeaders.length).equal(3);
-
     expect(ackOrderTracker.ack('b')).to.deep.equal([]);
     expect(ackOrderTracker.ack('a')).to.deep.equal(['a', 'b']);
     expect(ackOrderTracker.ack('c')).to.deep.equal(['c']);
+    expect(ackOrderTracker.pendingHeaders).to.be.empty;
   });
 
   it('should work with right ack order', () => {
@@ -30,6 +29,7 @@ describe('AckOrderTracker', () => {
     expect(ackOrderTracker.ack('a')).to.deep.equal(['a']);
     expect(ackOrderTracker.ack('b')).to.deep.equal(['b']);
     expect(ackOrderTracker.ack('c')).to.deep.equal(['c']);
+    expect(ackOrderTracker.pendingHeaders).to.be.empty;
   });
 
   it('should work with reverse ack order', () => {
