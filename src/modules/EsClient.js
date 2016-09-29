@@ -13,8 +13,7 @@ import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import specialChars from './specialChars';
 import EsServerError from './EsServerError';
-
-const ackOrderTracker = new AckOrderTracker();
+import { parseIsTrue, toJSON } from './utils';
 
 export default class EsClient {
 
@@ -251,7 +250,35 @@ export default class EsClient {
     });
   }
 
-  getObservableCreateFn(subscriberId, entityTypesAndEvents, callback) {
+  subscribe(subscriberId, entityTypesAndEvents, options, callback) {
+
+    console.log('subscribe')
+    callback = callback || options;
+
+    const ackOrderTracker = new AckOrderTracker();
+
+    if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
+      return callback(new Error('Incorrect input parameters'));
+    }
+
+    const createFn = this.observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback);
+
+    const observable = Rx.Observable.create(createFn);
+
+    const acknowledge = ack => {
+      ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
+    };
+
+    return {
+      acknowledge,
+      observable
+    };
+  }
+
+  observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback) {
+    console.log('observableCreateAndSubscribe');
+    console.log(options, callback);
+    callback = callback || options;
 
     return observer => {
 
@@ -271,7 +298,7 @@ export default class EsClient {
         });
       };
 
-      this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
+      this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, callback);
 
       this.connectToStompServer().then(
         () => {
@@ -282,42 +309,54 @@ export default class EsClient {
     };
   }
 
-  subscribe(subscriberId, entityTypesAndEvents, callback) {
+  addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
 
-    if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
-      return callback(new Error('Incorrect input parameters'));
+    console.log('addSubscription');
+
+    console.log(options, clientSubscribeCallback);
+
+    clientSubscribeCallback = clientSubscribeCallback || options;
+
+    //add new subscription if not exists
+    if (typeof this.subscriptions[subscriberId] == 'undefined') {
+      this.subscriptions[subscriberId] = {};
     }
 
-    const createFn = this.getObservableCreateFn(subscriberId, entityTypesAndEvents, callback);
-
-    const observable = Rx.Observable.create(createFn);
-
-    const acknowledge = ack => {
-      ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
+    const destinationObj = {
+      entityTypesAndEvents,
+      subscriberId
     };
 
-    return {
-      acknowledge,
-      observable
+    if (this.spaceName) {
+      destinationObj.space = this.spaceName;
+    }
+
+    if (options) {
+      destinationObj.durability = options.durability;
+      destinationObj.readFrom = options.readFrom;
+      destinationObj.progressNotifications = options.progressNotifications;
+    }
+
+    const destination = specialChars.escape(JSON.stringify(destinationObj));
+
+    const uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
+    const id = `subscription-id-${uniqueId}`;
+    const receipt = `receipt-id-${uniqueId}`;
+
+    //add to receipts
+    this.addReceipt(receipt, clientSubscribeCallback);
+
+    this.subscriptions[subscriberId] = {
+      subscriberId,
+      entityTypesAndEvents,
+      messageCallback,
+      headers: {
+        id,
+        receipt,
+        destination
+      }
     };
   }
-
-  disconnect() {
-    this.closed = true;
-
-    invariant(this._connPromise, 'Disconnect without connection promise spotted.');
-
-    this._connPromise.then(conn => {
-      conn.disconnect();
-      if (this.stompClient) {
-        try {
-          this.stompClient.disconnect();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    });
-  };
 
   connectToStompServer() {
 
@@ -431,44 +470,7 @@ export default class EsClient {
       );
     }, interval);
 
-  };
-
-  addSubscription(subscriberId, entityTypesAndEvents, messageCallback, clientSubscribeCallback) {
-
-    //add new subscription if not exists
-    if (typeof this.subscriptions[subscriberId] == 'undefined') {
-      this.subscriptions[subscriberId] = {};
-    }
-
-    const destinationObj = {
-      entityTypesAndEvents,
-      subscriberId
-    };
-
-    if (this.spaceName) {
-      destinationObj.space = this.spaceName;
-    }
-
-    const destination = specialChars.escape(JSON.stringify(destinationObj));
-
-    const uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
-    const id = `subscription-id-${uniqueId}`;
-    const receipt = `receipt-id-${uniqueId}`;
-
-    //add to receipts
-    this.addReceipt(receipt, clientSubscribeCallback);
-
-    this.subscriptions[subscriberId] = {
-      subscriberId,
-      entityTypesAndEvents,
-      messageCallback,
-      headers: {
-        id,
-        receipt,
-        destination
-      }
-    };
-  };
+  }
 
   addReceipt(receipt, clientSubscribeCallback) {
 
@@ -479,7 +481,7 @@ export default class EsClient {
     }
 
     receiptObj.clientSubscribeCallback = clientSubscribeCallback;
-  };
+  }
 
   doClientSubscribe(subscriberId) {
 
@@ -490,7 +492,24 @@ export default class EsClient {
     const subscription = this.subscriptions[subscriberId];
 
     this.stompClient.subscribe(subscription.headers);
-  };
+  }
+
+  disconnect() {
+    this.closed = true;
+
+    invariant(this._connPromise, 'Disconnect without connection promise spotted.');
+
+    this._connPromise.then(conn => {
+      conn.disconnect();
+      if (this.stompClient) {
+        try {
+          this.stompClient.disconnect();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+  }
 
   makeEvent(eventStr, ack) {
 
@@ -518,7 +537,7 @@ export default class EsClient {
       return { error };
     }
 
-  };
+  }
 
   urlSpaceName(urlPath) {
 
@@ -632,26 +651,6 @@ export default class EsClient {
   }
 }
 
-function parseIsTrue(val) {
-  return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
-}
-
-function toJSON(v, callback) {
-
-  if (typeof (v) == 'object') {
-
-    callback(null, v);
-
-  } else {
-
-    try {
-      callback(null, JSON.parse(v));
-    } catch (err) {
-      callback(err);
-    }
-
-  }
-}
 
 function _request(path, method, apiKey, jsonData, client, callback) {
 

@@ -64,13 +64,13 @@ var _EsServerError = require('./EsServerError');
 
 var _EsServerError2 = _interopRequireDefault(_EsServerError);
 
+var _utils = require('./utils');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var ackOrderTracker = new _AckOrderTracker2.default();
 
 var EsClient = function () {
   function EsClient(_ref) {
@@ -130,7 +130,7 @@ var EsClient = function () {
       if (typeof httpKeepAlive === 'undefined') {
         this.httpKeepAlive = true;
       } else {
-        this.httpKeepAlive = parseIsTrue(httpKeepAlive);
+        this.httpKeepAlive = (0, _utils.parseIsTrue)(httpKeepAlive);
       }
 
       if (this.httpKeepAlive) {
@@ -186,7 +186,7 @@ var EsClient = function () {
           return callback(error);
         }
 
-        toJSON(body, function (err, jsonBody) {
+        (0, _utils.toJSON)(body, function (err, jsonBody) {
 
           if (err) {
             return callback(err);
@@ -246,7 +246,7 @@ var EsClient = function () {
           return callback(error);
         }
 
-        toJSON(body, function (err, jsonBody) {
+        (0, _utils.toJSON)(body, function (err, jsonBody) {
 
           if (err) {
             return callback(err);
@@ -295,7 +295,7 @@ var EsClient = function () {
           return callback(error);
         }
 
-        toJSON(body, function (err, jsonBody) {
+        (0, _utils.toJSON)(body, function (err, jsonBody) {
           if (err) {
             return callback(err);
           }
@@ -321,9 +321,37 @@ var EsClient = function () {
       });
     }
   }, {
-    key: 'getObservableCreateFn',
-    value: function getObservableCreateFn(subscriberId, entityTypesAndEvents, callback) {
+    key: 'subscribe',
+    value: function subscribe(subscriberId, entityTypesAndEvents, options, callback) {
       var _this2 = this;
+
+      callback = callback || options;
+
+      var ackOrderTracker = new _AckOrderTracker2.default();
+
+      if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
+        return callback(new Error('Incorrect input parameters'));
+      }
+
+      var createFn = this.observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback);
+
+      var observable = _rx2.default.Observable.create(createFn);
+
+      var acknowledge = function acknowledge(ack) {
+        ackOrderTracker.ack(ack).forEach(_this2.stompClient.ack.bind(_this2.stompClient));
+      };
+
+      return {
+        acknowledge: acknowledge,
+        observable: observable
+      };
+    }
+  }, {
+    key: 'observableCreateAndSubscribe',
+    value: function observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback) {
+      var _this3 = this;
+
+      callback = callback || options;
 
       return function (observer) {
 
@@ -333,7 +361,7 @@ var EsClient = function () {
 
           body.forEach(function (eventStr) {
 
-            var result = _this2.makeEvent(eventStr, headers.ack);
+            var result = _this3.makeEvent(eventStr, headers.ack);
 
             if (result.error) {
               return observer.onError(result.error);
@@ -343,175 +371,18 @@ var EsClient = function () {
           });
         };
 
-        _this2.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, callback);
+        _this3.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, callback);
 
-        _this2.connectToStompServer().then(function () {
-          _this2.doClientSubscribe(subscriberId);
+        _this3.connectToStompServer().then(function () {
+          _this3.doClientSubscribe(subscriberId);
         }, callback);
       };
     }
   }, {
-    key: 'subscribe',
-    value: function subscribe(subscriberId, entityTypesAndEvents, callback) {
-      var _this3 = this;
-
-      if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
-        return callback(new Error('Incorrect input parameters'));
-      }
-
-      var createFn = this.getObservableCreateFn(subscriberId, entityTypesAndEvents, callback);
-
-      var observable = _rx2.default.Observable.create(createFn);
-
-      var acknowledge = function acknowledge(ack) {
-        ackOrderTracker.ack(ack).forEach(_this3.stompClient.ack.bind(_this3.stompClient));
-      };
-
-      return {
-        acknowledge: acknowledge,
-        observable: observable
-      };
-    }
-  }, {
-    key: 'disconnect',
-    value: function disconnect() {
-      var _this4 = this;
-
-      this.closed = true;
-
-      (0, _invariant2.default)(this._connPromise, 'Disconnect without connection promise spotted.');
-
-      this._connPromise.then(function (conn) {
-        conn.disconnect();
-        if (_this4.stompClient) {
-          try {
-            _this4.stompClient.disconnect();
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      });
-    }
-  }, {
-    key: 'connectToStompServer',
-    value: function connectToStompServer() {
-      var _this5 = this;
-
-      return this._connPromise || (this._connPromise = new Promise(function (resolve, reject) {
-
-        // Do not reconnect if self-invoked
-        if (_this5.closed) {
-          return reject();
-        }
-
-        var port = _this5.stompPort;
-        var host = _this5.stompHost;
-        var ssl = _this5.useHttps;
-        var debug = _this5.debug;
-        var _apiKey = _this5.apiKey;
-        var login = _apiKey.id;
-        var passcode = _apiKey.secret;
-
-        var heartBeat = [5000, 5000];
-        var timeout = 50000;
-        var keepAlive = false;
-
-        (0, _invariant2.default)(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
-        var stompArgs = { port: port, host: host, login: login, passcode: passcode, heartBeat: heartBeat, timeout: timeout, keepAlive: keepAlive, ssl: ssl, debug: debug };
-
-        _this5.stompClient = new _Stomp2.default(stompArgs);
-        _this5.stompClient.connect();
-
-        _this5.stompClient.on('socketConnected', function () {
-
-          //reset interval
-          _this5.reconnectInterval = _this5.reconnectIntervalStart;
-        });
-
-        _this5.stompClient.on('connected', function () {
-
-          resolve();
-          _this5.connectionCount++;
-        });
-
-        _this5.stompClient.on('disconnected', function () {
-          _this5.stompClient = null;
-          _this5._connPromise = null;
-
-          // Do not reconnect if self-invoked
-          if (!_this5.closed) {
-
-            if (_this5.reconnectInterval < 16000) {
-              _this5.reconnectInterval = _this5.reconnectInterval * 2;
-            }
-
-            _this5.reconnectStompServer(_this5.reconnectInterval);
-          }
-        });
-
-        _this5.stompClient.on('message', function (frame) {
-
-          var headers = frame.headers;
-          var body = frame.body;
-
-          var ack = JSON.parse(_specialChars2.default.unescape(headers.ack));
-
-          var subscriberId = ack.receiptHandle.subscriberId;
-
-          if (_this5.subscriptions.hasOwnProperty(subscriberId)) {
-            //call message callback;
-            _this5.subscriptions[subscriberId].messageCallback(body, headers);
-          } else {
-            console.error('Can\'t find massageCallback for subscriber: ' + subscriberId);
-          }
-        });
-
-        _this5.stompClient.on('receipt', function (receiptId) {
-          //Run the callback function
-          if (_this5.receipts.hasOwnProperty(receiptId)) {
-            //call Client.subscribe callback;
-            _this5.receipts[receiptId].clientSubscribeCallback(null, receiptId);
-          }
-        });
-
-        _this5.stompClient.on('error', function (error) {
-          console.error('stompClient ERROR');
-          console.error(error);
-        });
-      }));
-    }
-  }, {
-    key: 'reconnectStompServer',
-    value: function reconnectStompServer(interval) {
-      var _this6 = this;
-
-      console.log('\nReconnecting...');
-      console.log(interval);
-
-      setTimeout(function () {
-
-        _this6.connectToStompServer().then(function () {
-
-          //resubscribe
-          for (var subscriberId in _this6.subscriptions) {
-            if (_this6.subscriptions.hasOwnProperty(subscriberId)) {
-              _this6.doClientSubscribe(subscriberId);
-            }
-          }
-        }, function (error) {
-
-          //run subscription callback
-          for (var receipt in _this6.receipts) {
-            if (_this6.receipts.hasOwnProperty(receipt)) {
-              _this6.receipts[receipt].clientSubscribeCallback(error);
-            }
-          }
-        });
-      }, interval);
-    }
-  }, {
     key: 'addSubscription',
-    value: function addSubscription(subscriberId, entityTypesAndEvents, messageCallback, clientSubscribeCallback) {
+    value: function addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
+
+      clientSubscribeCallback = clientSubscribeCallback || options;
 
       //add new subscription if not exists
       if (typeof this.subscriptions[subscriberId] == 'undefined') {
@@ -525,6 +396,12 @@ var EsClient = function () {
 
       if (this.spaceName) {
         destinationObj.space = this.spaceName;
+      }
+
+      if (options) {
+        destinationObj.durability = options.durability;
+        destinationObj.readFrom = options.readFrom;
+        destinationObj.progressNotifications = options.progressNotifications;
       }
 
       var destination = _specialChars2.default.escape(JSON.stringify(destinationObj));
@@ -546,6 +423,123 @@ var EsClient = function () {
           destination: destination
         }
       };
+    }
+  }, {
+    key: 'connectToStompServer',
+    value: function connectToStompServer() {
+      var _this4 = this;
+
+      return this._connPromise || (this._connPromise = new Promise(function (resolve, reject) {
+
+        // Do not reconnect if self-invoked
+        if (_this4.closed) {
+          return reject();
+        }
+
+        var port = _this4.stompPort;
+        var host = _this4.stompHost;
+        var ssl = _this4.useHttps;
+        var debug = _this4.debug;
+        var _apiKey = _this4.apiKey;
+        var login = _apiKey.id;
+        var passcode = _apiKey.secret;
+
+        var heartBeat = [5000, 5000];
+        var timeout = 50000;
+        var keepAlive = false;
+
+        (0, _invariant2.default)(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
+        var stompArgs = { port: port, host: host, login: login, passcode: passcode, heartBeat: heartBeat, timeout: timeout, keepAlive: keepAlive, ssl: ssl, debug: debug };
+
+        _this4.stompClient = new _Stomp2.default(stompArgs);
+        _this4.stompClient.connect();
+
+        _this4.stompClient.on('socketConnected', function () {
+
+          //reset interval
+          _this4.reconnectInterval = _this4.reconnectIntervalStart;
+        });
+
+        _this4.stompClient.on('connected', function () {
+
+          resolve();
+          _this4.connectionCount++;
+        });
+
+        _this4.stompClient.on('disconnected', function () {
+          _this4.stompClient = null;
+          _this4._connPromise = null;
+
+          // Do not reconnect if self-invoked
+          if (!_this4.closed) {
+
+            if (_this4.reconnectInterval < 16000) {
+              _this4.reconnectInterval = _this4.reconnectInterval * 2;
+            }
+
+            _this4.reconnectStompServer(_this4.reconnectInterval);
+          }
+        });
+
+        _this4.stompClient.on('message', function (frame) {
+
+          var headers = frame.headers;
+          var body = frame.body;
+
+          var ack = JSON.parse(_specialChars2.default.unescape(headers.ack));
+
+          var subscriberId = ack.receiptHandle.subscriberId;
+
+          if (_this4.subscriptions.hasOwnProperty(subscriberId)) {
+            //call message callback;
+            _this4.subscriptions[subscriberId].messageCallback(body, headers);
+          } else {
+            console.error('Can\'t find massageCallback for subscriber: ' + subscriberId);
+          }
+        });
+
+        _this4.stompClient.on('receipt', function (receiptId) {
+          //Run the callback function
+          if (_this4.receipts.hasOwnProperty(receiptId)) {
+            //call Client.subscribe callback;
+            _this4.receipts[receiptId].clientSubscribeCallback(null, receiptId);
+          }
+        });
+
+        _this4.stompClient.on('error', function (error) {
+          console.error('stompClient ERROR');
+          console.error(error);
+        });
+      }));
+    }
+  }, {
+    key: 'reconnectStompServer',
+    value: function reconnectStompServer(interval) {
+      var _this5 = this;
+
+      console.log('\nReconnecting...');
+      console.log(interval);
+
+      setTimeout(function () {
+
+        _this5.connectToStompServer().then(function () {
+
+          //resubscribe
+          for (var subscriberId in _this5.subscriptions) {
+            if (_this5.subscriptions.hasOwnProperty(subscriberId)) {
+              _this5.doClientSubscribe(subscriberId);
+            }
+          }
+        }, function (error) {
+
+          //run subscription callback
+          for (var receipt in _this5.receipts) {
+            if (_this5.receipts.hasOwnProperty(receipt)) {
+              _this5.receipts[receipt].clientSubscribeCallback(error);
+            }
+          }
+        });
+      }, interval);
     }
   }, {
     key: 'addReceipt',
@@ -570,6 +564,26 @@ var EsClient = function () {
       var subscription = this.subscriptions[subscriberId];
 
       this.stompClient.subscribe(subscription.headers);
+    }
+  }, {
+    key: 'disconnect',
+    value: function disconnect() {
+      var _this6 = this;
+
+      this.closed = true;
+
+      (0, _invariant2.default)(this._connPromise, 'Disconnect without connection promise spotted.');
+
+      this._connPromise.then(function (conn) {
+        conn.disconnect();
+        if (_this6.stompClient) {
+          try {
+            _this6.stompClient.disconnect();
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
     }
   }, {
     key: 'makeEvent',
@@ -734,26 +748,6 @@ var EsClient = function () {
 
 exports.default = EsClient;
 
-
-function parseIsTrue(val) {
-  return (/^(?:t(?:rue)?|yes?|1+)$/i.test(val)
-  );
-}
-
-function toJSON(v, callback) {
-
-  if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) == 'object') {
-
-    callback(null, v);
-  } else {
-
-    try {
-      callback(null, JSON.parse(v));
-    } catch (err) {
-      callback(err);
-    }
-  }
-}
 
 function _request(path, method, apiKey, jsonData, client, callback) {
 
