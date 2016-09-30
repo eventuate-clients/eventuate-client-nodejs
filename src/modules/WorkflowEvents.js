@@ -1,12 +1,9 @@
 import 'babel-polyfill';
 import EsClient from './EsClient';
 import Rx from 'rx';
+import { getLogger } from './logger';
 
-let defaultLogger = {
-  debug: (process.env.LOG_LEVEL == 'DEBUG')? console.log: function(){},
-  info: console.log,
-  error: console.error
-};
+const defaultLogger = getLogger({ title: 'WorkflowEvents' });
 
 export default class WorkflowEvents {
 
@@ -31,7 +28,7 @@ export default class WorkflowEvents {
       throw new Error('Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set Event Store auth data');
     }
 
-    let esClientOpts = {
+    const esClientOpts = {
       apiKey: apiKey,
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
@@ -44,7 +41,7 @@ export default class WorkflowEvents {
 
 
     this.subscriptions.forEach(({subscriberId, entityTypesAndEvents}) => {
-      let logger = this.logger;
+      const logger = this.logger;
       const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
         if (err) {
           logger.error('subscribe callback error', err);
@@ -62,7 +59,6 @@ export default class WorkflowEvents {
   runProcessEvents(subscription) {
 
     subscription.observable
-      //.map(logEventTime)
       .map(createObservable.call(this, this.getEventHandler))
       .merge(1)
       .subscribe(
@@ -79,17 +75,10 @@ export default class WorkflowEvents {
 
 };
 
-function logEventTime(event){
-  let [eventTimePart] = event.eventId.split('-');
-  let eventTime = new Date(parseInt(eventTimePart, 16));
-  console.log('New Event (created at ' + eventTime + '): ', event);
-  return event;
-}
-
 function createObservable(getEventHandler) {
   return (event) => Rx.Observable.create((observer) => {
 
-    let eventHandler = getEventHandler.call(this.worker, event.eventType);
+    const eventHandler = getEventHandler.call(this.worker, event.eventType);
 
     if (eventHandler) {
       eventHandler(event).then(

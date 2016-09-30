@@ -14,6 +14,9 @@ import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
 import EsServerError from './EsServerError';
 import { parseIsTrue, toJSON } from './utils';
+import { getLogger } from './logger';
+
+const logger = getLogger({ title: 'EsClient' });
 
 export default class EsClient {
 
@@ -413,7 +416,7 @@ export default class EsClient {
             //call message callback;
             this.subscriptions[subscriberId].messageCallback( body, headers);
           } else {
-            console.error(`Can't find massageCallback for subscriber: ${subscriberId}`);
+            logger.error(`Can't find massageCallback for subscriber: ${subscriberId}`);
           }
         });
 
@@ -426,16 +429,16 @@ export default class EsClient {
         });
 
         this.stompClient.on('error', error => {
-          console.error('stompClient ERROR');
-          console.error(error);
+          logger.error('stompClient ERROR');
+          logger.error(error);
         });
 
       }));
   }
 
   reconnectStompServer(interval) {
-    console.log('\nReconnecting...');
-    console.log(interval);
+    logger.info('\nReconnecting...');
+    logger.info(interval);
 
     setTimeout(() => {
 
@@ -479,7 +482,7 @@ export default class EsClient {
   doClientSubscribe(subscriberId) {
 
     if (!this.subscriptions.hasOwnProperty(subscriberId)) {
-      return console.error(new Error(`Can't find subscription for subscriber ${subscriberId}`));
+      return logger.error(new Error(`Can't find subscription for subscriber ${subscriberId}`));
     }
 
     const subscription = this.subscriptions[subscriberId];
@@ -498,7 +501,7 @@ export default class EsClient {
         try {
           this.stompClient.disconnect();
         } catch (e) {
-          console.error(e);
+          logger.error(e);
         }
       }
     });
@@ -588,8 +591,8 @@ export default class EsClient {
       try {
         event.eventData = JSON.parse(event.eventData);
       } catch (err) {
-        console.error('Can not parse eventData');
-        console.error(err);
+        logger.error('Can not parse eventData');
+        logger.error(err);
         event.eventData = {};
       }
 
@@ -671,9 +674,6 @@ function _request(path, method, apiKey, jsonData, client, callback) {
   if (client.httpKeepAlive) {
     options.agent = client.keepAliveAgent;
   }
-
-
-  //console.log('request options:', options);
 
   const req = client.httpClient.request(options, res => {
 

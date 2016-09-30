@@ -14,9 +14,13 @@ var _EsClient = require('./EsClient');
 
 var _EsClient2 = _interopRequireDefault(_EsClient);
 
+var _logger = require('./logger');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var logger = (0, _logger.getLogger)({ title: 'EventStoreUtils' });
 
 var EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
@@ -46,6 +50,8 @@ var EventStoreUtils = function () {
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
+
+    logger.debug('Using EsClinet options:', esClientOpts);
 
     this.esClient = new _EsClient2.default(esClientOpts);
 
@@ -130,7 +136,7 @@ var EventStoreUtils = function () {
           if (errConditionFn(err, result)) {
             count--;
             if (count) {
-              console.log('retryNTimes ' + count + ' - ' + args[1] + ' - ' + _util2.default.inspect(args[2]));
+              logger.info('retryNTimes  ' + count + ' - ' + args[1] + ' - ' + _util2.default.inspect(args[2]));
               setTimeout(worker, 100);
             } else {
               oldCb(err, result);

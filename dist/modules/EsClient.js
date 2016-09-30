@@ -64,11 +64,15 @@ var _EsServerError2 = _interopRequireDefault(_EsServerError);
 
 var _utils = require('./utils');
 
+var _logger = require('./logger');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var logger = (0, _logger.getLogger)({ title: 'EsClient' });
 
 var EsClient = function () {
   function EsClient(_ref) {
@@ -491,7 +495,7 @@ var EsClient = function () {
             //call message callback;
             _this4.subscriptions[subscriberId].messageCallback(body, headers);
           } else {
-            console.error('Can\'t find massageCallback for subscriber: ' + subscriberId);
+            logger.error('Can\'t find massageCallback for subscriber: ' + subscriberId);
           }
         });
 
@@ -504,8 +508,8 @@ var EsClient = function () {
         });
 
         _this4.stompClient.on('error', function (error) {
-          console.error('stompClient ERROR');
-          console.error(error);
+          logger.error('stompClient ERROR');
+          logger.error(error);
         });
       }));
     }
@@ -514,8 +518,8 @@ var EsClient = function () {
     value: function reconnectStompServer(interval) {
       var _this5 = this;
 
-      console.log('\nReconnecting...');
-      console.log(interval);
+      logger.info('\nReconnecting...');
+      logger.info(interval);
 
       setTimeout(function () {
 
@@ -555,7 +559,7 @@ var EsClient = function () {
     value: function doClientSubscribe(subscriberId) {
 
       if (!this.subscriptions.hasOwnProperty(subscriberId)) {
-        return console.error(new Error('Can\'t find subscription for subscriber ' + subscriberId));
+        return logger.error(new Error('Can\'t find subscription for subscriber ' + subscriberId));
       }
 
       var subscription = this.subscriptions[subscriberId];
@@ -577,7 +581,7 @@ var EsClient = function () {
           try {
             _this6.stompClient.disconnect();
           } catch (e) {
-            console.error(e);
+            logger.error(e);
           }
         }
       });
@@ -679,8 +683,8 @@ var EsClient = function () {
         try {
           event.eventData = JSON.parse(event.eventData);
         } catch (err) {
-          console.error('Can not parse eventData');
-          console.error(err);
+          logger.error('Can not parse eventData');
+          logger.error(err);
           event.eventData = {};
         }
 
@@ -772,8 +776,6 @@ function _request(path, method, apiKey, jsonData, client, callback) {
   if (client.httpKeepAlive) {
     options.agent = client.keepAliveAgent;
   }
-
-  //console.log('request options:', options);
 
   var req = client.httpClient.request(options, function (res) {
 

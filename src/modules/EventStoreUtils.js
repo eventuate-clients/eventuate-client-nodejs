@@ -1,5 +1,8 @@
 import util from 'util';
 import EsClient from './EsClient';
+import { getLogger } from './logger';
+
+const logger = getLogger({ title: 'EventStoreUtils' });
 
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
@@ -24,6 +27,8 @@ export default class EventStoreUtils {
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
+
+    logger.debug('Using EsClinet options:', esClientOpts);
 
     this.esClient = new EsClient(esClientOpts);
 
@@ -68,7 +73,7 @@ export default class EventStoreUtils {
               callback(null, updatedEntityAndEventInfo);
             });
           } else {
-            callback(new Error('Can not get entityVersion: no events for ' + entity.entityTypeName + ' ' + entityId));
+            callback(new Error(`Can not get entityVersion: no events for ${entity.entityTypeName} ${entityId}`));
           }
         }
       });
@@ -106,7 +111,7 @@ export default class EventStoreUtils {
         if (errConditionFn(err, result)) {
           count--;
           if (count) {
-            console.log('retryNTimes ' + count + ' - ' + args[1] + ' - ' + util.inspect(args[2]));
+            logger.info(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
             setTimeout(worker, 100);
           } else {
             oldCb(err, result);
