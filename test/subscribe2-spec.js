@@ -84,10 +84,7 @@ describe('Create ' + createEvents.length + ' events and subscribe for them', fun
         }
       });
 
-      subscribe.should.be.have.property('acknowledge');
-      subscribe.acknowledge.should.be.a.Function;
-      subscribe.should.be.have.property('observable');
-      subscribe.observable.should.be.an.Object;
+      helpers.expectSubscribe(subscribe);
 
       subscribe.observable.subscribe(
         function (event) {

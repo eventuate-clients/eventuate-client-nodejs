@@ -252,8 +252,10 @@ export default class EsClient {
 
   subscribe(subscriberId, entityTypesAndEvents, options, callback) {
 
-    console.log('subscribe')
-    callback = callback || options;
+    if (!callback) {
+      callback = options;
+      options = undefined;
+    }
 
     const ackOrderTracker = new AckOrderTracker();
 
@@ -276,9 +278,6 @@ export default class EsClient {
   }
 
   observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback) {
-    console.log('observableCreateAndSubscribe');
-    console.log(options, callback);
-    callback = callback || options;
 
     return observer => {
 
@@ -310,12 +309,6 @@ export default class EsClient {
   }
 
   addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
-
-    console.log('addSubscription');
-
-    console.log(options, clientSubscribeCallback);
-
-    clientSubscribeCallback = clientSubscribeCallback || options;
 
     //add new subscription if not exists
     if (typeof this.subscriptions[subscriberId] == 'undefined') {
@@ -425,9 +418,9 @@ export default class EsClient {
         });
 
         this.stompClient.on('receipt', receiptId => {
-          //Run the callback function
+
           if (this.receipts.hasOwnProperty(receiptId)) {
-            //call Client.subscribe callback;
+            //call Client.subscribe callback
             this.receipts[receiptId].clientSubscribeCallback(null, receiptId);
           }
         });
@@ -474,11 +467,11 @@ export default class EsClient {
 
   addReceipt(receipt, clientSubscribeCallback) {
 
-    let receiptObj = this.receipts[receipt];
-
-    if (typeof receiptObj == 'undefined') {
-      receiptObj = {};
+    if (typeof this.receipts[receipt] == 'undefined') {
+      this.receipts[receipt] = {};
     }
+
+    let receiptObj = this.receipts[receipt];
 
     receiptObj.clientSubscribeCallback = clientSubscribeCallback;
   }
