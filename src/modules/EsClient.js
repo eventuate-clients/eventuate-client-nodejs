@@ -11,7 +11,7 @@ import invariant from 'invariant';
 
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
-import specialChars from './specialChars';
+import { escapeStr, unEscapeStr } from './specialChars';
 import EsServerError from './EsServerError';
 import { parseIsTrue, toJSON } from './utils';
 
@@ -330,7 +330,7 @@ export default class EsClient {
       destinationObj.progressNotifications = options.progressNotifications;
     }
 
-    const destination = specialChars.escape(JSON.stringify(destinationObj));
+    const destination = escapeStr(JSON.stringify(destinationObj));
 
     const uniqueId = uuid.v1().replace(new RegExp('-', 'g'), '');
     const id = `subscription-id-${uniqueId}`;
@@ -405,7 +405,7 @@ export default class EsClient {
           const headers = frame.headers;
           const body = frame.body;
 
-          const ack = JSON.parse(specialChars.unescape(headers.ack));
+          const ack = JSON.parse(unEscapeStr(headers.ack));
 
           const subscriberId = ack.receiptHandle.subscriberId;
 

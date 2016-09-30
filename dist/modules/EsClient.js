@@ -58,8 +58,6 @@ var _AckOrderTracker2 = _interopRequireDefault(_AckOrderTracker);
 
 var _specialChars = require('./specialChars');
 
-var _specialChars2 = _interopRequireDefault(_specialChars);
-
 var _EsServerError = require('./EsServerError');
 
 var _EsServerError2 = _interopRequireDefault(_EsServerError);
@@ -403,7 +401,7 @@ var EsClient = function () {
         destinationObj.progressNotifications = options.progressNotifications;
       }
 
-      var destination = _specialChars2.default.escape(JSON.stringify(destinationObj));
+      var destination = (0, _specialChars.escapeStr)(JSON.stringify(destinationObj));
 
       var uniqueId = _uuid2.default.v1().replace(new RegExp('-', 'g'), '');
       var id = 'subscription-id-' + uniqueId;
@@ -485,7 +483,7 @@ var EsClient = function () {
           var headers = frame.headers;
           var body = frame.body;
 
-          var ack = JSON.parse(_specialChars2.default.unescape(headers.ack));
+          var ack = JSON.parse((0, _specialChars.unEscapeStr)(headers.ack));
 
           var subscriberId = ack.receiptHandle.subscriberId;
 

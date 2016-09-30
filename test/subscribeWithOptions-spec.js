@@ -4,7 +4,7 @@ const EsClient = require('../dist');
 const should = require('should');
 const util = require('util');
 const helpers = require('./lib/helpers');
-const unescape = require('../dist/modules/specialChars').unescape;
+const unEscapeStr = require('../dist/modules/specialChars').unEscapeStr;
 
 
 const apiKey = {
@@ -52,7 +52,7 @@ describe('Subscribe with options', function () {
       console.log('Subscribed');
 
       const destination = esClient.subscriptions[subscriberId].headers.destination;
-      const destinationObj = JSON.parse(unescape(destination));
+      const destinationObj = JSON.parse(unEscapeStr(destination));
 
       destinationObj.should.be.have.property('durability');
       destinationObj.should.be.have.property('readFrom');

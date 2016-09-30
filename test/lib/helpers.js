@@ -102,7 +102,7 @@ exports.expectParsedFrame = function (frame) {
 
 exports.parseAck = function (event, done) {
   try {
-    return JSON.parse(specialChars.unescape(event.ack));
+    return JSON.parse(specialChars.unEscapeStr(event.ack));
   } catch (error) {
     done(error);
   }
