@@ -26,6 +26,8 @@ var EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUN
 
 var EventStoreUtils = function () {
   function EventStoreUtils() {
+    var _this = this;
+
     var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
     var _ref$apiKey = _ref.apiKey;
@@ -51,54 +53,58 @@ var EventStoreUtils = function () {
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
-    logger.debug('Using EsClinet options:', esClientOpts);
+    logger.debug('Using EsClient options:', esClientOpts);
 
     this.esClient = new _EsClient2.default(esClientOpts);
 
     this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, function (EntityClass, entityId, command, callback) {
-      var entity = new EntityClass(),
-          self = this;
+      var entity = new EntityClass();
 
-      self.esClient.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
+      _this.esClient.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
+
         if (err) {
-          callback(err);
-        } else {
+          logger.error('Load events failed: ' + entityTypeName + ' ' + entityId);
+          return callback(err);
+        }
 
-          if (loadedEvents.length > 0) {
+        if (loadedEvents.length <= 0) {
+          return callback(new Error('Can not get entityVersion: no events for ' + entity.entityTypeName + ' ' + entityId));
+        }
 
-            var entityVersion = loadedEvents[loadedEvents.length - 1].id;
+        var _loadedEvents$pop = loadedEvents.pop();
 
-            //iterate through the events calling entity.applyEvent(..)
-            for (var prop in loadedEvents) {
+        var entityVersion = _loadedEvents$pop.id;
 
-              if (Object.prototype.hasOwnProperty.call(loadedEvents, prop)) {
+        //iterate through the events calling entity.applyEvent(..)
 
-                var event = loadedEvents[prop];
+        for (var prop in loadedEvents) {
 
-                var type = event.eventType.split('.').pop();
+          if (Object.prototype.hasOwnProperty.call(loadedEvents, prop)) {
 
-                var applyMethod = self.getApplyMethod(entity, type);
+            var event = loadedEvents[prop];
 
-                applyMethod.call(entity, event);
-              }
-            }
+            var type = event.eventType.split('.').pop();
 
-            var processCommandMethod = self.getProcessCommandMethod(entity, command.commandType);
+            var applyMethod = _this.getApplyMethod(entity, type);
 
-            var events = processCommandMethod.call(entity, command);
-
-            self.esClient.update(entity.entityTypeName, entityId, entityVersion, events, function (error, updatedEntityAndEventInfo) {
-              if (error) {
-                callback(error);
-                return;
-              }
-
-              callback(null, updatedEntityAndEventInfo);
-            });
-          } else {
-            callback(new Error('Can not get entityVersion: no events for ' + entity.entityTypeName + ' ' + entityId));
+            applyMethod.call(entity, event);
           }
         }
+
+        var processCommandMethod = _this.getProcessCommandMethod(entity, command.commandType);
+
+        var events = processCommandMethod.call(entity, command);
+
+        _this.esClient.update(entity.entityTypeName, entityId, entityVersion, events, function (error, result) {
+          if (error) {
+            logger.error('Update entity failed: ' + EntityClass.name + ' ' + entityId + ' ' + entityVersion);
+            return callback(error);
+          }
+
+          logger.debug('Updated entity: ' + EntityClass.name + ' ' + entityId + ' ' + JSON.stringify(result));
+
+          callback(null, result);
+        });
       });
     }, function (err) {
       return err && err.statusCode === 409;
@@ -159,13 +165,14 @@ var EventStoreUtils = function () {
 
       var events = processCommandMethod.call(entity, command);
 
-      this.esClient.create(entity.entityTypeName, events, function (err, createdEntityAndEventInfo) {
+      this.esClient.create(entity.entityTypeName, events, function (err, result) {
         if (err) {
-          callback(err);
-          return;
+          logger.error('Create entity failed: ' + EntityClass.name);
+          return callback(err);
         }
 
-        callback(null, createdEntityAndEventInfo);
+        logger.debug('Created entity: ' + EntityClass.name + ' ' + result.entityIdTypeAndVersion.entityId + ' ' + JSON.stringify(result));
+        callback(null, result);
       });
     }
   }, {
@@ -174,10 +181,11 @@ var EventStoreUtils = function () {
 
       this.esClient.loadEvents(entityTypeName, entityId, function (err, loadedEvents) {
         if (err) {
-          callback(err);
-          return;
+          logger.error('Load events failed: ' + entityTypeName + ' ' + entityId);
+          return callback(err);
         }
 
+        logger.debug('Loaded events: ' + entityTypeName + ' ' + entityId + ' ' + JSON.stringify(loadedEvents));
         callback(null, loadedEvents);
       });
     }
@@ -196,7 +204,7 @@ var EventStoreUtils = function () {
         return entity[defaultMethod];
       } else {
 
-        throw new Error('Entity does not have method to ' + prefix + ' for ' + eventType + ': ');
+        throw new Error('Entity does not have method to ' + prefix + ' for ' + eventType + '.');
       }
     }
   }, {
@@ -214,7 +222,7 @@ var EventStoreUtils = function () {
         return entity[defaultMethod];
       } else {
 
-        throw new Error('Entity does not have method to ' + prefix + ' for ' + commandType + ': ');
+        throw new Error('Entity does not have method to ' + prefix + ' for ' + commandType + '.');
       }
     }
   }]);

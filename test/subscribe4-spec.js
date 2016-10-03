@@ -30,7 +30,7 @@ entityTypesAndEvents[entityTypeName] = [ entityChangedEvent ];
 
 
 var eventsNumber = 1000;
-var timeout = 25000;
+var timeout = 30000;
 
 describe('Create entity with ' + eventsNumber + ' events and subscribe', function () {
   this.timeout(timeout);

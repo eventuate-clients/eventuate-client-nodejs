@@ -25,7 +25,7 @@ var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
 var eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
 var eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEntityNameChanged';
 
-var timeout = 20000;
+var timeout = 30000;
 
 describe('ES Node.js Client: function create()', function () {
 
@@ -119,7 +119,10 @@ describe('ES Node.js Client: function create()', function () {
 });
 
 describe('ES Node.js Client: function create() custom entityId', function () {
-  it('function create() should create new Entity with custom entityId return entityAndEventInfo object', function (done) {
+
+  this.timeout(timeout);
+
+  it('function create() should create new Entity with custom entityId and return entityAndEventInfo object', function (done) {
     var entityId = uuid.v1().replace(/-/g, '');
 
     var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Bob' } } ];
