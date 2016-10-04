@@ -1,6 +1,9 @@
 import 'babel-polyfill';
-import EsClient from './EsClient';
 import Rx from 'rx';
+import async from 'async';
+import util from 'util';
+
+import EsClient from './EsClient';
 import { getLogger } from './logger';
 
 const defaultLogger = getLogger({ title: 'WorkflowEvents' });
@@ -37,23 +40,43 @@ export default class WorkflowEvents {
     this.esClient = new EsClient(esClientOpts);
   }
 
-  startWorkflow() {
+  startWorkflow(callback) {
 
+    this.logger.info('Subscribe to: ', util.inspect(this.subscriptions, false, 10));
+
+    let functions = [];
 
     this.subscriptions.forEach(({subscriberId, entityTypesAndEvents}) => {
-      const logger = this.logger;
-      const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
-        if (err) {
-          logger.error('subscribe callback error', err);
-          return;
-        }
-        logger.info(`The subscription has been established
-        receipt-id:${receiptId}
-        `);
-      });
 
-      this.runProcessEvents(subscribe);
+      const logger = this.logger;
+
+      let receipts = [];
+
+      functions.push(cb => {
+        const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
+
+          if (err) {
+            logger.error('subscribe callback error', err);
+            cb(err);
+            return;
+          }
+
+          logger.info(`The subscription has been established receipt-id: ${receiptId}`);
+
+          if (receipts.indexOf(receiptId) < 0) {
+            receipts.push(receiptId);
+            cb(null, receiptId);
+          }
+
+        });
+
+        this.runProcessEvents(subscribe);
+
+      });
     });
+
+
+    async.parallel(functions, callback);
   }
 
   runProcessEvents(subscription) {
@@ -76,26 +99,22 @@ export default class WorkflowEvents {
 };
 
 function createObservable(getEventHandler) {
-  return (event) => Rx.Observable.create((observer) => {
+  return event => Rx.Observable.create(observer => {
 
     const eventHandler = getEventHandler.call(this.worker, event.eventType);
 
-    if (eventHandler) {
-      eventHandler(event).then(
-        (result) => {
-          observer.onNext(event.ack);
-          observer.onCompleted();
-        },
-        (error) => {
-          observer.onNext();
-           observer.onCompleted();
-        }
-      );
-    } else {
-      this.logger.debug('No handler for eventType: ', event.eventType);
-      observer.onNext();
-      observer.onCompleted();
+
+    if (!eventHandler) {
+      return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
     }
+
+    eventHandler(event).then(
+      result => {
+        observer.onNext(event.ack);
+        observer.onCompleted();
+      },
+      observer.onError
+    );
   });
 
 }

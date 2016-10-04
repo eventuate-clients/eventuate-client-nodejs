@@ -8,13 +8,21 @@ Object.defineProperty(exports, "__esModule", {
 
 require('babel-polyfill');
 
-var _EsClient = require('./EsClient');
-
-var _EsClient2 = _interopRequireDefault(_EsClient);
-
 var _rx = require('rx');
 
 var _rx2 = _interopRequireDefault(_rx);
+
+var _async = require('async');
+
+var _async2 = _interopRequireDefault(_async);
+
+var _util = require('util');
+
+var _util2 = _interopRequireDefault(_util);
+
+var _EsClient = require('./EsClient');
+
+var _EsClient2 = _interopRequireDefault(_EsClient);
 
 var _logger = require('./logger');
 
@@ -69,24 +77,44 @@ var WorkflowEvents = function () {
 
   _createClass(WorkflowEvents, [{
     key: 'startWorkflow',
-    value: function startWorkflow() {
+    value: function startWorkflow(callback) {
       var _this = this;
+
+      this.logger.info('Subscribe to: ', _util2.default.inspect(this.subscriptions, false, 10));
+
+      var functions = [];
 
       this.subscriptions.forEach(function (_ref2) {
         var subscriberId = _ref2.subscriberId;
         var entityTypesAndEvents = _ref2.entityTypesAndEvents;
 
-        var logger = _this.logger;
-        var subscribe = _this.esClient.subscribe(subscriberId, entityTypesAndEvents, function (err, receiptId) {
-          if (err) {
-            logger.error('subscribe callback error', err);
-            return;
-          }
-          logger.info('The subscription has been established\n        receipt-id:' + receiptId + '\n        ');
-        });
 
-        _this.runProcessEvents(subscribe);
+        var logger = _this.logger;
+
+        var receipts = [];
+
+        functions.push(function (cb) {
+          var subscribe = _this.esClient.subscribe(subscriberId, entityTypesAndEvents, function (err, receiptId) {
+
+            if (err) {
+              logger.error('subscribe callback error', err);
+              cb(err);
+              return;
+            }
+
+            logger.info('The subscription has been established receipt-id: ' + receiptId);
+
+            if (receipts.indexOf(receiptId) < 0) {
+              receipts.push(receiptId);
+              cb(null, receiptId);
+            }
+          });
+
+          _this.runProcessEvents(subscribe);
+        });
       });
+
+      _async2.default.parallel(functions, callback);
     }
   }, {
     key: 'runProcessEvents',
@@ -120,19 +148,14 @@ function createObservable(getEventHandler) {
 
       var eventHandler = getEventHandler.call(_this3.worker, event.eventType);
 
-      if (eventHandler) {
-        eventHandler(event).then(function (result) {
-          observer.onNext(event.ack);
-          observer.onCompleted();
-        }, function (error) {
-          observer.onNext();
-          observer.onCompleted();
-        });
-      } else {
-        _this3.logger.debug('No handler for eventType: ', event.eventType);
-        observer.onNext();
-        observer.onCompleted();
+      if (!eventHandler) {
+        return observer.onError(new Error('No event handler for eventType: ' + event.eventType));
       }
+
+      eventHandler(event).then(function (result) {
+        observer.onNext(event.ack);
+        observer.onCompleted();
+      }, observer.onError);
     });
   };
 }

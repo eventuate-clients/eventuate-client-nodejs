@@ -155,7 +155,10 @@ describe('EventStoreUtils: function createEntity()', function () {
                       var workflow = new WorkflowEvents({ subscriptions: subscriptions, getEventHandler: getEventHandler });
 
                       //Run workflow
-                      workflow.startWorkflow();
+                      workflow.startWorkflow(() => {
+
+                        console.log('Workflow started');
+                      });
 
                     });
 
