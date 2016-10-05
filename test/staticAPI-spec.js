@@ -1,25 +1,8 @@
 'use strict';
-
-const EsClient = require('../dist');
 const should = require('should');
 const helpers = require('./lib/helpers');
 
-const apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
-
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
-
-const esClientOpts = {
-  apiKey: apiKey,
-  spaceName: process.env.EVENTUATE_SPACE_NAME || false
-};
-
-
-const esClient = new EsClient(esClientOpts);
+var esClient = helpers.createEsClient();
 
 describe('Test static API ', function () {
 

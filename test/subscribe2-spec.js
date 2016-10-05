@@ -1,27 +1,11 @@
 /*
  This test creates uniquely named entity with many events and subscribes to them
 */
-
-var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./lib/helpers');
 
-var apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
-
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
-
-var esClientOpts = {
-  apiKey: apiKey,
-  spaceName: process.env.EVENTUATE_SPACE_NAME || false
-};
-
-var esClient = new EsClient(esClientOpts);
+var esClient = helpers.createEsClient();
 
 var subscriberId = 'subscriber-' + helpers.getUniqueID();
 

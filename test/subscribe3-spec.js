@@ -2,34 +2,16 @@
  Create two entities and subscribe for events using two subscribers.
  Each subscriber should receive only its own events.
  */
-
-var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./lib/helpers');
 
+var esClient = helpers.createEsClient();
+
 var timeout = 25000;
-
-var apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
-
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
-
-var esClientOpts = {
-  apiKey: apiKey,
-  spaceName: process.env.EVENTUATE_SPACE_NAME || false
-};
-
 var timeStamp = new Date().getTime();
 
-var esClient = new EsClient(esClientOpts);
-
 var subscriberId1 = 'subscriber-' + helpers.getUniqueID();
-
 var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents1 = {};
@@ -38,7 +20,6 @@ entityTypesAndEvents1[entityTypeName1] = [
 ];
 
 var subscriberId2 = 'subscriber-' + helpers.getUniqueID();
-
 var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
 
 var entityTypesAndEvents2 = {};

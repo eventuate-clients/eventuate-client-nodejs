@@ -1,30 +1,11 @@
 /*
   This test creates and updates one uniquely named entity with one event and subscribes to it
 */
-
-//import EsClient from '../src/modules/EsClient';
-var EsClient = require('../dist');
 var should = require('should');
 var util = require('util');
 var helpers = require('./lib/helpers');
 
-
-var apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
-
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
-
-var esClientOpts = {
-  apiKey: apiKey,
-  spaceName: process.env.EVENTUATE_SPACE_NAME || false,
-  debug: false
-};
-
-var esClient = new EsClient(esClientOpts);
+var esClient = helpers.createEsClient();
 
 var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-'  + helpers.getUniqueID();
 

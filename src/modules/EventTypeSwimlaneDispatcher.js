@@ -3,19 +3,20 @@ import util from 'util';
 import async from 'async';
 
 import EsClient from './EsClient';
+import ObservableQueue from './ObservableQueue';
 import { getLogger } from './logger';
 
-const defaultLogger = getLogger({ title: 'WorkflowEvents' });
+export default class EventTypeSwimlaneDispatcher {
 
-export default class SwimlaneDispatcher {
-
-  constructor({ subscriptions = [], swimlane, executor, apiKey = {}, logger = null, getEventHandler } = {}) {
+  constructor({ subscriptions = [], apiKey = {}, logger = null, getEventHandler } = {}) {
 
     if (!logger) {
-      logger = defaultLogger;
+      logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
     }
 
-    Object.assign(this, { subscriptions, swimlane, executor, logger });
+    Object.assign(this, { subscriptions, logger, getEventHandler });
+
+    this.queues = {};
 
     this.createEsClientInstance(apiKey);
   }
@@ -86,29 +87,54 @@ export default class SwimlaneDispatcher {
 
   runProcessEvents(subscription) {
 
-    subscription.observable
-      .map(createObservable.call(this, this.getEventHandler))
-      .merge(1)
-      .subscribe(
-      ack => {
-        if (ack) {
-          this.logger.debug('acknowledge: ', ack);
-          subscription.acknowledge(ack);
-        }
+    subscription.observable.subscribe(
+      event => {
+
+        //this.logger.debug(event);
+
+        this.dispatch({ event, acknowledgeFn: subscription.acknowledge });
       },
-      err => this.logger.error('Subscribe Error', err),
-      () => this.logger.debug('Disconnected!')
-    );
+      err => {
+        this.logger.error(err);
+      },
+      () => {
+        this.logger.debug('Completed')
+      }
+    )
   }
-}
 
-function createObservable(getEventHandler) {
+  dispatch({ event, acknowledgeFn }) {
 
-  return event => Rx.Observable.create(observer => {
+    const { eventType, swimlane } = event;
 
-    
+    this.logger.debug(`eventType: ${eventType}, swimlane: ${swimlane}`);
 
+    const eventHandler = this.getEventHandler(eventType);
 
-  });
+    let queue = this.getQueue({ eventType, swimlane });
+
+    if (!queue) {
+      this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
+      queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });
+      this.saveQueue(queue);
+    }
+
+    queue.queueEvent(event);
+  }
+
+  getQueue({ eventType, swimlane }) {
+    if(!this.queues[eventType]) {
+      this.queues[eventType] = {};
+    }
+
+    return this.queues[eventType][swimlane];
+  }
+
+  saveQueue(queue) {
+
+    const { eventType, swimlane } = queue;
+
+    this.queues[eventType][swimlane] = queue;
+  }
 
 }

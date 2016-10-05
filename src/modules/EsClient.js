@@ -511,7 +511,7 @@ export default class EsClient {
 
     try {
 
-      const {id: eventId, eventType, entityId, eventData: eventDataStr } = JSON.parse(eventStr);
+      const {id: eventId, eventType, entityId, eventData: eventDataStr, swimlane } = JSON.parse(eventStr);
 
       try {
 
@@ -521,8 +521,9 @@ export default class EsClient {
           eventId,
           eventType,
           entityId,
-          ack,
-          eventData
+          swimlane,
+          eventData,
+          ack
         };
 
         return { event };
