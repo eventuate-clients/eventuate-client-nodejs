@@ -119,8 +119,8 @@ function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
 
   helpers.expectEvent(event);
-  return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));
-  //return Promise.resolve();
+  //return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));
+  return Promise.resolve();
 }
 
 function getEventHandler (eventType) {

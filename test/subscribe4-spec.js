@@ -21,7 +21,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
   it('should create entity and subscribe for the events', function (done) {
 
     //create events
-    var createEvents = fillEventsArr(eventsNumber, entityChangedEvent);
+    var createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);
 
     esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
 
@@ -72,14 +72,3 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
     });
   });
 });
-
-function fillEventsArr(size, eventType) {
-  return Array
-    .apply(null, new Array(size))
-    .map((val, index) => {
-      return {
-        eventType: eventType,
-        eventData: '{ "index": "' + index +'" }'
-      };
-    })
-}

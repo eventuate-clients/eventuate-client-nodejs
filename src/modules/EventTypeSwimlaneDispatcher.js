@@ -51,21 +51,18 @@ export default class EventTypeSwimlaneDispatcher {
       return callback(new Error('The subscriptions array can not be empty'))
     }
 
-    let functions = [];
-
-    this.subscriptions.forEach(({subscriberId, entityTypesAndEvents}) => {
+    const functions = this.subscriptions.map(({subscriberId, entityTypesAndEvents}) => {
 
       const logger = this.logger;
 
       let receipts = [];
 
-      functions.push(cb => {
+      return cb => {
         const subscribe = this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
 
           if (err) {
             logger.error('subscribe callback error', err);
-            cb(err);
-            return;
+            return cb(err);
           }
 
           logger.info(`The subscription has been established receipt-id: ${receiptId}`);
@@ -79,7 +76,7 @@ export default class EventTypeSwimlaneDispatcher {
 
         this.runProcessEvents(subscribe);
 
-      });
+      };
     });
 
     async.parallel(functions, callback);
@@ -109,13 +106,14 @@ export default class EventTypeSwimlaneDispatcher {
 
     this.logger.debug(`eventType: ${eventType}, swimlane: ${swimlane}`);
 
-    const eventHandler = this.getEventHandler(eventType);
-
     let queue = this.getQueue({ eventType, swimlane });
 
     if (!queue) {
       this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
+
+      const eventHandler = this.getEventHandler(eventType);
       queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });
+
       this.saveQueue(queue);
     }
 

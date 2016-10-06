@@ -130,3 +130,15 @@ module.exports.createEsClient = function () {
   return new EsClient(esClientOpts);
 };
 
+module.exports.makeEventsArr = (size, eventType, swimlane = 0) => {
+  return Array
+    .apply(null, new Array(size))
+    .map((val, index) => {
+      return {
+        eventType: eventType,
+        swimlane: swimlane,
+        eventData: '{ "index": "' + index +'" }',
+        ack: index
+      };
+    })
+};
