@@ -271,6 +271,9 @@ export default class EsClient {
     const observable = Rx.Observable.create(createFn);
 
     const acknowledge = ack => {
+
+      //logger.debug('acknowledge fn:', ack);
+
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 

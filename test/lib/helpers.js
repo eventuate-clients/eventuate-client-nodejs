@@ -130,7 +130,12 @@ module.exports.createEsClient = function () {
   return new EsClient(esClientOpts);
 };
 
-module.exports.makeEventsArr = (size, eventType, swimlane = 0) => {
+module.exports.makeEventsArr = (size, eventType, swimlane) => {
+
+  if (typeof swimlane == 'undefined') {
+    swimlane = 1;
+  }
+
   return Array
     .apply(null, new Array(size))
     .map((val, index) => {

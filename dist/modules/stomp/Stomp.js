@@ -529,6 +529,7 @@ var Stomp = function (_EventEmitter) {
   }, {
     key: 'sendFrame',
     value: function sendFrame(_frame) {
+
       var socket = this.socket;
       var frameStr = _frame.asString();
 

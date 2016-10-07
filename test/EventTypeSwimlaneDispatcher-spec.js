@@ -1,10 +1,11 @@
 'use strict';
 const expect = require('chai').expect;
-const SwimlaneDispatcher = require('../src/modules/EventTypeSwimlaneDispatcher');
+const EventTypeSwimlaneDispatcher = require('../dist/modules/EventTypeSwimlaneDispatcher');
+const Subscriber = require('../dist/modules/Subscriber');
 const eventConfig = require('./lib/eventConfig');
 const helpers = require('./lib/helpers');
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
 const timeout = 30000;
 
@@ -31,53 +32,19 @@ const eventHandlers = {
   [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
 };
 
+let processed = 0;
+
 describe('EventTypeSwimlaneDispatcher', function () {
 
   this.timeout(timeout);
 
-  xit('should subscribe', done => {
-
-    const sd = new SwimlaneDispatcher({ subscriptions, getEventHandler });
-
-    sd.startWorkflow((err, result) => {
-
-      if (err) {
-        return done(err);
-      }
-
-      console.log('result', result);
-      done();
-    });
-  });
-
   it('should receive events', done => {
-
-    const sd = new SwimlaneDispatcher({ subscriptions, getEventHandler });
-
-    sd.startWorkflow((err, result) => {
-      if (err) {
-        return done(err);
-      }
-
-    });
 
     const events = [
       {
         eventType: MyEntityWasCreatedEvent,
         eventData: {
           action: 'created'
-        }
-      },
-      {
-        eventType: MyEntityWasUpdatedEvent,
-        eventData: {
-          action: 'updated'
-        }
-      },
-      {
-        eventType: MyEntityWasUpdatedEvent,
-        eventData: {
-          action: 'updated'
         }
       },
       {
@@ -103,6 +70,23 @@ describe('EventTypeSwimlaneDispatcher', function () {
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
     });
+
+    const subscriber = new Subscriber({ subscriptions });
+
+    subscriber.subscribe().forEach(subscription => {
+
+      const dispatcher = new EventTypeSwimlaneDispatcher({ getEventHandler, subscription });
+      dispatcher.run();
+
+    });
+
+    setInterval(() => {
+
+      if (processed == events.length) {
+        done();
+      }
+
+    }, 500)
   });
 });
 
@@ -112,6 +96,7 @@ function handleMyEntityWasCreatedEvent(event) {
 
   helpers.expectEvent(event);
 
+  processed++;
   return Promise.resolve();
 }
 
@@ -119,6 +104,7 @@ function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
 
   helpers.expectEvent(event);
+  processed++;
   //return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));
   return Promise.resolve();
 }

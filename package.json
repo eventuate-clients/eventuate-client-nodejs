@@ -4,7 +4,7 @@
   "description": "NodeJS-based client for the Eventuate Platform",
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha --reporter spec --ui bdd test/staticAPI-spec.js test/specialChars-spec.js test/AckOrderTracker-spec.js test/esClient-spec.js test/subscribe1-spec.js test/subscribe2-spec.js test/subscribe3-spec.js test/subscribe4-spec.js test/subscribeWithOptions-spec.js test/EventStoreUtils-spec.js test/stomp-spec.js",
+    "test": "mocha --reporter spec --ui bdd test/staticAPI-spec.js test/specialChars-spec.js test/AckOrderTracker-spec.js test/esClient-spec.js  test/stomp-spec.js test/subscribe1-spec.js test/subscribe2-spec.js test/subscribe3-spec.js test/subscribeManyEvents-spec.js test/subscribeWithOptions-spec.js test/EventStoreUtils-spec.js test/EventTypeSwimlaneDispatcher-spec.js",
     "compile": "rm -fr dist/* && babel --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/"
   },
   "author": "",

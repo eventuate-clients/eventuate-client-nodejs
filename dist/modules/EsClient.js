@@ -343,6 +343,9 @@ var EsClient = function () {
       var observable = _rx2.default.Observable.create(createFn);
 
       var acknowledge = function acknowledge(ack) {
+
+        //logger.debug('acknowledge fn:', ack);
+
         ackOrderTracker.ack(ack).forEach(_this2.stompClient.ack.bind(_this2.stompClient));
       };
 
@@ -597,6 +600,7 @@ var EsClient = function () {
         var eventType = _JSON$parse.eventType;
         var entityId = _JSON$parse.entityId;
         var eventDataStr = _JSON$parse.eventData;
+        var swimlane = _JSON$parse.swimlane;
 
 
         try {
@@ -607,8 +611,9 @@ var EsClient = function () {
             eventId: eventId,
             eventType: eventType,
             entityId: entityId,
-            ack: ack,
-            eventData: eventData
+            swimlane: swimlane,
+            eventData: eventData,
+            ack: ack
           };
 
           return { event: _event };

@@ -479,6 +479,7 @@ class Stomp extends EventEmitter {
 
 
   sendFrame(_frame) {
+
     const socket = this.socket;
     const frameStr = _frame.asString();
 
