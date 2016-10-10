@@ -4,9 +4,13 @@ import { getLogger } from './logger';
 
 export default class ObservableQueue {
 
-  constructor({ eventType, swimlane, eventHandler, acknowledgeFn }) {
+  constructor({ eventType, swimlane, eventHandler, executor, acknowledgeFn }) {
 
-    Object.assign(this, { eventType, swimlane, eventHandler, acknowledgeFn });
+    this.eventType = eventType;
+    this.swimlane = swimlane;
+    this.eventHandler = eventHandler;
+    this.executor = executor;
+    this.acknowledgeFn = acknowledgeFn;
 
     this.logger = getLogger({ title: `Queue-${this.eventType}-${this.swimlane}` });
 
@@ -45,7 +49,7 @@ export default class ObservableQueue {
         return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
       }
 
-      this.eventHandler(event).then(
+      this.eventHandler.call(this.executor, event).then(
         result => {
           observer.onNext(event.ack);
           observer.onCompleted();

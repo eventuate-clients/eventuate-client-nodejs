@@ -6,7 +6,7 @@ import { getLogger } from './logger';
 
 export default class EventTypeSwimlaneDispatcher {
 
-  constructor({ logger = null, getEventHandler, subscription } = {}) {
+  constructor({ logger = null, getEventHandler, subscription, executor } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
@@ -15,6 +15,7 @@ export default class EventTypeSwimlaneDispatcher {
     this.getEventHandler =  getEventHandler;
     this.logger = logger;
     this.subscription = subscription;
+    this.executor = executor;
 
     this.queues = {};
 
@@ -48,7 +49,7 @@ export default class EventTypeSwimlaneDispatcher {
       this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
 
       const eventHandler = this.getEventHandler(eventType);
-      queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn: this.subscription.acknowledge });
+      queue = new ObservableQueue({ eventType, swimlane, eventHandler, executor: this.executor, acknowledgeFn: this.subscription.acknowledge });
 
       this.saveQueue(queue);
     }

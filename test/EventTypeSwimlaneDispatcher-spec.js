@@ -75,25 +75,31 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     subscriber.subscribe().forEach(subscription => {
 
-      const dispatcher = new EventTypeSwimlaneDispatcher({ getEventHandler, subscription });
+      const dispatcher = new EventTypeSwimlaneDispatcher({ getEventHandler, subscription, executor: new Executor() });
       dispatcher.run();
 
     });
 
     setInterval(() => {
-
       if (processed == events.length) {
         done();
       }
 
-    }, 500)
+    }, 1000)
   });
 });
 
 
+class Executor {
+  getClassName() {
+    return Executor.name;
+  }
+}
+
 function handleMyEntityWasCreatedEvent(event) {
   console.log('Running handleMyEntityWasCreatedEvent');
 
+  expect(this.getClassName()).to.equal(Executor.name);
   helpers.expectEvent(event);
 
   processed++;
@@ -103,6 +109,7 @@ function handleMyEntityWasCreatedEvent(event) {
 function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
 
+  expect(this.getClassName()).to.equal(Executor.name);
   helpers.expectEvent(event);
   processed++;
   //return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));

@@ -23,11 +23,16 @@ var ObservableQueue = function () {
     var eventType = _ref.eventType;
     var swimlane = _ref.swimlane;
     var eventHandler = _ref.eventHandler;
+    var executor = _ref.executor;
     var acknowledgeFn = _ref.acknowledgeFn;
 
     _classCallCheck(this, ObservableQueue);
 
-    Object.assign(this, { eventType: eventType, swimlane: swimlane, eventHandler: eventHandler, acknowledgeFn: acknowledgeFn });
+    this.eventType = eventType;
+    this.swimlane = swimlane;
+    this.eventHandler = eventHandler;
+    this.executor = executor;
+    this.acknowledgeFn = acknowledgeFn;
 
     this.logger = (0, _logger.getLogger)({ title: 'Queue-' + this.eventType + '-' + this.swimlane });
 
@@ -67,7 +72,7 @@ var ObservableQueue = function () {
             return observer.onError(new Error('No event handler for eventType: ' + event.eventType));
           }
 
-          _this2.eventHandler(event).then(function (result) {
+          _this2.eventHandler.call(_this2.executor, event).then(function (result) {
             observer.onNext(event.ack);
             observer.onCompleted();
           }).catch(function (err) {

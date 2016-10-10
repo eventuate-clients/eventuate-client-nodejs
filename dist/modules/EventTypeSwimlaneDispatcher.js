@@ -30,6 +30,7 @@ var EventTypeSwimlaneDispatcher = function () {
     var logger = _ref$logger === undefined ? null : _ref$logger;
     var getEventHandler = _ref.getEventHandler;
     var subscription = _ref.subscription;
+    var executor = _ref.executor;
 
     _classCallCheck(this, EventTypeSwimlaneDispatcher);
 
@@ -40,6 +41,7 @@ var EventTypeSwimlaneDispatcher = function () {
     this.getEventHandler = getEventHandler;
     this.logger = logger;
     this.subscription = subscription;
+    this.executor = executor;
 
     this.queues = {};
   }
@@ -73,7 +75,7 @@ var EventTypeSwimlaneDispatcher = function () {
         this.logger.debug('Create new queue for eventType: ' + eventType + ', swimlane: ' + swimlane);
 
         var eventHandler = this.getEventHandler(eventType);
-        queue = new _ObservableQueue2.default({ eventType: eventType, swimlane: swimlane, eventHandler: eventHandler, acknowledgeFn: this.subscription.acknowledge });
+        queue = new _ObservableQueue2.default({ eventType: eventType, swimlane: swimlane, eventHandler: eventHandler, executor: this.executor, acknowledgeFn: this.subscription.acknowledge });
 
         this.saveQueue(queue);
       }
