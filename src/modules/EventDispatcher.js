@@ -6,12 +6,12 @@ import EsClient from './EsClient';
 import { getLogger } from './logger';
 
 
-export default class WorkflowEvents {
+export default class EventDispatcher {
 
   constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {}} = {}) {
 
     if (!logger) {
-      logger = getLogger({ title: 'WorkflowEvents' });
+      logger = getLogger({ title: 'EventDispatcher' });
     }
 
     Object.assign(this, { getEventHandler, subscriptions, logger, worker });

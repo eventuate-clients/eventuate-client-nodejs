@@ -1,7 +1,7 @@
 'use strict';
 const expect = require('chai').expect;
-const EventTypeSwimlaneDispatcher = require('../dist/modules/EventTypeSwimlaneDispatcher');
-const Subscriber = require('../dist/modules/Subscriber');
+const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
+const Subscriber = require('../dist').Subscriber;
 const eventConfig = require('./lib/eventConfig');
 const helpers = require('./lib/helpers');
 

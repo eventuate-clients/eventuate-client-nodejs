@@ -2,7 +2,9 @@
 require('should');
 const Promise = require('promise');
 const helpers = require('./lib/helpers');
-const Subscriber = require('../dist/modules/Subscriber');
+const EventStoreUtils = require('../dist').EventStoreUtils;
+const EventDispatcher = require('../dist').EventDispatcher;
+const Subscriber = require('../dist').Subscriber;
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
@@ -22,9 +24,6 @@ const CreateEntityCommand = EntityClass.CreateEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 //var EventStoreUtils = require('../src/modules/EventStoreUtils.js');
-const EventStoreUtils = require('../dist').EventStoreUtils;
-const WorkflowEvents = require('../dist').WorkflowEvents;
-
 
 const esUtil = new EventStoreUtils();
 
@@ -145,7 +144,7 @@ describe('EventStoreUtils: function createEntity()', function () {
         });
       });
 
-      describe('WorkflowEvents', function () {
+      describe('EventDispatcher', function () {
 
         this.timeout(timeout);
 
@@ -203,9 +202,9 @@ describe('EventStoreUtils: function createEntity()', function () {
           const subscriber = new Subscriber({ subscriptions });
 
           subscriber.subscribe().forEach(subscription => {
-            //Create WorkflowEvents instance
-            const workflow = new WorkflowEvents({ getEventHandler, subscription });
-            workflow.run(subscription);
+            //Create EventDispatcher instance
+            const dispatcher = new EventDispatcher({ getEventHandler, subscription });
+            dispatcher.run(subscription);
 
           });
         });

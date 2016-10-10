@@ -26,8 +26,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var WorkflowEvents = function () {
-  function WorkflowEvents() {
+var EventDispatcher = function () {
+  function EventDispatcher() {
     var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
     var getEventHandler = _ref.getEventHandler;
@@ -38,16 +38,16 @@ var WorkflowEvents = function () {
     var _ref$worker = _ref.worker;
     var worker = _ref$worker === undefined ? {} : _ref$worker;
 
-    _classCallCheck(this, WorkflowEvents);
+    _classCallCheck(this, EventDispatcher);
 
     if (!logger) {
-      logger = (0, _logger.getLogger)({ title: 'WorkflowEvents' });
+      logger = (0, _logger.getLogger)({ title: 'EventDispatcher' });
     }
 
     Object.assign(this, { getEventHandler: getEventHandler, subscriptions: subscriptions, logger: logger, worker: worker });
   }
 
-  _createClass(WorkflowEvents, [{
+  _createClass(EventDispatcher, [{
     key: 'run',
     value: function run(subscription) {
       var _this = this;
@@ -65,10 +65,10 @@ var WorkflowEvents = function () {
     }
   }]);
 
-  return WorkflowEvents;
+  return EventDispatcher;
 }();
 
-exports.default = WorkflowEvents;
+exports.default = EventDispatcher;
 ;
 
 function createObservable(getEventHandler) {
