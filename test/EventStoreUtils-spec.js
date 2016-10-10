@@ -1,53 +1,55 @@
+'use strict';
 require('should');
-var Promise = require('promise');
-var helpers = require('./lib/helpers');
+const Promise = require('promise');
+const helpers = require('./lib/helpers');
+const Subscriber = require('../dist/modules/Subscriber');
 
-var eventConfig = require('./lib/eventConfig');
-var entityTypeName = eventConfig.entityTypeName;
-var MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
-var MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
+const eventConfig = require('./lib/eventConfig');
+const entityTypeName = eventConfig.entityTypeName;
+const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
+const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
 
-var entityTypesAndEvents = {};
-entityTypesAndEvents[entityTypeName] = [
-  MyEntityWasCreatedEvent,
-  MyEntityWasUpdatedEvent
-];
+const entityTypesAndEvents = {
+  [entityTypeName]: [
+    MyEntityWasCreatedEvent,
+    MyEntityWasUpdatedEvent
+  ]
+};
 
 
-var EntityClass = require('./lib/EntityClass');
-var CreateEntityCommand = EntityClass.CreateEntityCommand;
-var UpdateEntityCommand = EntityClass.UpdateEntityCommand;
+const EntityClass = require('./lib/EntityClass');
+const CreateEntityCommand = EntityClass.CreateEntityCommand;
+const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 //var EventStoreUtils = require('../src/modules/EventStoreUtils.js');
-var EventStoreUtils = require('../dist').EventStoreUtils;
-var WorkflowEvents = require('../dist').WorkflowEvents;
+const EventStoreUtils = require('../dist').EventStoreUtils;
+const WorkflowEvents = require('../dist').WorkflowEvents;
 
 
-var esUtil = new EventStoreUtils();
+const esUtil = new EventStoreUtils();
 
-var timeout = 20000;
+const timeout = 20000;
 
-var createTimestamp;
-var updateTimestamp;
+let createTimestamp;
+let updateTimestamp;
 
 
 describe('EventStoreUtils: function createEntity()', function () {
 
   this.timeout(timeout);
 
-  it('function createEntity() should return entityAndEventInfo object', function (done) {
+  it('function createEntity() should return entityAndEventInfo object', done => {
 
     createTimestamp = new Date().getTime();
-    var command = {
+    const command = {
       commandType: CreateEntityCommand,
       createTimestamp: createTimestamp
     };
 
-    esUtil.createEntity(EntityClass, command, function (err, createdEntityAndEventInfo) {
+    esUtil.createEntity(EntityClass, command, (err, createdEntityAndEventInfo) => {
 
       if (err) {
-        console.error(err);
-        throw err;
+        return done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo, done);
@@ -55,20 +57,20 @@ describe('EventStoreUtils: function createEntity()', function () {
       describe('EventStoreUtils.js: function updateEntity()', function () {
         this.timeout(timeout);
 
-        it('function updateEntity() should update entity and return entityAndEventInfo object', function (done) {
+        it('function updateEntity() should update entity and return entityAndEventInfo object', done => {
 
-          var entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
+          const entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
 
           updateTimestamp = new Date().getTime();
-          var command = {
+          const command = {
             commandType: UpdateEntityCommand,
             updateTimestamp: updateTimestamp
           };
 
-          esUtil.updateEntity(EntityClass, entityId, command, function (err, updatedEntityAndEventInfo) {
+          esUtil.updateEntity(EntityClass, entityId, command, (err, updatedEntityAndEventInfo) => {
 
             if (err) {
-              throw err;
+              return done(err);
             }
 
             helpers.expectCommandResult(updatedEntityAndEventInfo, done);
@@ -76,15 +78,14 @@ describe('EventStoreUtils: function createEntity()', function () {
             describe('EventStoreUtils.js: function loadEvents()', function () {
               this.timeout(timeout);
 
-              it('function loadEvents() should load events', function (done) {
+              it('function loadEvents() should load events', done => {
 
-                var entity = new EntityClass();
+                const entity = new EntityClass();
 
-                esUtil.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
+                esUtil.loadEvents(entity.entityTypeName, entityId, (err, loadedEvents) => {
 
                   if (err) {
-                    done(err);
-                    return;
+                    return done(err);
                   }
 
                   helpers.expectLoadedEvents(loadedEvents);
@@ -96,90 +97,21 @@ describe('EventStoreUtils: function createEntity()', function () {
                   done();
 
 
-
-                  describe('WorkflowEvents: function startWorkflow()', function () {
-
-                    this.timeout(timeout);
-
-                    it('test startWorkflow()', function (done) {
-
-                      var eventCount = 0;
-                      var expectedEventCount = 2;
-
-                      //Define event handlers
-                      var eventHandlers = {};
-                      eventHandlers[MyEntityWasCreatedEvent] = handleMyEntityWasCreatedEvent;
-                      eventHandlers[MyEntityWasUpdatedEvent] = handleMyEntityWasUpdatedEvent;
-
-                      function handleMyEntityWasCreatedEvent(event) {
-
-                        helpers.expectEvent(event);
-
-                        if (event.eventData.timestamp == createTimestamp) {
-                          eventCount++;
-                        }
-
-                        return Promise.resolve();
-                      }
-
-                      function handleMyEntityWasUpdatedEvent(event) {
-
-                        helpers.expectEvent(event);
-
-                        if (event.eventData.timestamp == updateTimestamp) {
-                          eventCount++;
-                        }
-
-                        if(eventCount == expectedEventCount) {
-                          done();
-                        }
-
-                        return Promise.resolve();
-                      }
-
-                      function getEventHandler (eventType) {
-                        if (typeof eventHandlers[eventType] != 'undefined') {
-                          return eventHandlers[eventType]
-                        }
-                      }
-
-                      //Define subscriptions
-                      var subscriptions = [
-                        {
-                          subscriberId: 'test-EventStoreUtils',
-                          entityTypesAndEvents: entityTypesAndEvents
-                        }
-                      ];
-
-                      //Create WorkflowEvents instance
-                      var workflow = new WorkflowEvents({ subscriptions: subscriptions, getEventHandler: getEventHandler });
-
-                      //Run workflow
-                      workflow.startWorkflow(() => {
-
-                        console.log('Workflow started');
-                      });
-
-                    });
-
-                  });
-
-
                   describe('Test getApplyMethod() method', function () {
 
-                    it('should return a function', function () {
+                    it('should return a function', () => {
 
-                      loadedEvents.forEach(function (event) {
+                      loadedEvents.forEach(event => {
 
-                        var type = event.eventType.split('.').pop();
-                        var applyMethod = esUtil.getApplyMethod(entity, type);
+                        const type = event.eventType.split('.').pop();
+                        const applyMethod = esUtil.getApplyMethod(entity, type);
 
                         applyMethod.should.be.a.function;
                       });
 
                       //check default applyEvent() method
-                      var type = 'UnknownEventType';
-                      var applyMethod = esUtil.getApplyMethod(entity, type);
+                      const type = 'UnknownEventType';
+                      const applyMethod = esUtil.getApplyMethod(entity, type);
                       applyMethod.should.be.a.function;
                     });
 
@@ -188,9 +120,9 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                   describe('Test getProcessCommandMethod() method', function () {
 
-                    it('should return a function', function () {
+                    it('should return a function', () => {
 
-                      var processCommandMethod = esUtil.getProcessCommandMethod(entity, CreateEntityCommand);
+                      let processCommandMethod = esUtil.getProcessCommandMethod(entity, CreateEntityCommand);
                       processCommandMethod.should.be.a.function;
 
                       processCommandMethod = esUtil.getProcessCommandMethod(entity, UpdateEntityCommand);
@@ -205,22 +137,83 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                 });
 
-
-
-
               });
 
             });
 
-
-
-
           });
         });
       });
+
+      describe('WorkflowEvents', function () {
+
+        this.timeout(timeout);
+
+        it('test process events', done => {
+
+          let eventCount = 0;
+          const expectedEventCount = 2;
+
+          //Define event handlers
+          const eventHandlers = {
+            [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
+            [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+          };
+
+          function handleMyEntityWasCreatedEvent(event) {
+
+            helpers.expectEvent(event);
+
+            if (event.eventData.timestamp == createTimestamp) {
+              eventCount++;
+            }
+
+            return Promise.resolve();
+          }
+
+          function handleMyEntityWasUpdatedEvent(event) {
+
+            helpers.expectEvent(event);
+
+            if (event.eventData.timestamp == updateTimestamp) {
+              eventCount++;
+            }
+
+            if(eventCount == expectedEventCount) {
+              done();
+            }
+
+            return Promise.resolve();
+          }
+
+          function getEventHandler (eventType) {
+            if (typeof eventHandlers[eventType] != 'undefined') {
+              return eventHandlers[eventType]
+            }
+          }
+
+          //Define subscriptions
+          const subscriptions = [
+            {
+              subscriberId: 'test-EventStoreUtils',
+              entityTypesAndEvents: entityTypesAndEvents
+            }
+          ];
+
+          const subscriber = new Subscriber({ subscriptions });
+
+          subscriber.subscribe().forEach(subscription => {
+            //Create WorkflowEvents instance
+            const workflow = new WorkflowEvents({ getEventHandler, subscription });
+            workflow.run(subscription);
+
+          });
+        });
+
+      });
+
+
     });
   });
 
 });
-
-
