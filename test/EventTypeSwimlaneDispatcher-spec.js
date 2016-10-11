@@ -9,27 +9,29 @@ const esClient = helpers.createEsClient();
 
 const timeout = 30000;
 
-const entityTypeName = eventConfig.entityTypeName;
-const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
-const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
+const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
+const myEntityWasCreatedEvent = 'net.chrisrichardson.eventstore.example.MyEntityWasCreatedEvent';
+const myEntityWasUpdatedEvent = 'net.chrisrichardson.eventstore.example.MyEntityWasCreatedEvent';
 
 const entityTypesAndEvents = {
  [entityTypeName]: [
-    MyEntityWasCreatedEvent,
-    MyEntityWasUpdatedEvent
+    myEntityWasCreatedEvent,
+    myEntityWasUpdatedEvent
   ]
 };
 
+console.log(entityTypesAndEvents);
+
 const subscriptions = [
   {
-    subscriberId: 'test-EventTypeSwimlaneDispatcher',
+    subscriberId: 'EventTypeSwimlaneDispatcher-test',
     entityTypesAndEvents: entityTypesAndEvents
   }
 ];
 
 const eventHandlers = {
-  [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
-  [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+  [myEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
+  [myEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
 };
 
 let processed = 0;
@@ -42,19 +44,19 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     const events = [
       {
-        eventType: MyEntityWasCreatedEvent,
+        eventType: myEntityWasCreatedEvent,
         eventData: {
           action: 'created'
         }
       },
       {
-        eventType: MyEntityWasUpdatedEvent,
+        eventType: myEntityWasUpdatedEvent,
         eventData: {
           action: 'updated'
         }
       },
       {
-        eventType: MyEntityWasUpdatedEvent,
+        eventType: myEntityWasUpdatedEvent,
         eventData: {
           action: 'updated'
         }
@@ -80,8 +82,9 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     });
 
-    setInterval(() => {
+    const interval = setInterval(() => {
       if (processed == events.length) {
+        clearInterval(interval);
         done();
       }
 

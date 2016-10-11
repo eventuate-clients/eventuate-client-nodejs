@@ -1,6 +1,6 @@
 'use strict';
 const expect = require('chai').expect;
-const ObservableQueue = require('../src/modules/ObservableQueue');
+const ObservableQueue = require('../dist/modules/ObservableQueue');
 const helpers = require('./lib/helpers');
 
 const timeout = 10000;
@@ -18,20 +18,21 @@ describe('ObservableQueue', function () {
 
   this.timeout(timeout);
 
-  xit('should process all events', done => {
+  it('should process all events', done => {
 
     let processedEvents = 0;
 
     const eventHandler = event => {
-      console.log('Processing event:', event);
+      return new Promise((resolve, reject) => {
 
-      processedEvents++;
+        processedEvents++;
 
-      if (processedEvents == events.length) {
-        done();
-      }
+        if (processedEvents == events.length) {
+          done();
+        }
 
-      return Promise.resolve();
+        resolve()
+      });
     };
 
     const queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });
@@ -46,15 +47,22 @@ describe('ObservableQueue', function () {
     const stop = 3;
 
     const eventHandler = event => {
-      console.log('Processing event:', event);
 
-      if (stop === processedEvents) {
-        return Promise.reject(new Error('Some error'));
-      }
+      return new Promise((resolve, reject) => {
 
-      processedEvents++;
+        processedEvents++;
 
-      return Promise.resolve();
+        if (stop === processedEvents) {
+          reject(new Error('Some error'));
+          return done();
+        }
+
+        if (processedEvents == events.length) {
+          done(new Error('The queue did not stop'))
+        }
+
+        resolve();
+      });
     };
 
     const queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });

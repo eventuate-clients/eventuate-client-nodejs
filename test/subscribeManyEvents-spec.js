@@ -1,20 +1,20 @@
-var should = require('should');
-var util = require('util');
-var helpers = require('./lib/helpers');
+const should = require('should');
+const util = require('util');
+const helpers = require('./lib/helpers');
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
+const subscriberId = 'subscribeManyEvents-test';
 
-var subscriberId = 'subscribe-test-4';
+const entityChangedEvent = 'net.chrisrichardson.eventstore.example.MyEntityChanged';
+const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
+const entityTypesAndEvents = {
+  [entityTypeName]: [ entityChangedEvent ]
+};
 
-var entityTypesAndEvents = {};
-var entityChangedEvent = 'net.chrisrichardson.eventstore.example.MyEntityChanged';
-entityTypesAndEvents[entityTypeName] = [ entityChangedEvent ];
-
-
-var eventsNumber = 1000;
-var timeout = 30000;
+console.log('entityTypesAndEvents:', entityTypesAndEvents);
+const eventsNumber = 500;
+const timeout = 50000;
 
 describe('Create entity with ' + eventsNumber + ' events and subscribe', function () {
   this.timeout(timeout);
@@ -26,9 +26,10 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
     esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
 
       if (err) {
-        console.error(err);
-        done(err);
+        return done(err);
       }
+
+      console.log('Entity created');
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
@@ -37,10 +38,10 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
       //subscribe for events
       var subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, function callback(err, receiptId) {
         if (err) {
-          console.log('subscribe callback error');
-          console.error(err);
-          done(err);
+          return done(err);
         }
+
+        console.log('Subscription established')
       });
 
       helpers.expectSubscribe(subscribe);

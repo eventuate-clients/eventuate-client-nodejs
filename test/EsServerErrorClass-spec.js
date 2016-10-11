@@ -1,6 +1,5 @@
-import 'should';
-import EsServerError from '../src/modules/EsServerError.js'
-
+const expect = require('chai').expect;
+const EsServerError = require('../dist/modules/EsServerError.js');
 
 //TODO: get error from the ES Client
 describe('EsServerError class', () => {
@@ -22,8 +21,14 @@ describe('EsServerError class', () => {
       message: body
     });
 
-    console.log(error);
-    console.log(error.stack);
+
+    expect(error).to.have.property('timestamp');
+    expect(error).to.have.property('status');
+    expect(error).to.have.property('statusCode');
+    expect(error).to.have.property('error');
+    expect(error).to.have.property('exception');
+    expect(error).to.have.property('message');
+    expect(error).to.have.property('stack');
 
     done()
   });
