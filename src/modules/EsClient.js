@@ -27,7 +27,7 @@ export default class EsClient {
     this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
 
     this.apiKey = apiKey;
-    this.spaceName = spaceName || false;
+    this.spaceName = spaceName || '';
 
     this.urlObj = url.parse(this.url);
 
@@ -89,7 +89,6 @@ export default class EsClient {
     }
   }
 
-
   create(entityTypeName, _events, options, callback) {
 
     callback = callback || options;
@@ -107,22 +106,12 @@ export default class EsClient {
 
     this.addBodyOptions(jsonData, options);
 
-    const urlPath = this.urlSpaceName(this.baseUrlPath);
+    const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
     return _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
 
-      if (err) {
+      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
         return callback(err);
-      }
-
-      if (httpResponse.statusCode != 200) {
-        const error = new EsServerError({
-          error: `Server returned status code ${httpResponse.statusCode}`,
-          statusCode: httpResponse.statusCode,
-          message: body
-        });
-
-        return callback(error);
       }
 
       toJSON(body, (err, jsonBody) => {
@@ -158,7 +147,7 @@ export default class EsClient {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    let urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+    let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
     if (typeof  options == 'object') {
       urlPath += '?' + this.serialiseObject(options);
@@ -166,18 +155,8 @@ export default class EsClient {
 
     _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
 
-      if (err) {
+      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
         return callback(err);
-      }
-
-      if (httpResponse.statusCode != 200) {
-        const error = new EsServerError({
-          error: `Server returned status code ${httpResponse.statusCode}`,
-          statusCode: httpResponse.statusCode,
-          message: body
-        });
-
-        return callback(error);
       }
 
       toJSON(body, (err, jsonBody) => {
@@ -212,22 +191,12 @@ export default class EsClient {
 
     this.addBodyOptions(jsonData, options);
 
-    const urlPath = this.urlSpaceName(path.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+    const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
     _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
 
-      if (err) {
+      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
         return callback(err);
-      }
-
-      if (httpResponse.statusCode != 200) {
-        const error = new EsServerError({
-          error: `Server returned status code ${httpResponse.statusCode}`,
-          statusCode: httpResponse.statusCode,
-          message: body
-        });
-
-        return callback(error);
       }
 
       toJSON(body, (err, jsonBody) => {
@@ -539,15 +508,6 @@ export default class EsClient {
 
   }
 
-  urlSpaceName(urlPath) {
-
-    if (this.spaceName) {
-      return urlPath.replace(new RegExp('^' + this.baseUrlPath.replace('/', '\/')), `${this.baseUrlPath}/${this.spaceName}`);
-    } else {
-      return urlPath;
-    }
-  }
-
   serialiseObject(obj) {
 
     return Object.keys(obj)
@@ -651,6 +611,19 @@ export default class EsClient {
   }
 }
 
+
+function statusCodeError(statusCode, message) {
+
+  if (statusCode != 200) {
+
+    return new EsServerError({
+      error: `Server returned status code ${statusCode}`,
+      statusCode,
+      message
+    });
+
+  }
+}
 
 function _request(path, method, apiKey, jsonData, client, callback) {
 

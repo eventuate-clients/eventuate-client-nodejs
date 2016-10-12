@@ -88,7 +88,7 @@ var EsClient = function () {
     this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
 
     this.apiKey = apiKey;
-    this.spaceName = spaceName || false;
+    this.spaceName = spaceName || '';
 
     this.urlObj = _url2.default.parse(this.url);
 
@@ -170,22 +170,12 @@ var EsClient = function () {
 
       this.addBodyOptions(jsonData, options);
 
-      var urlPath = this.urlSpaceName(this.baseUrlPath);
+      var urlPath = _path2.default.join(this.baseUrlPath, this.spaceName);
 
       return _request(urlPath, 'POST', this.apiKey, jsonData, this, function (err, httpResponse, body) {
 
-        if (err) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
           return callback(err);
-        }
-
-        if (httpResponse.statusCode != 200) {
-          var error = new _EsServerError2.default({
-            error: 'Server returned status code ' + httpResponse.statusCode,
-            statusCode: httpResponse.statusCode,
-            message: body
-          });
-
-          return callback(error);
         }
 
         (0, _utils.toJSON)(body, function (err, jsonBody) {
@@ -226,7 +216,7 @@ var EsClient = function () {
         return callback(new Error('Incorrect input parameters'));
       }
 
-      var urlPath = this.urlSpaceName(_path2.default.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+      var urlPath = _path2.default.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
       if ((typeof options === 'undefined' ? 'undefined' : _typeof(options)) == 'object') {
         urlPath += '?' + this.serialiseObject(options);
@@ -234,18 +224,8 @@ var EsClient = function () {
 
       _request(urlPath, 'GET', this.apiKey, null, this, function (err, httpResponse, body) {
 
-        if (err) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
           return callback(err);
-        }
-
-        if (httpResponse.statusCode != 200) {
-          var error = new _EsServerError2.default({
-            error: 'Server returned status code ' + httpResponse.statusCode,
-            statusCode: httpResponse.statusCode,
-            message: body
-          });
-
-          return callback(error);
         }
 
         (0, _utils.toJSON)(body, function (err, jsonBody) {
@@ -279,22 +259,12 @@ var EsClient = function () {
 
       this.addBodyOptions(jsonData, options);
 
-      var urlPath = this.urlSpaceName(_path2.default.join(this.baseUrlPath, '/', entityTypeName, '/', entityId));
+      var urlPath = _path2.default.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
       _request(urlPath, 'POST', this.apiKey, jsonData, this, function (err, httpResponse, body) {
 
-        if (err) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
           return callback(err);
-        }
-
-        if (httpResponse.statusCode != 200) {
-          var error = new _EsServerError2.default({
-            error: 'Server returned status code ' + httpResponse.statusCode,
-            statusCode: httpResponse.statusCode,
-            message: body
-          });
-
-          return callback(error);
         }
 
         (0, _utils.toJSON)(body, function (err, jsonBody) {
@@ -625,16 +595,6 @@ var EsClient = function () {
       }
     }
   }, {
-    key: 'urlSpaceName',
-    value: function urlSpaceName(urlPath) {
-
-      if (this.spaceName) {
-        return urlPath.replace(new RegExp('^' + this.baseUrlPath.replace('/', '\/')), this.baseUrlPath + '/' + this.spaceName);
-      } else {
-        return urlPath;
-      }
-    }
-  }, {
     key: 'serialiseObject',
     value: function serialiseObject(obj) {
 
@@ -754,6 +714,18 @@ var EsClient = function () {
 
 exports.default = EsClient;
 
+
+function statusCodeError(statusCode, message) {
+
+  if (statusCode != 200) {
+
+    return new _EsServerError2.default({
+      error: 'Server returned status code ' + statusCode,
+      statusCode: statusCode,
+      message: message
+    });
+  }
+}
 
 function _request(path, method, apiKey, jsonData, client, callback) {
 
