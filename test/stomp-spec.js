@@ -1,25 +1,26 @@
-var should = require('should');
-var Stomp = require('../dist/modules/stomp/Stomp');
-var chunks = require('./data/chunks').chunks;
-var expectedFramesNumber = require('./data/chunks').framesNumber;
-var helpers = require('./lib/helpers');
+'use strict';
+const expect = require('chai').expect;
+const Stomp = require('../dist/modules/stomp/Stomp');
+const chunks = require('./data/chunks').chunks;
+const expectedFramesNumber = require('./data/chunks').framesNumber;
+const helpers = require('./lib/helpers');
 
-var stomp = new Stomp({});
-var frames = [];
+const stomp = new Stomp({});
+let frames = [];
 
-describe('Test stomp.js functions', function () {
+describe('Test stomp.js functions', () => {
 
-  it('should split data chunks into frames', function () {
+  it('should split data chunks into frames', () => {
 
-    chunks.forEach(function (chunk) {
+    chunks.forEach(chunk => {
       frames = frames.concat(stomp.parseStompFrames(chunk));
     });
 
-    frames.length.should.be.equal(expectedFramesNumber);
+    expect(frames.length).to.be.equal(expectedFramesNumber);
 
-    frames.forEach(function (_frame) {
+    frames.forEach(_frame => {
 
-      var parsed_frame = stomp.parseFrame(_frame);
+      const parsed_frame = stomp.parseFrame(_frame);
 
       helpers.expectParsedFrame(parsed_frame)
 

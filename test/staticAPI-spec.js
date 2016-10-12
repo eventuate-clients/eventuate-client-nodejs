@@ -1,39 +1,38 @@
 'use strict';
-const should = require('should');
+const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
+const escapeStr = require('../dist/modules/specialChars').escapeStr;
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
-describe('Test static API ', function () {
+describe('Test static API ', () => {
 
-  describe('Test makeEvent() function', function () {
+  describe('Test makeEvent() function', () => {
 
-    it('should have function makeEvent()', function () {
+    it('should have function makeEvent()', () => {
 
-      esClient.should.be.have.property('makeEvent');
-      esClient.makeEvent.should.be.a.Function;
-
+      expect(esClient).to.have.property('makeEvent');
+      expect(esClient.makeEvent).to.be.a('Function');
     });
 
-    it('should return error for empty string', function  () {
+    it('should return error for empty string', () => {
 
       const result = esClient.makeEvent('');
-      result.should.be.have.property('error');
-      (result.error instanceof Error).should.be.true;
+      expect(result).to.have.property('error');
+      expect(result.error).to.be.instanceof(Error);
     });
 
-    it('should return error for event with empty eventData', function () {
+    it('should return error for event with empty eventData', () => {
 
       const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
 
       const result = esClient.makeEvent(eventStr);
-
-      result.should.be.have.property('error');
-      (result.error instanceof Error).should.be.true;
+      expect(result).to.have.property('error');
+      expect(result.error).to.be.instanceof(Error);
 
     });
 
-    it('should parse the event', function () {
+    it('should parse the event', () => {
 
       const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"{\\"name\\":\\"Fred\\"}","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
 
@@ -53,12 +52,11 @@ describe('Test static API ', function () {
           eventType: 'net.chrisrichardson.eventstore.example.MyEntityWasCreated' } };
 
 
-      const result = esClient.makeEvent(eventStr, ack);
+      const result = esClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
 
-      result.should.be.have.property('event');
+      expect(result).to.have.property('event');
 
       const event = result.event;
-
 
       helpers.expectEvent(event);
 
@@ -67,32 +65,31 @@ describe('Test static API ', function () {
   });
 
 
-  describe('Test serialiseObject() function', function () {
+  describe('Test serialiseObject() function', () => {
 
     it('should have function serialiseObject()', () => {
 
-      esClient.should.be.have.property('serialiseObject');
-      esClient.serialiseObject.should.be.a.Function;
-
+      expect(esClient).to.have.property('serialiseObject');
+      expect(esClient.serialiseObject).to.be.a('Function');
     });
 
-    it('should return serialised object', function () {
+    it('should return serialised object', () => {
 
       const obj = { a: 1, b: 2, c: 3 };
-
-      esClient.serialiseObject(obj).should.be.equal('a=1&b=2&c=3');
+      const serialised = esClient.serialiseObject(obj);
+      expect(serialised).to.equal('a=1&b=2&c=3');
     });
 
   });
 
-  describe('Test addBodyOptions() function', function () {
+  describe('Test addBodyOptions() function', () => {
 
-    it('should have function addBodyOptions()', function () {
-      esClient.should.be.have.property('addBodyOptions');
-      esClient.addBodyOptions.should.be.a.Function;
+    it('should have function addBodyOptions()', () => {
+      expect(esClient).to.have.property('addBodyOptions');
+      expect(esClient.addBodyOptions).to.be.a.Function;
     });
 
-    it('should add new options into jsonData', function () {
+    it('should add new options into jsonData', () => {
       const jsonData = {
         data: 'data'
       };
@@ -100,50 +97,50 @@ describe('Test static API ', function () {
 
       esClient.addBodyOptions(jsonData, options);
 
-      jsonData.should.containDeep(options);
+      expect(jsonData).to.contain.deep(options);
 
     });
 
   });
 
-  describe('Test checkEvents() function', function () {
+  describe('Test checkEvents() function', () => {
 
-    it('should have function checkEvents()', function () {
-      esClient.should.be.have.property('checkEvents');
-      esClient.checkEvents.should.be.a.Function;
+    it('should have function checkEvents()', () => {
+      expect(esClient).to.have.property('checkEvents');
+      expect(esClient.checkEvents).to.be.a('Function');
     });
 
-    it('should return false for empty events array', function () {
-      esClient.checkEvents([]).should.be.false();
+    it('should return false for empty events array', () => {
+      expect(esClient.checkEvents([])).to.be.false;
     });
 
-    it('should return false for {}', function () {
+    it('should return false for {}', () => {
       const event = {};
-      esClient.checkEvents([ event ]).should.be.false();
+      expect(esClient.checkEvents([ event ])).to.be.false;
     });
 
-    it('should return false for incorrect event', function () {
+    it('should return false for incorrect event', () => {
       let event = {
         eventType: 'event1'
       };
 
-      esClient.checkEvents(event).should.be.false();
+      expect(esClient.checkEvents(event)).to.be.false;
 
       event = {
         eventData: { a: 1 }
       };
 
-      esClient.checkEvents(event).should.be.false();
+      expect(esClient.checkEvents(event)).to.be.false;
 
       event = {
         eventType: 'event1',
         eventData: '{"a": }'
       };
 
-      esClient.checkEvents([event]).should.be.false();
+      expect(esClient.checkEvents([event])).to.be.false;
     });
 
-    it('should return true for correct event', function () {
+    it('should return true for correct event', () => {
       const event1 = {
         eventType: 'event1',
         eventData: '{"a": 1}'
@@ -154,7 +151,7 @@ describe('Test static API ', function () {
         eventData: { a: 1 }
       };
 
-      esClient.checkEvents([event1, event2]).should.be.true();
+      expect(esClient.checkEvents([event1, event2])).to.be.true;
     });
 
   });

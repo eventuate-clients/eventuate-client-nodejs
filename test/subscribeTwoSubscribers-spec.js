@@ -2,105 +2,109 @@
  Create two entities and subscribe for events using two subscribers.
  Each subscriber should receive only its own events.
  */
-var should = require('should');
-var util = require('util');
-var helpers = require('./lib/helpers');
 
-var esClient = helpers.createEsClient();
+'use strict';
 
-var timeout = 25000;
-var timeStamp = new Date().getTime();
+const expect = require('chai').expect;
+const util = require('util');
+const helpers = require('./lib/helpers');
 
-var subscriberId1 = 'subscriber-' + helpers.getUniqueID();
-var entityTypeName1 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
+const esClient = helpers.createEsClient();
 
-var entityTypesAndEvents1 = {};
-entityTypesAndEvents1[entityTypeName1] = [
-  'net.chrisrichardson.eventstore.example.MyEntityWasCreated1'
-];
+const timeout = 25000;
+const timeStamp = new Date().getTime();
 
-var subscriberId2 = 'subscriber-' + helpers.getUniqueID();
-var entityTypeName2 = 'net.chrisrichardson.eventstore.example.MyEntity-' + helpers.getUniqueID();
+const subscriberId1 = `subscriber-${helpers.getUniqueID()}`;
+const entityTypeName1 = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
 
-var entityTypesAndEvents2 = {};
-entityTypesAndEvents2[entityTypeName2] = [
-  'net.chrisrichardson.eventstore.example.MyEntityWasCreated2'
-];
+const entityTypesAndEvents1 = {
+  [entityTypeName1]: [
+    'net.chrisrichardson.eventstore.example.MyEntityWasCreated1'
+  ]
+};
 
-var createEvents1 = [
+
+const subscriberId2 = `subscriber-${helpers.getUniqueID()}`;
+const entityTypeName2 = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
+
+const entityTypesAndEvents2 = {
+  [entityTypeName2]: [
+    'net.chrisrichardson.eventstore.example.MyEntityWasCreated2'
+  ]
+};
+
+
+const createEvents1 = [
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated1', eventData: '{"name":"Fred"}' },
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated1', eventData: '{"name":"Bob"}' },
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated1', eventData: '{"name":"Peter"}' }
 ];
 
-var createEvents2 = [
+const createEvents2 = [
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated2', eventData: '{"name":"Fred"}' },
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated2', eventData: '{"name":"Bob"}' },
   { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated2', eventData: '{"name":"Peter"}' }
 ];
 
-var shouldBeProcessedNumber = createEvents1.length;
+const shouldBeProcessedNumber = createEvents1.length;
 
-describe('Create First Entity: ' + entityTypeName1, function () {
+describe(`Create First Entity: ${entityTypeName1}`, function () {
 
   this.timeout(timeout);
 
-  it('should create First Entity: ' + entityTypeName1, function (done) {
+  it(`should create First Entity: ${entityTypeName1}`, done => {
 
     //create events
-    esClient.create(entityTypeName1, createEvents1, function (err, createdEntityAndEventInfo) {
+    esClient.create(entityTypeName1, createEvents1, (err, createdEntityAndEventInfo) => {
       if (err) {
-        console.error(err);
-        throw err;
+        done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo, done);
 
-      describe('Create Second Entity: ' + entityTypeName2, function () {
+      describe(`Create Second Entity: ${entityTypeName2}`, function () {
 
         this.timeout(timeout);
 
-        it('should create Second Entity: ' + entityTypeName2, function (done) {
+        it(`should create Second Entity: ${entityTypeName2}`, done => {
 
           //create events
-          esClient.create(entityTypeName2, createEvents2, function (err, createdEntityAndEventInfo) {
+          esClient.create(entityTypeName2, createEvents2, (err, createdEntityAndEventInfo) => {
             if (err) {
-              console.error(err);
-              throw err;
+              done(err);
             }
 
             helpers.expectCommandResult(createdEntityAndEventInfo, done);
 
-            describe('Subscribe ' + entityTypeName1, function () {
+            describe(`Subscribe ${entityTypeName1}`, function () {
 
               this.timeout(timeout);
 
-              it('should subscribe for ' + entityTypeName1 + 'events', function (done) {
+              it(`should subscribe for ${entityTypeName1} events`, done => {
 
-                var processedMessagesNumber1 = 0;
+                let processedMessagesNumber1 = 0;
 
                 //subscribe for events
-                var subscribe1 = esClient.subscribe(subscriberId1, entityTypesAndEvents1, function callback(err, receiptId) {
+                const subscribe1 = esClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
                   if (err) {
-                    console.log(err);
-                    throw err;
+                    done(err);
                   }
                 });
 
                 helpers.expectSubscribe(subscribe1);
 
                 subscribe1.observable.subscribe(
-                  function (event) {
+                  event => {
                     processedMessagesNumber1++;
 
-                    (typeof event.eventData).should.equal('object');
+                    expect(event.eventData).to.be.an('Object');
 
                     //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
 
-                    var ack = helpers.parseAck(event, done);
+                    const ack = helpers.parseAck(event, done);
 
                     if (ack.receiptHandle.subscriberId != subscriberId1) {
-                      done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
+                      done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
                     }
 
                     subscribe1.acknowledge(event.ack);
@@ -109,29 +113,28 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                       done();
                     }
                   },
-                  function (err) {
+                  err => {
                     console.error(err);
-                    throw err;
+                    done(err);
                   },
-                  function () {
+                  () => {
                     console.log('Completed');
                   }
                 );
               });
             });//subscribe1
 
-            describe('Subscribe ' + entityTypeName2, function () {
+            describe(`Subscribe ${entityTypeName2}`, function () {
 
               this.timeout(timeout);
 
-              it('should subscribe for ' + entityTypeName2 + 'events', function (done) {
+              it(`should subscribe for ${entityTypeName2} events`, done => {
 
-                var processedMessagesNumber2 = 0;
+                let processedMessagesNumber2 = 0;
                 //subscribe for events
-                var subscribe2 = esClient.subscribe(subscriberId2, entityTypesAndEvents2, function callback(err, receiptId) {
+                const subscribe2 = esClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
                   if (err) {
-                    console.error(err);
-                    throw err;
+                    done(err);
                   }
 
                 });
@@ -139,13 +142,13 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                 helpers.expectSubscribe(subscribe2);
 
                 subscribe2.observable.subscribe(
-                  function (event) {
+                  event => {
 
                     processedMessagesNumber2++;
 
-                    (typeof event.eventData).should.equal('object');
+                    expect(event.eventData).to.be.an('Object');
 
-                    var ack = helpers.parseAck(event, done);
+                    const ack = helpers.parseAck(event, done);
 
                     if (ack.receiptHandle.subscriberId != subscriberId2) {
                       done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
@@ -156,9 +159,9 @@ describe('Create First Entity: ' + entityTypeName1, function () {
                       done();
                     }
                   },
-                  function (err) {
+                  err => {
                     console.error(err);
-                    throw err;
+                    done(err);
                   },
                   function () {
                     console.log('Completed');

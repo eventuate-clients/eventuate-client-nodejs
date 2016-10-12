@@ -1,6 +1,5 @@
 'use strict';
-require('should');
-const Promise = require('promise');
+const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const EventStoreUtils = require('../dist').EventStoreUtils;
 const EventDispatcher = require('../dist').EventDispatcher;
@@ -23,8 +22,6 @@ const EntityClass = require('./lib/EntityClass');
 const CreateEntityCommand = EntityClass.CreateEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
-//var EventStoreUtils = require('../src/modules/EventStoreUtils.js');
-
 const esUtil = new EventStoreUtils();
 
 const timeout = 20000;
@@ -42,7 +39,7 @@ describe('EventStoreUtils: function createEntity()', function () {
     createTimestamp = new Date().getTime();
     const command = {
       commandType: CreateEntityCommand,
-      createTimestamp: createTimestamp
+      createTimestamp
     };
 
     esUtil.createEntity(EntityClass, command, (err, createdEntityAndEventInfo) => {
@@ -63,7 +60,7 @@ describe('EventStoreUtils: function createEntity()', function () {
           updateTimestamp = new Date().getTime();
           const command = {
             commandType: UpdateEntityCommand,
-            updateTimestamp: updateTimestamp
+            updateTimestamp
           };
 
           esUtil.updateEntity(EntityClass, entityId, command, (err, updatedEntityAndEventInfo) => {
@@ -89,12 +86,11 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                   helpers.expectLoadedEvents(loadedEvents);
 
-                  loadedEvents.length.should.be.equal(2);
-                  loadedEvents[0].eventData.timestamp.should.be.equal(createTimestamp);
-                  loadedEvents[1].eventData.timestamp.should.be.equal(updateTimestamp);
+                  expect(loadedEvents.length).to.equal(2);
+                  expect(loadedEvents[0].eventData.timestamp).to.equal(createTimestamp);
+                  expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
 
                   done();
-
 
                   describe('Test getApplyMethod() method', function () {
 
@@ -104,14 +100,13 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                         const type = event.eventType.split('.').pop();
                         const applyMethod = esUtil.getApplyMethod(entity, type);
-
-                        applyMethod.should.be.a.function;
+                        expect(applyMethod).to.be.a('Function');
                       });
 
                       //check default applyEvent() method
                       const type = 'UnknownEventType';
                       const applyMethod = esUtil.getApplyMethod(entity, type);
-                      applyMethod.should.be.a.function;
+                      expect(applyMethod).to.be.a('Function');
                     });
 
                   });
@@ -122,14 +117,14 @@ describe('EventStoreUtils: function createEntity()', function () {
                     it('should return a function', () => {
 
                       let processCommandMethod = esUtil.getProcessCommandMethod(entity, CreateEntityCommand);
-                      processCommandMethod.should.be.a.function;
+                      expect(processCommandMethod).to.be.a('Function');
 
                       processCommandMethod = esUtil.getProcessCommandMethod(entity, UpdateEntityCommand);
-                      processCommandMethod.should.be.a.function;
+                      expect(processCommandMethod).to.be.a('Function');
 
                       //check default processCommand() method
                       processCommandMethod = esUtil.getProcessCommandMethod(entity, 'unknownCommand');
-                      processCommandMethod.should.be.a.function;
+                      expect(processCommandMethod).to.be.a('Function');
                     });
 
                   });
@@ -195,7 +190,7 @@ describe('EventStoreUtils: function createEntity()', function () {
           const subscriptions = [
             {
               subscriberId: 'test-EventStoreUtils',
-              entityTypesAndEvents: entityTypesAndEvents
+              entityTypesAndEvents
             }
           ];
 

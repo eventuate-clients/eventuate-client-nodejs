@@ -1,48 +1,43 @@
+'use strict';
+
 //events
-var eventConfig = require('./eventConfig');
-var MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
-var MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
+const eventConfig = require('./eventConfig'); 
+const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
+const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
 
-var entityTypeName = eventConfig.entityTypeName;
+const entityTypeName = eventConfig.entityTypeName;
 
 
-//commands
-var CreateEntityCommand = 'CreateEntityCommand';
-var UpdateEntityCommand = 'UpdateEntityCommand';
 
-var EntityClass = (function(){
-
-  function EntityClass(){
-    if (!(this instanceof  EntityClass)) {
-      return new EntityClass();
-    }
+class EntityClass {
+  
+  constructor() {
+    this.entityTypeName = entityTypeName;
   }
 
-  EntityClass.prototype.entityTypeName = entityTypeName;
-
-  EntityClass.prototype.applyMyEntityWasCreatedEvent = function (event) {
+  applyMyEntityWasCreatedEvent(event) {
     console.log('applyMyEntityWasCreatedEvent()');
     return this;
-  };
+  }
 
-  EntityClass.prototype.applyMyEntityWasUpdatedEvent = function (event) {
+  applyMyEntityWasUpdatedEvent(event) {
     console.log('applyMyEntityWasUpdatedEvent()');
     return this;
-  };
+  }
 
 
-  EntityClass.prototype.applyEvent = function (event) {
-    var eventType = event.eventType;
-
+  applyEvent(event) {
+    const eventType = event.eventType;
+  
     switch(eventType) {
       default:
         break;
     }
-
+  
     return this
-  };
+  }
 
-  EntityClass.prototype.processCreateEntityCommand = function (command) {
+  processCreateEntityCommand(command) {
     return [
       {
         eventType: MyEntityWasCreatedEvent,
@@ -51,9 +46,9 @@ var EntityClass = (function(){
         }
       }
     ];
-  };
+  }
 
-  EntityClass.prototype.processUpdateEntityCommand = function (command) {
+  processUpdateEntityCommand(command) {
     return [
       {
         eventType: MyEntityWasUpdatedEvent,
@@ -61,13 +56,13 @@ var EntityClass = (function(){
           timestamp: command.updateTimestamp
         }
       }];
-  };
+  }
 
-  EntityClass.prototype.processCommand = function (command) {
+  processCommand(command) {
 
     switch(command.commandType) {
       case CreateEntityCommand:
-
+  
         return [
           {
             eventType: MyEntityWasCreatedEvent,
@@ -77,9 +72,9 @@ var EntityClass = (function(){
           }
         ];
         break;
-
+  
       case UpdateEntityCommand:
-
+  
         return [
           {
             eventType: MyEntityWasUpdatedEvent,
@@ -88,19 +83,23 @@ var EntityClass = (function(){
             }
           }];
         break;
-
+  
       default:
         break;
     }
-  };
+  }
 
-  return EntityClass;
 
-})();
+
+  //commands
+  static get CreateEntityCommand() {
+    return 'CreateEntityCommand';
+  }
+
+  static get UpdateEntityCommand() {
+    return 'UpdateEntityCommand';
+  }
+}
 
 
 module.exports = EntityClass;
-
-//export commands
-module.exports.CreateEntityCommand = CreateEntityCommand;
-module.exports.UpdateEntityCommand = UpdateEntityCommand;

@@ -1,6 +1,7 @@
+'use strict';
+
 const AckOrderTracker =require('../dist/modules/stomp/AckOrderTracker');
 const expect = require('chai').expect;
-
 
 
 describe('AckOrderTracker', () => {

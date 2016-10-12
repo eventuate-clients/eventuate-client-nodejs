@@ -1,88 +1,88 @@
 /*
   This test creates and updates one uniquely named entity with one event and subscribes to it
 */
-var should = require('should');
-var util = require('util');
-var helpers = require('./lib/helpers');
+'use strict';
+const expect = require('chai').expect;
+const util = require('util');
+const helpers = require('./lib/helpers');
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity-'  + helpers.getUniqueID();
+const subscriberId = `subscriber-${helpers.getUniqueID()}`;
 
-var subscriberId = 'subscriber-' + helpers.getUniqueID();
-var entityTypesAndEvents = {};
-entityTypesAndEvents[entityTypeName] = [
-  'net.chrisrichardson.eventstore.example.MyEntityWasCreated',
-  'net.chrisrichardson.eventstore.example.MyEntityNameChanged'
-];
+const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
 
-var shouldBeProcessedNumber = 2;
+const entityTypesAndEvents = {
+  [entityTypeName]: [
+    'net.chrisrichardson.eventstore.example.MyEntityWasCreated',
+    'net.chrisrichardson.eventstore.example.MyEntityNameChanged'
+  ]
+};
+
+
+const shouldBeProcessedNumber = 2;
 
 describe('Create and update entity. Subscribe for 2 events', function () {
   this.timeout(25000);
-  it('should create and update one uniquely named entity and subscribe for the events', function (done) {
+
+  it('should create and update one uniquely named entity and subscribe for the events', done => {
 
     //create events
-    var createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
-    esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
+    const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
+    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
       if (err) {
-        done(err);
+        return done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
       //update events
-      var entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
-      var entityId = entityIdTypeAndVersion.entityId;
-      var entityVersion = createdEntityAndEventInfo.eventIds[0];
-      var updateEvents = [
+      const entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
+      const entityId = entityIdTypeAndVersion.entityId;
+      const entityVersion = createdEntityAndEventInfo.eventIds[0];
+      const updateEvents = [
         { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"George"}' }
       ];
 
-      esClient.update(entityTypeName, entityId, entityVersion, updateEvents, function (err, updatedEntityAndEventInfo) {
+      esClient.update(entityTypeName, entityId, entityVersion, updateEvents, (err, updatedEntityAndEventInfo) => {
         if (err) {
-          done(err);
+          return done(err);
         }
 
         helpers.expectCommandResult(updatedEntityAndEventInfo);
 
-        var processedMessagesNumber = 0;
+        let processedMessagesNumber = 0;
 
         //subscribe for events
-        var subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, function callback(err, receiptId) {
+        const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
           if (err) {
-            console.log('subscribe callback error');
-            console.log(err);
-            throw err;
+            return done(err)
           }
         });
 
-        subscribe.should.be.have.property('acknowledge');
-        subscribe.acknowledge.should.be.a.Function;
-        subscribe.should.be.have.property('observable');
-        subscribe.observable.should.be.an.Object;
+        helpers.expectSubscribe(subscribe);
 
         subscribe.observable.subscribe(
-          function (event) {
+          event => {
 
             processedMessagesNumber++;
 
             subscribe.acknowledge(event.ack);
 
-            (typeof event.eventData).should.equal('object');
+            expect(event.eventData).to.be.an('Object');
 
             if (processedMessagesNumber == shouldBeProcessedNumber) {
               done();
             }
           },
-          function (err) {
+          err => {
             done(err);
           },
-          function () {
+          () => {
             console.log('Completed');
             console.log('Processed messages: ', processedMessagesNumber);
 
-            processedMessagesNumber.should.be.equal(shouldBeProcessedNumber, 'Processed messages number not equal to expected');
+            expect(processedMessagesNumber).to.equal(shouldBeProcessedNumber, 'Processed messages number not equal to expected');
             done();
           }
         );

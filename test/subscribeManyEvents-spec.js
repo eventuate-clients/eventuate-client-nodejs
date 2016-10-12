@@ -1,4 +1,6 @@
-const should = require('should');
+'use strict';
+
+const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
 
@@ -12,18 +14,18 @@ const entityTypesAndEvents = {
   [entityTypeName]: [ entityChangedEvent ]
 };
 
-console.log('entityTypesAndEvents:', entityTypesAndEvents);
 const eventsNumber = 500;
 const timeout = 50000;
 
 describe('Create entity with ' + eventsNumber + ' events and subscribe', function () {
   this.timeout(timeout);
-  it('should create entity and subscribe for the events', function (done) {
+
+  it('should create entity and subscribe for the events', done => {
 
     //create events
-    var createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);
+    const createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);
 
-    esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
+    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
@@ -33,10 +35,10 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      var processedMessagesNumber = 0;
+      let processedMessagesNumber = 0;
 
       //subscribe for events
-      var subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, function callback(err, receiptId) {
+      const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
         if (err) {
           return done(err);
         }
@@ -47,7 +49,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
       helpers.expectSubscribe(subscribe);
 
       subscribe.observable.subscribe(
-        function (event) {
+        event => {
           subscribe.acknowledge(event.ack);
 
           helpers.expectEvent(event);
@@ -58,15 +60,15 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
             done();
           }
         },
-        function (err) {
+        err => {
           console.error(err);
           done(err);
         },
-        function () {
+        () => {
           console.log('Completed');
           console.log('Processed messages: ', processedMessagesNumber);
 
-          processedMessagesNumber.should.be.equal(eventsNumber, 'Processed messages number not equal to expected');
+          expect(processedMessagesNumber).to.equal(eventsNumber, 'Processed messages number not equal to expected');
           done();
         }
       );

@@ -1,10 +1,10 @@
 'use strict';
-const should = require('should');
+const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
 const unEscapeStr = require('../dist/modules/specialChars').unEscapeStr;
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
 const subscriberId = 'subscribe-test-5';
 
@@ -23,7 +23,7 @@ describe('Subscribe with options', function () {
   it('should subscribe for events', done => {
 
    //subscribe for events
-    const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, (err, receiptId) => {
+    const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
 
       if (err) {
         console.log('subscribe callback error');
@@ -36,9 +36,9 @@ describe('Subscribe with options', function () {
       const destination = esClient.subscriptions[subscriberId].headers.destination;
       const destinationObj = JSON.parse(unEscapeStr(destination));
 
-      destinationObj.should.be.have.property('durability');
-      destinationObj.should.be.have.property('readFrom');
-      destinationObj.should.be.have.property('progressNotifications');
+      expect(destinationObj).to.have.property('durability');
+      expect(destinationObj).to.have.property('readFrom');
+      expect(destinationObj).to.have.property('progressNotifications');
 
       done();
 

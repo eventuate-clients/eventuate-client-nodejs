@@ -1,27 +1,25 @@
-var EventStoreUtils = require('../dist').EventStoreUtils;
-var WorkflowEvents = require('../dist').WorkflowEvents;
-var should = require('should');
-var helpers = require('./lib/helpers');
-var uuid = require('uuid');
+'use strict';
+const expect = require('chai').expect;
+const helpers = require('./lib/helpers');
+const uuid = require('uuid');
 
-var esClient = helpers.createEsClient();
+const esClient = helpers.createEsClient();
 
-var entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
-var eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
-var eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEntityNameChanged';
+const entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
+const eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
+const eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEntityNameChanged';
 
-var timeout = 30000;
+const timeout = 30000;
 
 describe('ES Node.js Client: function create()', function () {
 
   this.timeout(timeout);
 
-  it('function create() should return entityAndEventInfo object', function (done) {
+  it('function create() should return entityAndEventInfo object', done => {
 
-    var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Fred' } } ];
-
-
-    esClient.create(entityTypeName, createEvents, function (err, createdEntityAndEventInfo) {
+    const createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Fred' } } ];
+    
+    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
@@ -32,16 +30,16 @@ describe('ES Node.js Client: function create()', function () {
       describe('ES Node.js Client: function update()', function () {
         this.timeout(timeout);
 
-        it('function update() should update entity and return entityAndEventInfo object', function (done) {
+        it('function update() should update entity and return entityAndEventInfo object', done => {
 
-          var entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
-          var entityId = entityIdTypeAndVersion.entityId;
-          var entityVersion = createdEntityAndEventInfo.eventIds[0];
-          var updateEvents = [
+          const entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
+          const entityId = entityIdTypeAndVersion.entityId;
+          const entityVersion = createdEntityAndEventInfo.eventIds[0];
+          const updateEvents = [
             { eventType: eventTypeUpdated, eventData: { name: 'George' } }
           ];
 
-          esClient.update(entityTypeName, entityId, entityVersion, updateEvents, function (err, updatedEntityAndEventInfo) {
+          esClient.update(entityTypeName, entityId, entityVersion, updateEvents, (err, updatedEntityAndEventInfo) => {
 
             if (err) {
               return done(err);
@@ -51,43 +49,36 @@ describe('ES Node.js Client: function create()', function () {
 
             describe('ES Node.js Client: function loadEvents()', function () {
 
-              it('should return loadedEvents array of EventIdTypeAndData', function (done) {
+              it('should return loadedEvents array of EventIdTypeAndData', done => {
 
-                var entityId = updatedEntityAndEventInfo.entityIdTypeAndVersion.entityId;
-                esClient.loadEvents(entityTypeName, entityId, { a: 1, b: 2, c: 3 }, function (err, loadedEvents) {
+                const entityId = updatedEntityAndEventInfo.entityIdTypeAndVersion.entityId;
+
+                esClient.loadEvents(entityTypeName, entityId, { a: 1, b: 2, c: 3 }, (err, loadedEvents) => {
 
                   if (err) {
                     return done(err);
                   }
 
+                  helpers.expectLoadedEvents(loadedEvents);
 
-                  loadedEvents.should.be.an.Array;
-                  loadedEvents.should.be.not.empty;
-
-
-                  var firstItem = loadedEvents[0];
-                  firstItem.should.be.an.Object;
-                  firstItem.should.be.have.property('id');
-                  firstItem.should.be.have.property('eventType');
-                  firstItem.should.be.have.property('eventData');
-
-                  var secondItem = loadedEvents[1];
-                  secondItem.should.be.an.Object;
-                  secondItem.should.be.have.property('id');
-                  secondItem.should.be.have.property('eventType');
-                  secondItem.should.be.have.property('eventData');
+                  const firstItem = loadedEvents[0];
+                  const secondItem = loadedEvents[1];
 
                   //compare created with loaded
                   loadedEvents = helpers.removeEventsArrProperty(loadedEvents, 'id');
 
                   if (firstItem.eventType == eventTypeCreated && secondItem.eventType == eventTypeUpdated) {
-                    should.deepEqual(firstItem, createEvents[0], "The loadedEvents array does not contain create events.");
-                    should.deepEqual(secondItem, updateEvents[0], "The loadedEvents array does not contain update events.");
+
+                    expect(firstItem).to.deep.equal(createEvents[0], "The loadedEvents array does not contain create events.");
+                    expect(secondItem).to.deep.equal(updateEvents[0], "The loadedEvents array does not contain update events.");
                     done();
+
                   } else if (firstItem.eventType == eventTypeUpdated && secondItem.eventType == eventTypeCreated) {
-                    should.deepEqual(secondItem, createEvents[0], "The loadedEvents array does not contain create events.");
-                    should.deepEqual(firstItem, updateEvents[0], "The loadedEvents array does not contain update events.");
+
+                    expect(secondItem).to.deep.equal(createEvents[0], "The loadedEvents array does not contain create events.");
+                    expect(firstItem).to.deep.equal(updateEvents[0], "The loadedEvents array does not contain update events.");
                     done();
+
                   } else {
                     done(new Error('Got unexpected events'));
                   }
@@ -107,13 +98,14 @@ describe('ES Node.js Client: function create() custom entityId', function () {
 
   this.timeout(timeout);
 
-  it('function create() should create new Entity with custom entityId and return entityAndEventInfo object', function (done) {
-    var entityId = uuid.v1().replace(/-/g, '');
+  it('function create() should create new Entity with custom entityId and return entityAndEventInfo object', done => {
+    const entityId = uuid.v1().replace(/-/g, '');
 
-    var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Bob' } } ];
+    const createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Bob' } } ];
 
-    var options = { entityId: entityId };
-    esClient.create(entityTypeName, createEvents, options, function (err, createdEntityAndEventInfo) {
+    const options = { entityId };
+
+    esClient.create(entityTypeName, createEvents, options, (err, createdEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
@@ -121,7 +113,7 @@ describe('ES Node.js Client: function create() custom entityId', function () {
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      createdEntityAndEventInfo.entityIdTypeAndVersion.entityId.should.equal(entityId);
+      expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
       done();
     });
   })
@@ -131,13 +123,14 @@ describe('ES Node.js Client: function create() eventData contains unicode string
 
   this.timeout(timeout);
 
-  it('function create() should return entityAndEventInfo object', function (done) {
-    var entityId = uuid.v1().replace(/-/g, '');
+  it('function create() should return entityAndEventInfo object', done => {
+    const entityId = uuid.v1().replace(/-/g, '');
 
-    var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Крис Ричардсон' } } ];
+    const createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Крис Ричардсон' } } ];
 
-    var options = { entityId: entityId };
-    esClient.create(entityTypeName, createEvents, options, function (err, createdEntityAndEventInfo) {
+    const options = { entityId };
+
+    esClient.create(entityTypeName, createEvents, options, (err, createdEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
@@ -145,7 +138,7 @@ describe('ES Node.js Client: function create() eventData contains unicode string
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      createdEntityAndEventInfo.entityIdTypeAndVersion.entityId.should.equal(entityId);
+      expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
       done();
     });
   })

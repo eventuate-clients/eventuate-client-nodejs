@@ -1,3 +1,4 @@
+'use strict';
 const expect = require('chai').expect;
 const EsServerError = require('../dist/modules/EsServerError.js');
 
