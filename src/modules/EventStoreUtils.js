@@ -32,13 +32,25 @@ export default class EventStoreUtils {
 
     this.esClient = new EsClient(esClientOpts);
 
-    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, (EntityClass, entityId, command, callback) => {
+    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, (EntityClass, entityId, command, triggeringEventToken, callback) => {
+
+      if (!callback) {
+        callback = triggeringEventToken;
+        triggeringEventToken = null;
+      }
+
       const entity = new EntityClass();
 
-      this.esClient.loadEvents(entity.entityTypeName, entityId, (err, loadedEvents) => {
+      let options;
+
+      if (triggeringEventToken) {
+        options = Object.assign({}, { triggeringEventToken })
+      }
+
+      this.esClient.loadEvents(entity.entityTypeName, entityId, options, (err, loadedEvents) => {
 
         if (err) {
-          logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
+          logger.error(`Load events failed: ${entity.entityTypeName} ${entityId}`);
           return callback(err);
         }
 
@@ -67,7 +79,7 @@ export default class EventStoreUtils {
 
         const events = processCommandMethod.call(entity, command);
 
-        this.esClient.update(entity.entityTypeName, entityId, entityVersion, events,  (error, result) => {
+        this.esClient.update(entity.entityTypeName, entityId, entityVersion, events, options, (error, result) => {
           if (error) {
             logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
             return callback(error);

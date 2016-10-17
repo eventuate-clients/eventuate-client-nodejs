@@ -1,10 +1,10 @@
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -18,7 +18,7 @@ var EsServerError = function (_Error) {
   function EsServerError(jsonBody) {
     _classCallCheck(this, EsServerError);
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(EsServerError).call(this));
+    var _this = _possibleConstructorReturn(this, (EsServerError.__proto__ || Object.getPrototypeOf(EsServerError)).call(this));
 
     Error.captureStackTrace(_this);
 

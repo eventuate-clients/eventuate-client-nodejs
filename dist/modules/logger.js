@@ -12,7 +12,7 @@ var _log4js2 = _interopRequireDefault(_log4js);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var getLogger = exports.getLogger = function getLogger() {
-  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
   var logLevel = _ref.logLevel;
   var title = _ref.title;

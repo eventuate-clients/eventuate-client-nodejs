@@ -19,7 +19,7 @@ const entityTypesAndEvents = {
 
 
 const EntityClass = require('./lib/EntityClass');
-const CreateEntityCommand = EntityClass.CreateEntityCommand;
+const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 const esUtil = new EventStoreUtils();
@@ -38,7 +38,7 @@ describe('EventStoreUtils: function createEntity()', function () {
 
     createTimestamp = new Date().getTime();
     const command = {
-      commandType: CreateEntityCommand,
+      commandType: CreatedEntityCommand,
       createTimestamp
     };
 
@@ -116,7 +116,7 @@ describe('EventStoreUtils: function createEntity()', function () {
 
                     it('should return a function', () => {
 
-                      let processCommandMethod = esUtil.getProcessCommandMethod(entity, CreateEntityCommand);
+                      let processCommandMethod = esUtil.getProcessCommandMethod(entity, CreatedEntityCommand);
                       expect(processCommandMethod).to.be.a('Function');
 
                       processCommandMethod = esUtil.getProcessCommandMethod(entity, UpdateEntityCommand);

@@ -4,7 +4,7 @@ const EsServerError = require('../dist/modules/EsServerError.js');
 
 //TODO: get error from the ES Client
 describe('EsServerError class', () => {
-  it('should create instance', (done) => {
+  it('should create instance', () => {
 
     const statusCode = 500;
     const body = {
@@ -31,6 +31,5 @@ describe('EsServerError class', () => {
     expect(error).to.have.property('message');
     expect(error).to.have.property('stack');
 
-    done()
   });
 });

@@ -32,9 +32,9 @@ describe('Test static API ', () => {
 
     });
 
-    it('should parse the event', () => {
+    it('should parse event', done => {
 
-      const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"{\\"name\\":\\"Fred\\"}","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
+      const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"{\\"name\\":\\"Fred\\"}","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated", "eventToken":"eyJzdWJzY3JpYmVySWQiOiJkNmJmYTQ3YzI4M2Y0ZmNmYjIzYzQ5YjJkZjhjMTBlZF9kZWZhdWx0X3N1YnNjcmliZXItNzQwMzk2MDA5NDUyMTFlNjlkOTRlZjViOTNiZjk3OWIiLCJldmVudElkQW5kVHlwZSI6eyJpZCI6IjAwMDAwMTU3ZDIyMjc3MzctMDI0MmFjMTEwMGQ2MDAwMiIsImV2ZW50VHlwZSI6Im5ldC5jaHJpc3JpY2hhcmRzb24uZXZlbnRzdG9yZS5leGFtcGxlLk15RW50aXR5TmFtZUNoYW5nZWQifSwic2VuZGVyIjp7ImVudGl0eUlkIjoiMDAwMDAxNTdkMjIyNzExZi0wMjQyYWMxMTAwODkwMDAwIiwiZW50aXR5VHlwZSI6ImQ2YmZhNDdjMjgzZjRmY2ZiMjNjNDliMmRmOGMxMGVkL2RlZmF1bHQvbmV0LmNocmlzcmljaGFyZHNvbi5ldmVudHN0b3JlLmV4YW1wbGUuTXlFbnRpdHktNzQwMzk2MDE5NDUyMTFlNjlkOTRlZjViOTNiZjk3OWIifSwicHJvdmlkZXJIYW5kbGUiOiIwMDAwMDE1N2QyMjI3ZGYyLTAyNDJhYzExMDA4NzAwMDA6ZDZiZmE0N2MyODNmNGZjZmIyM2M0OWIyZGY4YzEwZWRfU0xBU0hfZGVmYXVsdF9TTEFTSF9uZXQuY2hyaXNyaWNoYXJkc29uLmV2ZW50c3RvcmUuZXhhbXBsZS5NeUVudGl0eS03NDAzOTYwMTk0NTIxMWU2OWQ5NGVmNWI5M2JmOTc5Yjo0OjEiLCJldmVudElkIjoiMDAwMDAxNTdkMjIyNzczNy0wMjQyYWMxMTAwZDYwMDAyIiwiZXZlbnRUeXBlIjoibmV0LmNocmlzcmljaGFyZHNvbi5ldmVudHN0b3JlLmV4YW1wbGUuTXlFbnRpdHlOYW1lQ2hhbmdlZCJ9"}';
 
       const ack = { serverId: '00000151e8f69a94-0242ac1100180000',
         eventType: 'net.chrisrichardson.eventstore.example.MyEntityWasCreated',
@@ -54,11 +54,16 @@ describe('Test static API ', () => {
 
       const result = esClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
 
+
+      if (result.error) {
+        return done(result.error);
+      }
+
       expect(result).to.have.property('event');
 
       const event = result.event;
 
-      helpers.expectEvent(event);
+      helpers.expectEvent(event, done);
 
     });
 

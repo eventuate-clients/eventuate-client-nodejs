@@ -2,6 +2,7 @@
 
 //events
 const eventConfig = require('./eventConfig'); 
+const MyEntityCreateEvent = eventConfig.MyEntityCreateEvent;
 const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
 
@@ -13,6 +14,11 @@ class EntityClass {
   
   constructor() {
     this.entityTypeName = entityTypeName;
+  }
+
+  applyMyEntityCreateEvent(event) {
+    console.log('applyMyEntityCreateEvent()');
+    return this;
   }
 
   applyMyEntityWasCreatedEvent(event) {
@@ -40,9 +46,31 @@ class EntityClass {
   processCreateEntityCommand(command) {
     return [
       {
-        eventType: MyEntityWasCreatedEvent,
+        eventType: MyEntityCreateEvent,
         eventData: {
           timestamp: command.createTimestamp
+        }
+      }
+    ];
+  }
+
+  processCreateEntityCommand(command) {
+    return [
+      {
+        eventType: MyEntityCreateEvent,
+        eventData: {
+          timestamp: command.createTimestamp
+        }
+      }
+    ];
+  }
+
+  processCreatedEntityCommand(command) {
+    return [
+      {
+        eventType: MyEntityWasCreatedEvent,
+        eventData: {
+          timestamp: command.createdTimestamp
         }
       }
     ];
@@ -60,7 +88,7 @@ class EntityClass {
 
   processCommand(command) {
 
-    switch(command.commandType) {
+    /*switch(command.commandType) {
       case CreateEntityCommand:
   
         return [
@@ -86,12 +114,16 @@ class EntityClass {
   
       default:
         break;
-    }
+    }*/
   }
 
 
 
   //commands
+  static get CreatedEntityCommand() {
+    return 'CreatedEntityCommand';
+  }
+
   static get CreateEntityCommand() {
     return 'CreateEntityCommand';
   }

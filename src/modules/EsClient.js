@@ -104,7 +104,9 @@ export default class EsClient {
       events
     };
 
-    this.addBodyOptions(jsonData, options);
+    if (typeof options == 'object') {
+      this.addBodyOptions(jsonData, options);
+    }
 
     const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
@@ -189,7 +191,9 @@ export default class EsClient {
       events
     };
 
-    this.addBodyOptions(jsonData, options);
+    if (typeof options == 'object') {
+      this.addBodyOptions(jsonData, options);
+    }
 
     const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
@@ -483,7 +487,7 @@ export default class EsClient {
 
     try {
 
-      const {id: eventId, eventType, entityId, eventData: eventDataStr, swimlane } = JSON.parse(eventStr);
+      const {id: eventId, eventType, entityId, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
 
       try {
 
@@ -495,6 +499,7 @@ export default class EsClient {
           entityId,
           swimlane,
           eventData,
+          eventToken,
           ack
         };
 

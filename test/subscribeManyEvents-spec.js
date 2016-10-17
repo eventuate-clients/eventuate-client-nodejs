@@ -20,7 +20,7 @@ const timeout = 50000;
 describe('Create entity with ' + eventsNumber + ' events and subscribe', function () {
   this.timeout(timeout);
 
-  it('should create entity and subscribe for the events', done => {
+  it('should create entity and subscribe for events', done => {
 
     //create events
     const createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);

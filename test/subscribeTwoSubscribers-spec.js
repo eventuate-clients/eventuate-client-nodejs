@@ -57,7 +57,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
     //create events
     esClient.create(entityTypeName1, createEvents1, (err, createdEntityAndEventInfo) => {
       if (err) {
-        done(err);
+        return done(err);
       }
 
       helpers.expectCommandResult(createdEntityAndEventInfo, done);
@@ -71,7 +71,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
           //create events
           esClient.create(entityTypeName2, createEvents2, (err, createdEntityAndEventInfo) => {
             if (err) {
-              done(err);
+              return done(err);
             }
 
             helpers.expectCommandResult(createdEntityAndEventInfo, done);
@@ -87,7 +87,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                 //subscribe for events
                 const subscribe1 = esClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
                   if (err) {
-                    done(err);
+                    return done(err);
                   }
                 });
 
@@ -104,7 +104,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                     const ack = helpers.parseAck(event, done);
 
                     if (ack.receiptHandle.subscriberId != subscriberId1) {
-                      done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
+                      return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
                     }
 
                     subscribe1.acknowledge(event.ack);
@@ -114,8 +114,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                     }
                   },
                   err => {
-                    console.error(err);
-                    done(err);
+                    return done(err);
                   },
                   () => {
                     console.log('Completed');
@@ -134,7 +133,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                 //subscribe for events
                 const subscribe2 = esClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
                   if (err) {
-                    done(err);
+                    return done(err);
                   }
 
                 });
@@ -151,7 +150,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                     const ack = helpers.parseAck(event, done);
 
                     if (ack.receiptHandle.subscriberId != subscriberId2) {
-                      done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
+                      return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
                     }
 
                     subscribe2.acknowledge(event.ack);
@@ -160,8 +159,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                     }
                   },
                   err => {
-                    console.error(err);
-                    done(err);
+                    return done(err);
                   },
                   function () {
                     console.log('Completed');

@@ -25,7 +25,7 @@ const shouldBeProcessedNumber = 2;
 describe('Create and update entity. Subscribe for 2 events', function () {
   this.timeout(25000);
 
-  it('should create and update one uniquely named entity and subscribe for the events', done => {
+  it('should create and update one uniquely named entity and subscribe for events', done => {
 
     //create events
     const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];

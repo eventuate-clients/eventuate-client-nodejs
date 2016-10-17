@@ -56,7 +56,7 @@ var Stomp = function (_EventEmitter) {
   function Stomp(args) {
     _classCallCheck(this, Stomp);
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Stomp).call(this));
+    var _this = _possibleConstructorReturn(this, (Stomp.__proto__ || Object.getPrototypeOf(Stomp)).call(this));
 
     _this._subscribed_to = {};
     _this.log = new StompLogging(args.debug);

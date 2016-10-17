@@ -55,19 +55,23 @@ exports.expectEvent = (event, done) => {
 
   expect(event).to.have.property('entityId');
   expect(event.entityId).to.be.a('String');
-  expect(event.eventId).to.be.not.empty;
+  expect(event.entityId).to.be.not.empty;
 
   expect(event).to.have.property('eventType');
   expect(event.eventType).to.be.a('String');
-  expect(event.eventId).to.be.not.empty;
+  expect(event.eventType).to.be.not.empty;
 
   expect(event).to.have.property('ack');
   expect(event.ack).to.be.a('String');
-  expect(event.eventId).to.be.not.empty;
+  expect(event.ack).to.be.not.empty;
 
   expect(event).to.have.property('eventData');
   expect(event.eventData).to.be.an('Object');
-  expect(event.eventId).to.be.not.empty;
+  expect(event.eventData).to.be.not.empty;
+
+  expect(event).to.have.property('eventToken');
+  expect(event.eventToken).to.be.an('String');
+  expect(event.eventToken).to.be.not.empty;
 
   if (typeof(done) == 'function') {
     done();

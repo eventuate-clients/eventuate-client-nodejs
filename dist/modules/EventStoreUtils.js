@@ -1,10 +1,10 @@
 'use strict';
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _util = require('util');
 
@@ -28,7 +28,7 @@ var EventStoreUtils = function () {
   function EventStoreUtils() {
     var _this = this;
 
-    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
     var _ref$apiKey = _ref.apiKey;
     var apiKey = _ref$apiKey === undefined ? {} : _ref$apiKey;
@@ -57,13 +57,25 @@ var EventStoreUtils = function () {
 
     this.esClient = new _EsClient2.default(esClientOpts);
 
-    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, function (EntityClass, entityId, command, callback) {
+    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, function (EntityClass, entityId, command, triggeringEventToken, callback) {
+
+      if (!callback) {
+        callback = triggeringEventToken;
+        triggeringEventToken = null;
+      }
+
       var entity = new EntityClass();
 
-      _this.esClient.loadEvents(entity.entityTypeName, entityId, function (err, loadedEvents) {
+      var options = void 0;
+
+      if (triggeringEventToken) {
+        options = Object.assign({}, { triggeringEventToken: triggeringEventToken });
+      }
+
+      _this.esClient.loadEvents(entity.entityTypeName, entityId, options, function (err, loadedEvents) {
 
         if (err) {
-          logger.error('Load events failed: ' + entityTypeName + ' ' + entityId);
+          logger.error('Load events failed: ' + entity.entityTypeName + ' ' + entityId);
           return callback(err);
         }
 
@@ -95,7 +107,7 @@ var EventStoreUtils = function () {
 
         var events = processCommandMethod.call(entity, command);
 
-        _this.esClient.update(entity.entityTypeName, entityId, entityVersion, events, function (error, result) {
+        _this.esClient.update(entity.entityTypeName, entityId, entityVersion, events, options, function (error, result) {
           if (error) {
             logger.error('Update entity failed: ' + EntityClass.name + ' ' + entityId + ' ' + entityVersion);
             return callback(error);

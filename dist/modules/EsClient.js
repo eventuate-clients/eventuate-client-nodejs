@@ -1,14 +1,14 @@
 'use strict';
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 require('babel-polyfill');
 
@@ -168,7 +168,9 @@ var EsClient = function () {
         events: events
       };
 
-      this.addBodyOptions(jsonData, options);
+      if ((typeof options === 'undefined' ? 'undefined' : _typeof(options)) == 'object') {
+        this.addBodyOptions(jsonData, options);
+      }
 
       var urlPath = _path2.default.join(this.baseUrlPath, this.spaceName);
 
@@ -257,7 +259,9 @@ var EsClient = function () {
         events: events
       };
 
-      this.addBodyOptions(jsonData, options);
+      if ((typeof options === 'undefined' ? 'undefined' : _typeof(options)) == 'object') {
+        this.addBodyOptions(jsonData, options);
+      }
 
       var urlPath = _path2.default.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
@@ -571,6 +575,7 @@ var EsClient = function () {
         var entityId = _JSON$parse.entityId;
         var eventDataStr = _JSON$parse.eventData;
         var swimlane = _JSON$parse.swimlane;
+        var eventToken = _JSON$parse.eventToken;
 
 
         try {
@@ -583,6 +588,7 @@ var EsClient = function () {
             entityId: entityId,
             swimlane: swimlane,
             eventData: eventData,
+            eventToken: eventToken,
             ack: ack
           };
 
@@ -618,7 +624,7 @@ var EsClient = function () {
     value: function prepareEvents(events) {
 
       return events.map(function () {
-        var _ref2 = arguments.length <= 0 || arguments[0] === undefined ? event : arguments[0];
+        var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : event;
 
         var eventData = _ref2.eventData;
 

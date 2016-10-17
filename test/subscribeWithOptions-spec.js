@@ -26,9 +26,7 @@ describe('Subscribe with options', function () {
     const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
 
       if (err) {
-        console.log('subscribe callback error');
-        console.error(err);
-        done(err);
+        return done(err);
       }
 
       console.log('Subscribed');
