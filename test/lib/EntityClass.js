@@ -54,23 +54,13 @@ class EntityClass {
     ];
   }
 
-  processCreateEntityCommand(command) {
-    return [
-      {
-        eventType: MyEntityCreateEvent,
-        eventData: {
-          timestamp: command.createTimestamp
-        }
-      }
-    ];
-  }
 
   processCreatedEntityCommand(command) {
     return [
       {
         eventType: MyEntityWasCreatedEvent,
         eventData: {
-          timestamp: command.createTimestamp
+          timestamp: command.createdTimestamp
         }
       }
     ];

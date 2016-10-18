@@ -41,7 +41,7 @@ export default class AggregateRepository {
 
       const entity = new EntityClass();
 
-      this.esClient.loadEvents(entity.entityTypeName, entityId, options, (err, loadedEvents) => {
+      this.loadEvents(entity.entityTypeName, entityId, options, (err, loadedEvents) => {
 
         if (err) {
           logger.error(`Load events failed: ${entity.entityTypeName} ${entityId}`);
@@ -52,7 +52,7 @@ export default class AggregateRepository {
           return callback(new Error(`Can not get entityVersion: no events for ${entity.entityTypeName} ${entityId}`));
         }
 
-        const { id: entityVersion } = loadedEvents.pop();
+        const { id: entityVersion } = loadedEvents[loadedEvents.length - 1];
 
         //iterate through the events calling entity.applyEvent(..)
 
@@ -71,8 +71,29 @@ export default class AggregateRepository {
 
         this.esClient.update(entity.entityTypeName, entityId, entityVersion, events, options, (error, result) => {
           if (error) {
+
             logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
-            return callback(error);
+
+            if (error.statusCode == 409) {
+
+              logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+              delete options.triggeringEventToken;
+
+              return this.loadEvents(entity.entityTypeName, entityId, options, (err, loadedEvents) => {
+
+                if (err) {
+                  return callback(err);
+                }
+
+                return loadedEvents.pop();
+              });
+
+
+            } else {
+
+              return callback(error);
+            }
+
           }
 
           logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
@@ -81,7 +102,10 @@ export default class AggregateRepository {
         });
       });
     }, err => {
-      return err && err.statusCode === 409;
+
+      console.log(`err.statusCode: ${err.statusCode}`);
+      //return err && err.statusCode === 409;
+      return err;
     });
   }
 
@@ -147,9 +171,14 @@ export default class AggregateRepository {
     });
   }
 
-  loadEvents(entityTypeName, entityId, callback) {
+  loadEvents(entityTypeName, entityId, options, callback) {
 
-    this.esClient.loadEvents(entityTypeName, entityId, (err, loadedEvents) => {
+    if (!callback) {
+      callback = options;
+      options = undefined;
+    }
+
+    this.esClient.loadEvents(entityTypeName, entityId, options, (err, loadedEvents) => {
       if (err) {
         logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
         return callback(err);

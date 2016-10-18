@@ -26,7 +26,7 @@ const aggregateRepository = new AggregateRepository();
 
 const timeout = 20000;
 
-let createTimestamp;
+let createdTimestamp;
 let updateTimestamp;
 
 
@@ -36,10 +36,10 @@ describe('AggregateRepository: function createEntity()', function () {
 
   it('function createEntity() should return entityAndEventInfo object', done => {
 
-    createTimestamp = new Date().getTime();
+    createdTimestamp = new Date().getTime();
     const command = {
       commandType: CreatedEntityCommand,
-      createTimestamp
+      createdTimestamp
     };
 
     aggregateRepository.createEntity(EntityClass, command, (err, createdEntityAndEventInfo) => {
@@ -84,10 +84,10 @@ describe('AggregateRepository: function createEntity()', function () {
                     return done(err);
                   }
 
-                  //helpers.expectLoadedEvents(loadedEvents);
+                  helpers.expectLoadedEvents(loadedEvents);
 
                   expect(loadedEvents.length).to.equal(2);
-                  expect(loadedEvents[0].eventData.timestamp).to.equal(createTimestamp);
+                  expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
                   expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
 
                   done();
@@ -160,7 +160,7 @@ describe('AggregateRepository: function createEntity()', function () {
             console.log('event:', event);
             //helpers.expectEvent(event);
 
-            if (event.eventData.timestamp == createTimestamp) {
+            if (event.eventData.timestamp == createdTimestamp) {
               eventCount++;
             }
 
