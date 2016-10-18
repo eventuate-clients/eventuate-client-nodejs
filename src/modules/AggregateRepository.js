@@ -2,11 +2,11 @@ import util from 'util';
 import EsClient from './EsClient';
 import { getLogger } from './logger';
 
-const logger = getLogger({ title: 'EventStoreUtils' });
+const logger = getLogger({ title: 'AggregateRepository' });
 
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
-export default class EventStoreUtils {
+export default class AggregateRepository {
 
   constructor({ apiKey = {} } = {}) {
 
@@ -32,20 +32,14 @@ export default class EventStoreUtils {
 
     this.esClient = new EsClient(esClientOpts);
 
-    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, (EntityClass, entityId, command, triggeringEventToken, callback) => {
+    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, (EntityClass, entityId, command, options, callback) => {
 
       if (!callback) {
-        callback = triggeringEventToken;
-        triggeringEventToken = null;
+        callback = options;
+        options = undefined;
       }
 
       const entity = new EntityClass();
-
-      let options;
-
-      if (triggeringEventToken) {
-        options = Object.assign({}, { triggeringEventToken })
-      }
 
       this.esClient.loadEvents(entity.entityTypeName, entityId, options, (err, loadedEvents) => {
 
@@ -61,19 +55,15 @@ export default class EventStoreUtils {
         const { id: entityVersion } = loadedEvents.pop();
 
         //iterate through the events calling entity.applyEvent(..)
-        for (let prop in loadedEvents) {
 
-          if (Object.prototype.hasOwnProperty.call(loadedEvents, prop)) {
+        loadedEvents.forEach(event => {
 
-            const event = loadedEvents[prop];
+          const type = event.eventType.split('.').pop();
 
-            const type = event.eventType.split('.').pop();
+          const applyMethod = this.getApplyMethod(entity, type);
 
-            const applyMethod = this.getApplyMethod(entity, type);
-
-            applyMethod.call(entity, event);
-          }
-        }
+          applyMethod.call(entity, event);
+        });
 
         const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
 

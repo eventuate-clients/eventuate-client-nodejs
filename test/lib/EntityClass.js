@@ -70,7 +70,7 @@ class EntityClass {
       {
         eventType: MyEntityWasCreatedEvent,
         eventData: {
-          timestamp: command.createdTimestamp
+          timestamp: command.createTimestamp
         }
       }
     ];

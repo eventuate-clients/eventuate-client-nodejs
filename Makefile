@@ -14,7 +14,7 @@ test:
 		test/subscribeTwoSubscribers-spec.js \
 		test/subscribeManyEvents-spec.js \
 		test/subscribeWithOptions-spec.js \
-		test/EventStoreUtils-spec.js \
+		test/AggregateRepository-spec.js \
 		test/ObservableQueue-spec.js \
 		test/EventTypeSwimlaneDispatcher-spec.js
 

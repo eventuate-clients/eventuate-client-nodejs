@@ -104,9 +104,7 @@ export default class EsClient {
       events
     };
 
-    if (typeof options == 'object') {
-      this.addBodyOptions(jsonData, options);
-    }
+    this.addBodyOptions(jsonData, options);
 
     const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
@@ -151,9 +149,7 @@ export default class EsClient {
 
     let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-    if (typeof  options == 'object') {
-      urlPath += '?' + this.serialiseObject(options);
-    }
+    urlPath += '?' + this.serialiseObject(options);
 
     _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
 
@@ -191,9 +187,7 @@ export default class EsClient {
       events
     };
 
-    if (typeof options == 'object') {
-      this.addBodyOptions(jsonData, options);
-    }
+    this.addBodyOptions(jsonData, options);
 
     const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
@@ -487,26 +481,21 @@ export default class EsClient {
 
     try {
 
-      const {id: eventId, eventType, entityId, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
+      const { id: eventId, eventType, entityId, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
 
-      try {
+      const eventData = JSON.parse(eventDataStr);
 
-        let eventData = JSON.parse(eventDataStr);
+      const event = {
+        eventId,
+        eventType,
+        entityId,
+        swimlane,
+        eventData,
+        eventToken,
+        ack
+      };
 
-        const event = {
-          eventId,
-          eventType,
-          entityId,
-          swimlane,
-          eventData,
-          eventToken,
-          ack
-        };
-
-        return { event };
-      } catch (error) {
-        return { error };
-      }
+      return { event };
     } catch (error) {
       return { error };
     }
@@ -515,21 +504,25 @@ export default class EsClient {
 
   serialiseObject(obj) {
 
-    return Object.keys(obj)
-      .map(key => {
-        return `${key}=${obj[key]}`;
-      })
-      .join('&');
+    if (typeof obj == 'object') {
+      return Object.keys(obj)
+        .map(key => {
+          return `${key}=${obj[key]}`;
+        })
+        .join('&');
+    }
   }
 
   addBodyOptions (jsonData, options) {
 
-    Object.keys(options).reduce((jsonData, key) => {
+    if (typeof options == 'object') {
+      Object.keys(options).reduce((jsonData, key) => {
 
-      jsonData[key] = options[key];
+        jsonData[key] = options[key];
 
-      return jsonData;
-    }, jsonData);
+        return jsonData;
+      }, jsonData);
+    }
   }
 
   prepareEvents(events) {

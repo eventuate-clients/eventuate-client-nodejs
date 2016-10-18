@@ -2,7 +2,7 @@
 const parallel = require('mocha.parallel');
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
-const EventStoreUtils = require('../dist').EventStoreUtils;
+const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
 const Subscriber = require('../dist').Subscriber;
 
@@ -23,11 +23,11 @@ const EntityClass = require('./lib/EntityClass');
 const CreateEntityCommand = EntityClass.CreateEntityCommand;
 const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 
-const esUtil = new EventStoreUtils();
+const aggregateRepository = new AggregateRepository();
 
 const timeout = 20000;
 
-describe('EventStoreUtils with triggeringEventToken', function () {
+parallel('AggregateRepository with triggeringEventToken', function () {
 
   this.timeout(timeout);
 
@@ -39,7 +39,7 @@ describe('EventStoreUtils with triggeringEventToken', function () {
       createTimestamp
     };
 
-    esUtil.createEntity(EntityClass, command, (err, result) => {
+    aggregateRepository.createEntity(EntityClass, command, (err, result) => {
 
       if (err) {
         return done(err);
@@ -73,14 +73,17 @@ describe('EventStoreUtils with triggeringEventToken', function () {
 
       return new Promise((resolve, reject) => {
 
-        esUtil.updateEntity(EntityClass, entityId, command, triggeredEventToken, (err, result) => {
+        //aggregateRepository.updateEntity(EntityClass, entityId, command, (err, result) => {
+        aggregateRepository.updateEntity(EntityClass, entityId, command, triggeredEventToken, (err, result) => {
 
           if (err) {
+
+            console.error('err:', err);
             return reject(err);
           }
 
           helpers.expectCommandResult(result);
-
+          resolve();
         });
       });
     }
