@@ -15,6 +15,7 @@ import { escapeStr, unEscapeStr } from './specialChars';
 import EsServerError from './EsServerError';
 import { parseIsTrue, toJSON } from './utils';
 import { getLogger } from './logger';
+import Result from './Result';
 
 const logger = getLogger({ title: 'EsClient' });
 
@@ -91,130 +92,149 @@ export default class EsClient {
 
   create(entityTypeName, _events, options, callback) {
 
-    callback = callback || options;
+    return new Promise((resolve, reject) => {
+      callback = callback || options;
 
-    //check input params
-    if(!entityTypeName || !this.checkEvents(_events)) {
-      return callback(new Error('Incorrect input parameters'));
-    }
-
-    const events = this.prepareEvents(_events);
-    const jsonData = {
-      entityTypeName,
-      events
-    };
-
-    this.addBodyOptions(jsonData, options);
-
-    const urlPath = path.join(this.baseUrlPath, this.spaceName);
-
-    return _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
-
-      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
-        return callback(err);
+      const result = new Result({ resolve, reject, callback });
+      //check input params
+      if(!entityTypeName || !this.checkEvents(_events)) {
+        return result.failure(new Error('Incorrect input parameters'));
       }
 
-      toJSON(body, (err, jsonBody) => {
+      const events = this.prepareEvents(_events);
+      const jsonData = {
+        entityTypeName,
+        events
+      };
 
-        if (err) {
-          return callback(err);
+      this.addBodyOptions(jsonData, options);
+
+      const urlPath = path.join(this.baseUrlPath, this.spaceName);
+
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+          return result.failure(err);
         }
 
-        const { entityId, entityVersion, eventIds} = jsonBody;
+        toJSON(body, (err, jsonBody) => {
 
-        if (!entityId || !entityVersion || !eventIds) {
-          return callback(new EsServerError({
-            error: 'Bad server response',
-            statusCode: httpResponse.statusCode,
-            message: body
-          }));
-        }
+          if (err) {
+            return result.failure(err);
+          }
 
-        callback(null, {
-          entityIdTypeAndVersion: { entityId, entityVersion },
-          eventIds
+          const { entityId, entityVersion, eventIds} = jsonBody;
+
+          if (!entityId || !entityVersion || !eventIds) {
+            return result.failure({
+              error: 'Bad server response',
+              statusCode: httpResponse.statusCode,
+              message: body
+            });
+          }
+
+          result.success({
+            entityIdTypeAndVersion: { entityId, entityVersion },
+            eventIds
+          });
         });
       });
+
+
     });
+
+
   }
 
   loadEvents(entityTypeName, entityId, options, callback) {
 
-    callback = callback || options;
+    return new Promise((resolve, reject) => {
 
-    //check input params
-    if (!entityTypeName || !entityId) {
-      return callback(new Error('Incorrect input parameters'));
-    }
+      callback = callback || options;
 
-    let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+      const result = new Result({ resolve, reject, callback });
 
-    urlPath += '?' + this.serialiseObject(options);
-
-    _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
-
-      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
-        return callback(err);
+      //check input params
+      if (!entityTypeName || !entityId) {
+        return result.failure(new Error('Incorrect input parameters'));
       }
 
-      toJSON(body, (err, jsonBody) => {
+      let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-        if (err) {
-          return callback(err);
+      urlPath += '?' + this.serialiseObject(options);
+
+      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
+
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+          return result.failure(err);
         }
 
-        const events = this.eventDataToObject(jsonBody.events);
-        callback(null, events);
+        toJSON(body, (err, jsonBody) => {
+
+          if (err) {
+            return result.failure(err);
+          }
+
+          const events = this.eventDataToObject(jsonBody.events);
+
+          result.success(events);
+
+        });
 
       });
 
     });
+
   }
 
   update(entityTypeName, entityId, entityVersion, _events, options, callback) {
 
-    callback = callback || options;
+    return new Promise((resolve, reject) => {
+      callback = callback || options;
 
-    //check input params
-    if (!entityTypeName || !entityId || !entityVersion || !this.checkEvents(_events)) {
-      return callback(new Error('Incorrect input parameters'));
-    }
+      const result = new Result({ resolve, reject, callback });
 
-    const events = this.prepareEvents(_events);
-    const jsonData = {
-      entityId,
-      entityVersion,
-      events
-    };
-
-    this.addBodyOptions(jsonData, options);
-
-    const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
-
-    _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
-
-      if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
-        return callback(err);
+      //check input params
+      if (!entityTypeName || !entityId || !entityVersion || !this.checkEvents(_events)) {
+        return result.failure(new Error('Incorrect input parameters'));
       }
 
-      toJSON(body, (err, jsonBody) => {
-        if (err) {
-          return callback(err);
+      const events = this.prepareEvents(_events);
+      const jsonData = {
+        entityId,
+        entityVersion,
+        events
+      };
+
+      this.addBodyOptions(jsonData, options);
+
+      const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+
+        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+          return result.failure(err);
         }
 
-        const { entityId, entityVersion, eventIds} = jsonBody;
+        toJSON(body, (err, jsonBody) => {
+          if (err) {
+            return result.failure(err);
+          }
 
-        if (!entityId || !entityVersion || !eventIds) {
-          return callback(new EsServerError({
-            error: 'Bad server response',
-            statusCode: httpResponse.statusCode,
-            message: body
-          }));
-        }
+          const { entityId, entityVersion, eventIds} = jsonBody;
 
-        callback(null, {
-          entityIdTypeAndVersion: { entityId, entityVersion },
-          eventIds
+          if (!entityId || !entityVersion || !eventIds) {
+            return result.failure({
+              error: 'Bad server response',
+              statusCode: httpResponse.statusCode,
+              message: body
+            });
+          }
+
+          result.success({
+            entityIdTypeAndVersion: { entityId, entityVersion },
+            eventIds
+          });
         });
       });
     });

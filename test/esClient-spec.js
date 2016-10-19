@@ -90,7 +90,13 @@ describe('ES Node.js Client: function create()', function () {
           });
         });
       });
-    });
+    })
+    .then(result => {
+        console.log('result:' ,result);
+      })
+    .catch(err => {
+        done(err);
+      });
   });
 });
 

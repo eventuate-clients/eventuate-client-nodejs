@@ -74,62 +74,60 @@ describe('AggregateRepository: function createEntity()', function () {
             describe('AggregateRepository.js: function loadEvents()', function () {
               this.timeout(timeout);
 
-              it('function loadEvents() should load events', done => {
+              it('should load events', done => {
 
                 const entity = new EntityClass();
 
-                aggregateRepository.loadEvents(entity.entityTypeName, entityId, (err, loadedEvents) => {
+                aggregateRepository.loadEvents({ entityTypeName, entityId })
+                  .then(loadedEvents => {
 
-                  if (err) {
-                    return done(err);
-                  }
+                    helpers.expectLoadedEvents(loadedEvents);
 
-                  helpers.expectLoadedEvents(loadedEvents);
+                    expect(loadedEvents.length).to.equal(2);
+                    expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
+                    expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
 
-                  expect(loadedEvents.length).to.equal(2);
-                  expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
-                  expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
+                    done();
 
-                  done();
+                    describe('Test getApplyMethod() method', function () {
 
-                  describe('Test getApplyMethod() method', function () {
+                      it('should return a function', () => {
 
-                    it('should return a function', () => {
+                        loadedEvents.forEach(event => {
 
-                      loadedEvents.forEach(event => {
+                          const type = event.eventType.split('.').pop();
+                          const applyMethod = aggregateRepository.getApplyMethod(entity, type);
+                          expect(applyMethod).to.be.a('Function');
+                        });
 
-                        const type = event.eventType.split('.').pop();
+                        //check default applyEvent() method
+                        const type = 'UnknownEventType';
                         const applyMethod = aggregateRepository.getApplyMethod(entity, type);
                         expect(applyMethod).to.be.a('Function');
                       });
 
-                      //check default applyEvent() method
-                      const type = 'UnknownEventType';
-                      const applyMethod = aggregateRepository.getApplyMethod(entity, type);
-                      expect(applyMethod).to.be.a('Function');
                     });
 
-                  });
 
+                    describe('Test getProcessCommandMethod() method', function () {
 
-                  describe('Test getProcessCommandMethod() method', function () {
+                      it('should return a function', () => {
 
-                    it('should return a function', () => {
+                        let processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, CreatedEntityCommand);
+                        expect(processCommandMethod).to.be.a('Function');
 
-                      let processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, CreatedEntityCommand);
-                      expect(processCommandMethod).to.be.a('Function');
+                        processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, UpdateEntityCommand);
+                        expect(processCommandMethod).to.be.a('Function');
 
-                      processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, UpdateEntityCommand);
-                      expect(processCommandMethod).to.be.a('Function');
+                        //check default processCommand() method
+                        processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, 'unknownCommand');
+                        expect(processCommandMethod).to.be.a('Function');
+                      });
 
-                      //check default processCommand() method
-                      processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, 'unknownCommand');
-                      expect(processCommandMethod).to.be.a('Function');
                     });
 
-                  });
-
-                });
+                  })
+                  .catch(done);
 
               });
 
