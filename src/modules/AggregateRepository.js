@@ -32,86 +32,90 @@ export default class AggregateRepository {
 
     this.esClient = new EsClient(esClientOpts);
 
-    this.updateEntity = this.retryNTimes(EVENT_STORE_UTILS_RETRIES_COUNT, (EntityClass, entityId, command, options, callback) => {
+    this.updateEntity = this.retryNTimes(
+      {
+        times: EVENT_STORE_UTILS_RETRIES_COUNT,
 
-      if (!callback) {
-        callback = options;
-        options = undefined;
-      }
+        fn: (EntityClass, entityId, command, options, callback) => {
 
-      const entity = new EntityClass();
-      const { entityTypeName } = entity;
+          return new Promise((resolve, reject) => {
 
-      this.loadEvents({ entityTypeName, entityId, options })
-        .then(loadedEvents => {
-
-          const entityVersion = this.getEntityVersionFromEvents(loadedEvents);
-
-          if (!entityVersion) {
-            return callback(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
-          }
-
-          //iterate through the events calling entity.applyEvent(..)
-          this.applyEntityEvents(loadedEvents, entity);
-
-          const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
-
-          const events = processCommandMethod.call(entity, command);
-
-          this.esClient.update(entityTypeName, entityId, entityVersion, events, options, (error, result) => {
-
-            if (error) {
-
-              logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
-
-              if (error.statusCode == 409) {
-
-                logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
-
-                delete options.triggeringEventToken;
-
-                return this.loadEvents(entityTypeName, entityId, options)
-                  .then(loadedEvents => {
-                    return callback(null, loadedEvents.pop());
-                  })
-                  .catch(err => {
-                    callback(err);
-                  });
-
-              } else {
-                return callback(error);
-              }
+            if (!callback) {
+              callback = options;
+              options = undefined;
             }
 
-            logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+            const entity = new EntityClass();
+            const { entityTypeName } = entity;
 
-            callback(null, result);
-        });
-      })
-        .catch(err => {
-          logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
-          logger.error(err);
-          return callback(err);
-        });
-    }, err => {
+            return this.loadEvents({ entityTypeName, entityId, options })
+              .then(loadedEvents => {
 
-      //console.log(`err.statusCode: ${err.statusCode}`);
-      console.log('error:', err);
-      //return err && err.statusCode === 409;
-      return err;
-    });
+                const entityVersion = this.getEntityVersionFromEvents(loadedEvents);
+
+                if (!entityVersion) {
+                  return callback(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
+                }
+
+                //iterate through the events calling entity.applyEvent(..)
+                this.applyEntityEvents(loadedEvents, entity);
+
+                const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
+
+                const events = processCommandMethod.call(entity, command);
+
+                return this.esClient.update(entityTypeName, entityId, entityVersion, events, options)
+                  .then(result => {
+
+                    logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+                    //callback(null, result);
+                    return Promise.resolve(result);
+                  })
+                  .catch(error => {
+                    logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
+
+                    if (error.statusCode == 409) {
+
+                      logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+
+                      delete options.triggeringEventToken;
+
+                      return this.loadEvents(entityTypeName, entityId, options)
+                        .then(loadedEvents => {
+
+                          //callback(null, loadedEvents.pop());
+                          return Promise.resolve(loadedEvents.pop());
+                        })
+                        .catch(err => {
+
+                          //callback(err);
+                          return Promise.reject(err);
+                        });
+
+                    }
+
+                    //callback(error);
+                    return Promise.reject(error);
+
+                  });
+              })
+              .catch(err => {
+                logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
+                logger.error(err);
+                //return callback(err);
+                return Promise.reject(err);
+              });
+          });
+
+        }
+      });
   }
 
-  retryNTimes(times, fn, _errConditionFn, ctx) {
+  retryNTimes({ times, fn, ctx, errConditionFn }) {
 
-    let errConditionFn;
-    if (typeof _errConditionFn !== 'function') {
-      ctx = _errConditionFn;
-      errConditionFn = function (err) {
-        return err;
-      };
-    } else {
-      errConditionFn = _errConditionFn;
+
+    if (typeof errConditionFn !== 'function') {
+      errConditionFn = err => err;
     }
 
     return function () {
@@ -119,33 +123,44 @@ export default class AggregateRepository {
       let innerCtx = this || ctx;
 
       let args = [].slice.call(arguments);
-      let worker = function () {
-        fn.apply(innerCtx, args);
-      };
 
       let oldCb = args.pop();
       if (typeof oldCb !== 'function') {
         throw new TypeError('Last parameter is expected to be a function');
       }
-      args.push(function (err, result) {
-        if (errConditionFn(err, result)) {
-          count--;
-          if (count) {
+
+      args.push((err, result) => {
+
+        if (!errConditionFn(err, result)) {
+          return oldCb(err, result);
+        }
+
+      });
+
+      var worker = function () {
+        fn.apply(innerCtx, args)
+          .then(result => {
+
+            return Promise.resolve(result);
+          })
+          .catch(err => {
+
+            count--;
+
+            if (!count) {
+              return Promise.reject(err);
+            }
+
             logger.info(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
             setTimeout(worker, 100);
-          } else {
-            oldCb(err, result);
-          }
-        } else {
-          oldCb(err, result);
-        }
-      });
+          });
+      };
 
       worker();
     };
   }
 
-  createEntity(EntityClass, command, callback) {
+  createEntity({ EntityClass, command, options }) {
 
     const entity = new EntityClass();
 
@@ -153,32 +168,20 @@ export default class AggregateRepository {
 
     const events = processCommandMethod.call(entity, command);
 
-    this.esClient.create(entity.entityTypeName, events, (err, result) => {
-      if (err) {
+    return this.esClient.create(entity.entityTypeName, events, options)
+      .then(result=> {
+        logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
+        return result;
+      },
+      err => {
         logger.error(`Create entity failed: ${EntityClass.name}`);
-        return callback(err);
-      }
-
-      logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
-      callback(null, result);
-    });
+        return err;
+      })
   }
 
   loadEvents({ entityTypeName, entityId, options }) {
 
-    return new Promise((resolve, reject) => {
-
-      this.esClient.loadEvents(entityTypeName, entityId, options, (err, loadedEvents) => {
-
-        if (err) {
-          logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
-          return reject(err);
-        }
-
-        logger.debug(`Loaded events: ${entityTypeName} ${entityId} ${JSON.stringify(loadedEvents)}`);
-        resolve(loadedEvents);
-      });
-    });
+    return this.esClient.loadEvents(entityTypeName, entityId, options);
   }
 
 

@@ -27,11 +27,11 @@ const aggregateRepository = new AggregateRepository();
 
 const timeout = 200000;
 
-parallel('AggregateRepository with triggeringEventToken', function () {
+describe('AggregateRepository with triggeringEventToken', function () {
 
   this.timeout(timeout);
 
-/*  it(`should create ${MyEntityCreateEvent} event`, done => {
+  it(`should create ${MyEntityCreateEvent} event`, done => {
 
     const createTimestamp = new Date().getTime();
     const command = {
@@ -39,15 +39,18 @@ parallel('AggregateRepository with triggeringEventToken', function () {
       createTimestamp
     };
 
-    aggregateRepository.createEntity(EntityClass, command, (err, result) => {
+    console.log('command', command);
 
-      if (err) {
-        return done(err);
-      }
-
-      helpers.expectCommandResult(result, done);
-    });
-  });*/
+    aggregateRepository.createEntity({ EntityClass, command })
+      .then(createdEntityAndEventInfo => {
+        helpers.expectCommandResult(createdEntityAndEventInfo);
+        done();
+      })
+      .catch(err => {
+        console.log('error', err);
+        done(err);
+      });
+  });
 
 
   it('should subscribe for events', done => {

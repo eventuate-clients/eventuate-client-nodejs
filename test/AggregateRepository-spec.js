@@ -29,6 +29,8 @@ const timeout = 20000;
 let createdTimestamp;
 let updateTimestamp;
 
+let entityId;
+
 
 describe('AggregateRepository: function createEntity()', function () {
 
@@ -42,171 +44,160 @@ describe('AggregateRepository: function createEntity()', function () {
       createdTimestamp
     };
 
-    aggregateRepository.createEntity(EntityClass, command, (err, createdEntityAndEventInfo) => {
+    aggregateRepository.createEntity({ EntityClass, command })
+      .then(createdEntityAndEventInfo => {
+
+        helpers.expectCommandResult(createdEntityAndEventInfo);
+        entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
+
+        done();
+    })
+    .catch(done);
+  });
+
+  it('function updateEntity() should update entity and return entityAndEventInfo object', done => {
+
+    expect(entityId).to.be.ok;
+
+    updateTimestamp = new Date().getTime();
+    const command = {
+      commandType: UpdateEntityCommand,
+      updateTimestamp
+    };
+
+    aggregateRepository.updateEntity(EntityClass, entityId, command, (err, updatedEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
       }
 
-      helpers.expectCommandResult(createdEntityAndEventInfo, done);
+      helpers.expectCommandResult(updatedEntityAndEventInfo, done);
+    })
+  });
 
-      describe('AggregateRepository.js: function updateEntity()', function () {
-        this.timeout(timeout);
+  it('function loadEvents() should load events', done => {
 
-        it('function updateEntity() should update entity and return entityAndEventInfo object', done => {
+    expect(entityId).to.be.ok;
 
-          const entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
+    const entity = new EntityClass();
 
-          updateTimestamp = new Date().getTime();
-          const command = {
-            commandType: UpdateEntityCommand,
-            updateTimestamp
-          };
+    aggregateRepository.loadEvents({ entityTypeName, entityId })
+      .then(loadedEvents => {
 
-          aggregateRepository.updateEntity(EntityClass, entityId, command, (err, updatedEntityAndEventInfo) => {
+        helpers.expectLoadedEvents(loadedEvents);
 
-            if (err) {
-              return done(err);
-            }
+        expect(loadedEvents.length).to.equal(2);
+        expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
+        expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
 
-            helpers.expectCommandResult(updatedEntityAndEventInfo, done);
+        done();
 
-            describe('AggregateRepository.js: function loadEvents()', function () {
-              this.timeout(timeout);
+        /*describe('Test getApplyMethod() method', function () {
 
-              it('should load events', done => {
+          it('should return a function', () => {
 
-                const entity = new EntityClass();
+            loadedEvents.forEach(event => {
 
-                aggregateRepository.loadEvents({ entityTypeName, entityId })
-                  .then(loadedEvents => {
-
-                    helpers.expectLoadedEvents(loadedEvents);
-
-                    expect(loadedEvents.length).to.equal(2);
-                    expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
-                    expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
-
-                    done();
-
-                    describe('Test getApplyMethod() method', function () {
-
-                      it('should return a function', () => {
-
-                        loadedEvents.forEach(event => {
-
-                          const type = event.eventType.split('.').pop();
-                          const applyMethod = aggregateRepository.getApplyMethod(entity, type);
-                          expect(applyMethod).to.be.a('Function');
-                        });
-
-                        //check default applyEvent() method
-                        const type = 'UnknownEventType';
-                        const applyMethod = aggregateRepository.getApplyMethod(entity, type);
-                        expect(applyMethod).to.be.a('Function');
-                      });
-
-                    });
-
-
-                    describe('Test getProcessCommandMethod() method', function () {
-
-                      it('should return a function', () => {
-
-                        let processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, CreatedEntityCommand);
-                        expect(processCommandMethod).to.be.a('Function');
-
-                        processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, UpdateEntityCommand);
-                        expect(processCommandMethod).to.be.a('Function');
-
-                        //check default processCommand() method
-                        processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, 'unknownCommand');
-                        expect(processCommandMethod).to.be.a('Function');
-                      });
-
-                    });
-
-                  })
-                  .catch(done);
-
-              });
-
+              const type = event.eventType.split('.').pop();
+              const applyMethod = aggregateRepository.getApplyMethod(entity, type);
+              expect(applyMethod).to.be.a('Function');
             });
 
+            //check default applyEvent() method
+            const type = 'UnknownEventType';
+            const applyMethod = aggregateRepository.getApplyMethod(entity, type);
+            expect(applyMethod).to.be.a('Function');
           });
-        });
-      });
 
-
-      describe('EventDispatcher', function () {
-
-        this.timeout(timeout);
-
-        it('test process events', done => {
-
-          let eventCount = 0;
-          const expectedEventCount = 2;
-
-          //Define event handlers
-          const eventHandlers = {
-            [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
-            [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
-          };
-
-          function handleMyEntityWasCreatedEvent(event) {
-
-            console.log('event:', event);
-            //helpers.expectEvent(event);
-
-            if (event.eventData.timestamp == createdTimestamp) {
-              eventCount++;
-            }
-
-            return Promise.resolve();
-          }
-
-          function handleMyEntityWasUpdatedEvent(event) {
-
-            console.log('event:', event);
-            //helpers.expectEvent(event);
-
-            if (event.eventData.timestamp == updateTimestamp) {
-              eventCount++;
-            }
-
-            if(eventCount == expectedEventCount) {
-              done();
-            }
-
-            return Promise.resolve();
-          }
-
-          function getEventHandler (eventType) {
-            if (typeof eventHandlers[eventType] != 'undefined') {
-              return eventHandlers[eventType]
-            }
-          }
-
-          //Define subscriptions
-          const subscriptions = [
-            {
-              subscriberId: 'test-AggregateRepository',
-              entityTypesAndEvents
-            }
-          ];
-
-          const subscriber = new Subscriber({ subscriptions });
-
-          subscriber.subscribe().forEach(subscription => {
-            //Create EventDispatcher instance
-            const dispatcher = new EventDispatcher({ getEventHandler, subscription });
-            dispatcher.run(subscription);
-
-          });
         });
 
-      });
+        describe('Test getProcessCommandMethod() method', function () {
 
+          it('should return a function', () => {
+
+            let processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, CreatedEntityCommand);
+            expect(processCommandMethod).to.be.a('Function');
+
+            processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, UpdateEntityCommand);
+            expect(processCommandMethod).to.be.a('Function');
+
+            //check default processCommand() method
+            processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, 'unknownCommand');
+            expect(processCommandMethod).to.be.a('Function');
+          });
+
+        });*/
+
+      })
+      .catch(done);
+
+  });
+
+});
+
+describe('EventDispatcher', function () {
+
+  this.timeout(timeout);
+
+  it('test process events', done => {
+
+    let eventCount = 0;
+    const expectedEventCount = 2;
+
+    //Define event handlers
+    const eventHandlers = {
+      [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
+      [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+    };
+
+    function handleMyEntityWasCreatedEvent(event) {
+
+      console.log('event:', event);
+      helpers.expectEvent(event);
+
+      if (event.eventData.timestamp == createdTimestamp) {
+        eventCount++;
+      }
+
+      return Promise.resolve();
+    }
+
+    function handleMyEntityWasUpdatedEvent(event) {
+
+      console.log('event:', event);
+      helpers.expectEvent(event);
+
+      if (event.eventData.timestamp == updateTimestamp) {
+        eventCount++;
+      }
+
+      if(eventCount == expectedEventCount) {
+        done();
+      }
+
+      return Promise.resolve();
+    }
+
+    function getEventHandler (eventType) {
+      if (typeof eventHandlers[eventType] != 'undefined') {
+        return eventHandlers[eventType]
+      }
+    }
+
+    //Define subscriptions
+    const subscriptions = [
+      {
+        subscriberId: 'test-AggregateRepository',
+        entityTypesAndEvents
+      }
+    ];
+
+    const subscriber = new Subscriber({ subscriptions });
+
+    subscriber.subscribe().forEach(subscription => {
+      //Create EventDispatcher instance
+      const dispatcher = new EventDispatcher({ getEventHandler, subscription });
+      dispatcher.run(subscription);
 
     });
   });
