@@ -15,6 +15,15 @@ describe('ES Node.js Client: function create()', function () {
 
   this.timeout(timeout);
 
+  it('function create() should return error', done => {
+
+    esClient.create('', [], (err, createdEntityAndEventInfo) => {
+
+      expect(err).to.be.instanceof(Error);
+      done();
+    });
+  });
+
   it('function create() should return entityAndEventInfo object', done => {
 
     const createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Fred' } } ];
@@ -122,7 +131,8 @@ describe('ES Node.js Client: function create() custom entityId', function () {
       expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
       done();
     });
-  })
+  });
+
 });
 
 describe('ES Node.js Client: function create() eventData contains unicode string', function () {

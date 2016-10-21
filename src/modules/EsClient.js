@@ -93,7 +93,10 @@ export default class EsClient {
   create(entityTypeName, _events, options, callback) {
 
     return new Promise((resolve, reject) => {
-      callback = callback || options;
+
+      if (!callback && typeof options == 'function') {
+        callback = options;
+      }
 
       const result = new Result({ resolve, reject, callback });
       //check input params
@@ -150,7 +153,9 @@ export default class EsClient {
 
     return new Promise((resolve, reject) => {
 
-      callback = callback || options;
+      if (!callback && typeof options == 'function') {
+        callback = options;
+      }
 
       const result = new Result({ resolve, reject, callback });
 
@@ -190,7 +195,10 @@ export default class EsClient {
   update(entityTypeName, entityId, entityVersion, _events, options, callback) {
 
     return new Promise((resolve, reject) => {
-      callback = callback || options;
+
+      if (!callback && typeof options == 'function') {
+        callback = options;
+      }
 
       const result = new Result({ resolve, reject, callback });
 

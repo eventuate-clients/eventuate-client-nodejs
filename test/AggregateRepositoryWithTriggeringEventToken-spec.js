@@ -63,7 +63,7 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
     function handleMyEntityCreateEvent(event) {
 
-      console.log('event:', event);
+      //console.log('event:', event);
 
       helpers.expectEvent(event);
 
@@ -91,11 +91,11 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
     function handleMyEntityWasCreatedEvent(event) {
 
-      console.log('event:', event);
+      //console.log('event:', event);
 
       helpers.expectEvent(event);
 
-      //done();
+      done();
 
       return Promise.resolve();
     }

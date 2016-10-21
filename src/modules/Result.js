@@ -1,10 +1,7 @@
 
 export default class Result {
   constructor({ resolve, reject, callback }){
-/*
-    console.log('resolve:', resolve)
-    console.log('reject:', reject);
-    console.log('callback:', callback);*/
+
     Object.assign(this, { resolve, reject, callback });
   }
 
@@ -18,6 +15,7 @@ export default class Result {
   }
 
   failure(err) {
+
     if (this.callback) {
       this.callback(err);
     }
