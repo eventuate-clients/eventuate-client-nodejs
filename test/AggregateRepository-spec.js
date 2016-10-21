@@ -65,14 +65,12 @@ describe('AggregateRepository: function createEntity()', function () {
       updateTimestamp
     };
 
-    aggregateRepository.updateEntity(EntityClass, entityId, command, (err, updatedEntityAndEventInfo) => {
-
-      if (err) {
-        return done(err);
-      }
+    aggregateRepository.updateEntity({ EntityClass, entityId, command })
+      .then(updatedEntityAndEventInfo => {
 
       helpers.expectCommandResult(updatedEntityAndEventInfo, done);
-    })
+      })
+      .catch(done);
   });
 
   it('function loadEvents() should load events', done => {

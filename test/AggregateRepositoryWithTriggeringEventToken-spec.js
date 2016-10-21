@@ -77,22 +77,16 @@ describe('AggregateRepository with triggeringEventToken', function () {
         createdTimestamp
       };
 
-      return new Promise((resolve, reject) => {
+      const options = { triggeringEventToken };
 
-        aggregateRepository.updateEntity(EntityClass, entityId, command, { triggeringEventToken }, (err, result) => {
+      return aggregateRepository.updateEntity({ EntityClass, entityId, command, options })
+        .then(result => {
 
-          if (err) {
-
-            console.error('err:', err);
-            return reject(err);
-          }
-
-          console.log('result:', result);
+         console.log('result:', result);
 
           //helpers.expectCommandResult(result);
-          resolve();
-        });
-      });
+        })
+        .catch(done);
     }
 
     function handleMyEntityWasCreatedEvent(event) {

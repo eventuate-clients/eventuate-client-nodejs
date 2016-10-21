@@ -35,78 +35,72 @@ export default class AggregateRepository {
     this.updateEntity = this.retryNTimes(
       {
         times: EVENT_STORE_UTILS_RETRIES_COUNT,
-
-        fn: (EntityClass, entityId, command, options, callback) => {
-
-          return new Promise((resolve, reject) => {
-
-            if (!callback) {
-              callback = options;
-              options = undefined;
-            }
+        fn: ({ EntityClass, entityId, command, options }) => {
 
             const entity = new EntityClass();
             const { entityTypeName } = entity;
 
             return this.loadEvents({ entityTypeName, entityId, options })
-              .then(loadedEvents => {
+              .then(
+                loadedEvents => {
 
-                const entityVersion = this.getEntityVersionFromEvents(loadedEvents);
+                  const entityVersion = this.getEntityVersionFromEvents(loadedEvents);
 
-                if (!entityVersion) {
-                  return callback(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
+                  if (!entityVersion) {
+                    return reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
+                  }
+
+                  //iterate through the events calling entity.applyEvent(..)
+                  this.applyEntityEvents(loadedEvents, entity);
+
+                  const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
+
+                  const events = processCommandMethod.call(entity, command);
+
+                  return this.esClient.update(entityTypeName, entityId, entityVersion, events, options);
+                },
+                err => {
+                  logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
+                  logger.error(err);
+                  return Promise.reject(err);
                 }
+              )
+              .then(
+                result => {
 
-                //iterate through the events calling entity.applyEvent(..)
-                this.applyEntityEvents(loadedEvents, entity);
+                  logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+                  return Promise.resolve(result);
 
-                const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
+                },
+                error => {
 
-                const events = processCommandMethod.call(entity, command);
+                  logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
+                  logger.error(error);
 
-                return this.esClient.update(entityTypeName, entityId, entityVersion, events, options)
-                  .then(result => {
+                  if (error.statusCode == 409) {
 
-                    logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
-                    //callback(null, result);
-                    return Promise.resolve(result);
-                  })
-                  .catch(error => {
-                    logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
+                    logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
 
-                    if (error.statusCode == 409) {
+                    delete options.triggeringEventToken;
 
-                      logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+                    return this.loadEvents(entityTypeName, entityId, options)
+                  }
 
-                      delete options.triggeringEventToken;
+                  return Promise.reject(error)
+                    .then(
+                      loadedEvents => {
 
-                      return this.loadEvents(entityTypeName, entityId, options)
-                        .then(loadedEvents => {
+                        logger.info('loadedEvents:', loadedEvents);
+                        return Promise.resolve(loadedEvents.pop());
+                      },
+                      err => {
 
-                          //callback(null, loadedEvents.pop());
-                          return Promise.resolve(loadedEvents.pop());
-                        })
-                        .catch(err => {
-
-                          //callback(err);
-                          return Promise.reject(err);
-                        });
-
-                    }
-
-                    //callback(error);
-                    return Promise.reject(error);
-
-                  });
-              })
-              .catch(err => {
-                logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
-                logger.error(err);
-                //return callback(err);
-                return Promise.reject(err);
-              });
-          });
-
+                        logger.error('err:', err);
+                        return Promise.reject(err);
+                      }
+                    );
+                }
+              )
         }
       });
   }
@@ -119,44 +113,41 @@ export default class AggregateRepository {
     }
 
     return function () {
-      let count = times;
-      let innerCtx = this || ctx;
 
       let args = [].slice.call(arguments);
 
-      let oldCb = args.pop();
-      if (typeof oldCb !== 'function') {
-        throw new TypeError('Last parameter is expected to be a function');
-      }
+      return new Promise((resolve, reject) => {
+        let count = times;
+        let innerCtx = this || ctx;
 
-      args.push((err, result) => {
+        let worker = function () {
+          fn.apply(innerCtx, args)
+            .then(result => {
 
-        if (!errConditionFn(err, result)) {
-          return oldCb(err, result);
-        }
+              return resolve(result);
+            })
+            .catch(err => {
 
+              if (errConditionFn(err)) {
+
+                count--;
+
+                if (!count) {
+                  return reject(err);
+                }
+
+                logger.debugq(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
+                setTimeout(worker, 100);
+
+                return;
+              }
+
+              reject(err);
+            });
+        };
+
+        worker();
       });
-
-      var worker = function () {
-        fn.apply(innerCtx, args)
-          .then(result => {
-
-            return Promise.resolve(result);
-          })
-          .catch(err => {
-
-            count--;
-
-            if (!count) {
-              return Promise.reject(err);
-            }
-
-            logger.info(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
-            setTimeout(worker, 100);
-          });
-      };
-
-      worker();
     };
   }
 
