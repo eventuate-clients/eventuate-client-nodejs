@@ -161,7 +161,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                   err => {
                     return done(err);
                   },
-                  function () {
+                  () => {
                     console.log('Completed');
                   }
                 );

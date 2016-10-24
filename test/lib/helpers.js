@@ -4,7 +4,7 @@ const EsClient = require('../../dist');
 const uuid = require('uuid');
 const specialChars = require('../../dist/modules/specialChars');
 
-exports.removeEventsArrProperty = (eventsArr, propertyName) => {
+module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {
     if (typeof (item[propertyName]) != 'undefined') {
       delete (item[propertyName]);
@@ -13,7 +13,7 @@ exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   });
 };
 
-exports.expectCommandResult = (entityAndEventInfo, done) => {
+module.exports.expectCommandResult = (entityAndEventInfo, done) => {
   expect(entityAndEventInfo).to.be.an('Object');
   expect(entityAndEventInfo).to.have.property('entityIdTypeAndVersion');
 
@@ -32,7 +32,7 @@ exports.expectCommandResult = (entityAndEventInfo, done) => {
 
 };
 
-exports.expectSubscribe = (subscribe, done) => {
+module.exports.expectSubscribe = (subscribe, done) => {
 
   expect(subscribe).to.have.property('acknowledge');
   expect(subscribe.acknowledge).to.be.a('Function');
@@ -45,7 +45,7 @@ exports.expectSubscribe = (subscribe, done) => {
 
 };
 
-exports.expectEvent = (event, done) => {
+module.exports.expectEvent = (event, done) => {
 
   expect(event).to.be.an('Object');
 
@@ -78,7 +78,7 @@ exports.expectEvent = (event, done) => {
   }
 };
 
-exports.expectLoadedEvents = (loadedEvents, done) => {
+module.exports.expectLoadedEvents = (loadedEvents, done) => {
   expect(loadedEvents).to.be.an('Array');
   expect(loadedEvents).to.be.not.empty;
 
@@ -94,12 +94,12 @@ exports.expectLoadedEvents = (loadedEvents, done) => {
   }
 };
 
-exports.getUniqueID = () => {
+module.exports.getUniqueID = () => {
 
   return uuid.v1().replace(new RegExp('-', 'g'), '');
 };
 
-exports.expectParsedFrame = frame => {
+module.exports.expectParsedFrame = frame => {
 
   expect(frame).to.be.an('Object');
   expect(frame).to.have.property('command');
@@ -107,7 +107,7 @@ exports.expectParsedFrame = frame => {
   expect(frame).to.have.property('body');
 };
 
-exports.parseAck = (event, done) => {
+module.exports.parseAck = (event, done) => {
   try {
     return JSON.parse(specialChars.unEscapeStr(event.ack));
   } catch (error) {
@@ -151,4 +151,15 @@ module.exports.makeEventsArr = (size, eventType, swimlane) => {
         ack: index
       };
     })
+};
+
+module.exports.testLoadedEvents = (loadedEvents) => {
+  const firstItem = loadedEvents[0];
+  const secondItem = loadedEvents[1];
+
+  //compare created with loaded
+  loadedEvents = helpers.removeEventsArrProperty(loadedEvents, 'id');
+
+  expect(firstItem).to.deep.equal(createEvents[0]);
+  expect(secondItem).to.deep.equal(updateEvents[0]);
 };

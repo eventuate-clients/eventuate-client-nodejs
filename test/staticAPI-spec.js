@@ -2,6 +2,7 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const escapeStr = require('../dist/modules/specialChars').escapeStr;
+const parseJSON = require('../dist/modules/utils').parseJSON;
 
 const esClient = helpers.createEsClient();
 
@@ -159,6 +160,37 @@ describe('Test static API ', () => {
       expect(esClient.checkEvents([event1, event2])).to.be.true;
     });
 
+  });
+
+  describe('Test parseJSON()', () => {
+
+    it('should parse JSON string', done => {
+
+      const jsonStr = '{ "a": 1, "b": 2, "c": 3 }';
+      parseJSON(jsonStr)
+        .then( res => {
+
+          console.log('res:', res);
+          expect(res).to.be.an('Object');
+          expect(res).to.have.property('a');
+          expect(res).to.have.property('b');
+          expect(res).to.have.property('c');
+          done();
+
+        })
+        .catch(done);
+    });
+
+    it('should return error for incorrect JSON string', done => {
+
+      const jsonStr = '{ "a": 1, "b": 2, "c": 3 ';
+      parseJSON(jsonStr)
+        .then()
+        .catch(err => {
+          expect(err).to.be.instanceof(Error);
+          done();
+        });
+    });
   });
 
 });

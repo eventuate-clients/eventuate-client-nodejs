@@ -13,7 +13,7 @@ import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
 import EsServerError from './EsServerError';
-import { parseIsTrue, toJSON } from './utils';
+import { parseIsTrue, parseJSON } from './utils';
 import { getLogger } from './logger';
 import Result from './Result';
 
@@ -120,32 +120,28 @@ export default class EsClient {
           return result.failure(err);
         }
 
-        toJSON(body, (err, jsonBody) => {
+        parseJSON(body)
+          .then(jsonBody => {
 
-          if (err) {
-            return result.failure(err);
-          }
+            const { entityId, entityVersion, eventIds} = jsonBody;
 
-          const { entityId, entityVersion, eventIds} = jsonBody;
+            if (!entityId || !entityVersion || !eventIds) {
+              return result.failure({
+                error: 'Bad server response',
+                statusCode: httpResponse.statusCode,
+                message: body
+              });
+            }
 
-          if (!entityId || !entityVersion || !eventIds) {
-            return result.failure({
-              error: 'Bad server response',
-              statusCode: httpResponse.statusCode,
-              message: body
-            });
-          }
-
-          result.success({
-            entityIdTypeAndVersion: { entityId, entityVersion },
-            eventIds
-          });
+            result.success({
+              entityIdTypeAndVersion: { entityId, entityVersion },
+              eventIds
+            })
+            .catch(result.failure);
         });
       });
 
-
     });
-
 
   }
 
@@ -174,17 +170,15 @@ export default class EsClient {
           return result.failure(err);
         }
 
-        toJSON(body, (err, jsonBody) => {
-
-          if (err) {
-            return result.failure(err);
-          }
+        parseJSON(body)
+          .then(jsonBody => {
 
           const events = this.eventDataToObject(jsonBody.events);
 
           result.success(events);
 
-        });
+        })
+        .catch(result.failure);
 
       });
 
@@ -224,26 +218,25 @@ export default class EsClient {
           return result.failure(err);
         }
 
-        toJSON(body, (err, jsonBody) => {
-          if (err) {
-            return result.failure(err);
-          }
+        parseJSON(body)
+          .then(jsonBody => {
 
-          const { entityId, entityVersion, eventIds} = jsonBody;
+            const { entityId, entityVersion, eventIds} = jsonBody;
 
-          if (!entityId || !entityVersion || !eventIds) {
-            return result.failure({
-              error: 'Bad server response',
-              statusCode: httpResponse.statusCode,
-              message: body
+            if (!entityId || !entityVersion || !eventIds) {
+              return result.failure({
+                error: 'Bad server response',
+                statusCode: httpResponse.statusCode,
+                message: body
+              });
+            }
+
+            result.success({
+              entityIdTypeAndVersion: { entityId, entityVersion },
+              eventIds
             });
-          }
-
-          result.success({
-            entityIdTypeAndVersion: { entityId, entityVersion },
-            eventIds
-          });
-        });
+          })
+          .catch(result.failure);
       });
     });
   }

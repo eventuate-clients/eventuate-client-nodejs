@@ -3,15 +3,13 @@ export const parseIsTrue = val => {
   return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
 };
 
-export const toJSON = (v, callback) => {
+export const parseJSON = (v) => {
 
-  if (typeof (v) == 'object') {
-    return callback(null, v);
-  }
+  return new Promise((resolve, reject) => {
+    if (typeof v == 'object') {
+      return resolve(v);
+    }
 
-  try {
-    callback(null, JSON.parse(v));
-  } catch (err) {
-    callback(err);
-  }
+    resolve(JSON.parse(v));
+  });
 };
