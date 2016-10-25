@@ -2,6 +2,7 @@
 const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
+const EsServerError = require('../dist/modules/EsServerError');
 
 const esClient = helpers.createEsClient();
 
@@ -13,12 +14,13 @@ const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helper
 
 const entityTypesAndEvents = {
   [entityTypeName]: [
-    'net.chrisrichardson.eventstore.example.MyEntityWasCreated',
-    'net.chrisrichardson.eventstore.example.MyEntityNameChanged'
+    'net.chrisrichardson.eventstore.example.MyEntityWasCreated'
   ]
 };
 
 let entityVersion;
+let triggeringEventToken;
+let entityId;
 
 describe('Create entity, subscribe for event and update with triggeringEventToken', function () {
   this.timeout(timeout);
@@ -36,7 +38,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
     .catch(done);
   });
 
-  it('should subscribe for events', done => {
+  it('should subscribe for events and update with triggeringEventToken', done => {
     //subscribe for events
     const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
       if (err) {
@@ -52,42 +54,60 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
         subscribe.acknowledge(event.ack);
         helpers.expectEvent(event);
 
-        let entityId = event.entityId;
-        let triggeringEventToken = event.eventToken;
+        entityId = event.entityId;
+        triggeringEventToken = event.eventToken;
 
-        console.log(entityTypeName, entityId);
         esClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
           .then(loadedEvents => {
 
-            console.log(loadedEvents);
-
             helpers.expectLoadedEvents(loadedEvents);
 
-            const entityVersion = loadedEvents[0].id;
+            const entityVersion = loadedEvents[loadedEvents.length - 1].id;
             const updateEvents = [
               { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"George"}' }
             ];
 
-            return esClient.update(entityTypeName, entityId, entityVersion, updateEvents)
+            return esClient.update(entityTypeName, entityId, entityVersion, updateEvents, { triggeringEventToken })
           })
           .then(updatedEntityAndEventInfo => {
+            console.log('updatedEntityAndEventInfo:', updatedEntityAndEventInfo);
+
             helpers.expectCommandResult(updatedEntityAndEventInfo);
-            console.log('updatedEntityAndEventInfo', updatedEntityAndEventInfo)
+
             done();
           })
           .catch(done);
 
       },
-        err => {
-        done(err);
-      },
+      done,
       () => {
         console.log('Completed');
-        console.log('Processed messages: ', processedMessagesNumber);
-
-        expect(processedMessagesNumber).to.equal(shouldBeProcessedNumber, 'Processed messages number not equal to expected');
-        done();
       }
     );
+  });
+
+  it('should got error 409', done => {
+    expect(triggeringEventToken).to.be.ok;
+    expect(entityId).to.be.ok;
+
+    esClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
+      .then(loadedEvents => {
+
+        helpers.expectLoadedEvents(loadedEvents);
+
+        const entityVersion = loadedEvents[0].id;
+        const updateEvents = [
+          { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"Bob"}' }
+        ];
+
+        return esClient.update(entityTypeName, entityId, entityVersion, updateEvents)
+      })
+      .then()
+      .catch(err => {
+        expect(err.statusCode).to.equal(409);
+        done();
+
+      });
+
   });
 });

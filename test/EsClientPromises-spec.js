@@ -88,7 +88,7 @@ describe('ES Node.js Client: function loadEvents()', function () {
       .then(loadedEvents => {
 
         helpers.expectLoadedEvents(loadedEvents);
-        helpers.testLoadedEvents(loadedEvents);
+        helpers.testLoadedEvents(loadedEvents, createEvents, updateEvents);
         done();
 
       })

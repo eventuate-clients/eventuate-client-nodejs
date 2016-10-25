@@ -153,13 +153,14 @@ module.exports.makeEventsArr = (size, eventType, swimlane) => {
     })
 };
 
-module.exports.testLoadedEvents = (loadedEvents) => {
+module.exports.testLoadedEvents = (loadedEvents, createEvents, updateEvents) => {
+
+  loadedEvents = module.exports.removeEventsArrProperty(loadedEvents, 'id');
+
   const firstItem = loadedEvents[0];
   const secondItem = loadedEvents[1];
 
   //compare created with loaded
-  loadedEvents = helpers.removeEventsArrProperty(loadedEvents, 'id');
-
   expect(firstItem).to.deep.equal(createEvents[0]);
   expect(secondItem).to.deep.equal(updateEvents[0]);
 };

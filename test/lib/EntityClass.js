@@ -78,33 +78,7 @@ class EntityClass {
 
   processCommand(command) {
 
-    /*switch(command.commandType) {
-      case CreateEntityCommand:
-  
-        return [
-          {
-            eventType: MyEntityWasCreatedEvent,
-            eventData: {
-              timestamp: command.createTimestamp
-            }
-          }
-        ];
-        break;
-  
-      case UpdateEntityCommand:
-  
-        return [
-          {
-            eventType: MyEntityWasUpdatedEvent,
-            eventData: {
-              timestamp: command.updateTimestamp
-            }
-          }];
-        break;
-  
-      default:
-        break;
-    }*/
+
   }
 
 

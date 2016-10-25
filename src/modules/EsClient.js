@@ -101,7 +101,7 @@ export default class EsClient {
       const result = new Result({ resolve, reject, callback });
       //check input params
       if(!entityTypeName || !this.checkEvents(_events)) {
-        return result.failure(new Error('Incorrect input parameters'));
+        return result.failure(new Error('Incorrect input parameters for create()'));
       }
 
       const events = this.prepareEvents(_events);
@@ -156,8 +156,9 @@ export default class EsClient {
       const result = new Result({ resolve, reject, callback });
 
       //check input params
+      console.log('entityTypeName, entityId:', entityTypeName, entityId);
       if (!entityTypeName || !entityId) {
-        return result.failure(new Error('Incorrect input parameters'));
+        return result.failure(new Error('Incorrect input parameters for loadEvents'));
       }
 
       let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
@@ -198,7 +199,7 @@ export default class EsClient {
 
       //check input params
       if (!entityTypeName || !entityId || !entityVersion || !this.checkEvents(_events)) {
-        return result.failure(new Error('Incorrect input parameters'));
+        return result.failure(new Error('Incorrect input parameters for update()'));
       }
 
       const events = this.prepareEvents(_events);

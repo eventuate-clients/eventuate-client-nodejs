@@ -13,8 +13,7 @@ const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 
 const entityTypesAndEvents = {
   [entityTypeName]: [
-    MyEntityCreateEvent,
-    MyEntityWasCreatedEvent
+    MyEntityCreateEvent
   ]
 };
 
@@ -26,6 +25,9 @@ const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 const aggregateRepository = new AggregateRepository();
 
 const timeout = 200000;
+
+let entityId;
+let triggeringEventToken;
 
 describe('AggregateRepository with triggeringEventToken', function () {
 
@@ -53,12 +55,11 @@ describe('AggregateRepository with triggeringEventToken', function () {
   });
 
 
-  it('should subscribe for events', done => {
+  it('should subscribe for events and update', done => {
 
     //Define event handlers
     const eventHandlers = {
-      [MyEntityCreateEvent]: handleMyEntityCreateEvent,
-      [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent
+      [MyEntityCreateEvent]: handleMyEntityCreateEvent
     };
 
     function handleMyEntityCreateEvent(event) {
@@ -67,9 +68,8 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
       helpers.expectEvent(event);
 
-      const entityId = event.entityId;
-      const triggeringEventToken = event.eventToken;
-      //const triggeringEventToken = 'eyJzdWJzY3JpYmVySWQiOiJkNmJmYTQ3YzI4M2Y0ZmNmYjIzYzQ5YjJkZjhjMTBlZF9kZWZhdWx0X3Rlc3QtRXZlbnRTdG9yZVV0aWxzV2l0aFRyaWdnZXJpbmdFdmVudFRva2VuIiwiZXZlbnRJZEFuZFR5cGUiOnsiaWQiOiIwMDAwMDE1N2Q4Nzk2MDZmLTAyNDJhYzExMDBmYjAwMDIiLCJldmVudFR5cGUiOiJuZXQuY2hyaXNyaWNoYXJkc29uLmV2ZW50c3RvcmUuZXhhbXBsZS5NeUVudGl0eUNyZWF0ZUV2ZW50In0sInNlbmRlciI6eyJlbnRpdHlJZCI6IjAwMDAwMTU3ZDg3OTYwNmUtMDI0MmFjMTEwMGZjMDAwMCIsImVudGl0eVR5cGUiOiJkNmJmYTQ3YzI4M2Y0ZmNmYjIzYzQ5YjJkZjhjMTBlZC9kZWZhdWx0L25ldC5jaHJpc3JpY2hhcmRzb24uZXZlbnRzdG9yZS5leGFtcGxlLk15RW50aXR5In0sInByb3ZpZGVySGFuZGxlIjoiMDAwMDAxNTdkODc5NjEzOS0wMjQyYWMxMTAwZmEwMDAwOmQ2YmZhNDdjMjgzZjRmY2ZiMjNjNDliMmRmOGMxMGVkX1NMQVNIX2RlZmF1bHRfU0xBU0hfbmV0LmNocmlzcmljaGFyZHNvbi5ldmVudHN0b3JlLmV4YW1wbGUuTXlFbnRpdHk6NjoxNDE5OCIsImV2ZW50SWQiOiIwMDAwMDE1N2Q4Nzk2MDZmLTAyNDJhYzExMDBmYjAwMDIiLCJldmVudFR5cGUiOiJuZXQuY2hyaXNyaWNoYXJkc29uLmV2ZW50c3RvcmUuZXhhbXBsZS5NeUVudGl0eUNyZWF0ZUV2ZW50In0';
+      entityId = event.entityId;
+      triggeringEventToken = event.eventToken;
       const createdTimestamp = new Date().getTime();
 
       const command = {
@@ -81,25 +81,13 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
       return aggregateRepository.updateEntity({ EntityClass, entityId, command, options })
         .then(result => {
+          console.log('result:', result);
+          helpers.expectCommandResult(result);
 
-         console.log('result:', result);
-
-          //helpers.expectCommandResult(result);
+          done();
         })
         .catch(done);
     }
-
-    function handleMyEntityWasCreatedEvent(event) {
-
-      //console.log('event:', event);
-
-      helpers.expectEvent(event);
-
-      done();
-
-      return Promise.resolve();
-    }
-
 
     function getEventHandler (eventType) {
       if (typeof eventHandlers[eventType] != 'undefined') {
@@ -123,5 +111,31 @@ describe('AggregateRepository with triggeringEventToken', function () {
       dispatcher.run(subscription);
 
     });
+  });
+
+  it('should update with old triggeredEventToken', done => {
+    expect(triggeringEventToken).to.be.ok;
+    expect(entityId).to.be.ok;
+
+    const createdTimestamp = new Date().getTime();
+
+    const command = {
+      commandType: CreatedEntityCommand,
+      createdTimestamp
+    };
+
+    const options = { triggeringEventToken };
+
+    aggregateRepository.updateEntity({ EntityClass, entityId, command, options })
+      .then(result => {
+        console.log('result2:', result);
+        helpers.expectCommandResult(result);
+
+        done();
+      })
+      .catch(done);
+
+    done();
+
   });
 });

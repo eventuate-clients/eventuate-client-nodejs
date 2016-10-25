@@ -37,70 +37,82 @@ export default class AggregateRepository {
         times: EVENT_STORE_UTILS_RETRIES_COUNT,
         fn: ({ EntityClass, entityId, command, options }) => {
 
-            const entity = new EntityClass();
-            const { entityTypeName } = entity;
+          const entity = new EntityClass();
+          const { entityTypeName } = entity;
 
-            return this.loadEvents({ entityTypeName, entityId, options })
-              .then(
-                loadedEvents => {
+          let entityVersion;
 
-                  const entityVersion = this.getEntityVersionFromEvents(loadedEvents);
+          return this.loadEvents({ entityTypeName, entityId, options })
+            .then(
+              loadedEvents => {
 
-                  if (!entityVersion) {
-                    return reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
-                  }
+                entityVersion = this.getEntityVersionFromEvents(loadedEvents);
 
-                  //iterate through the events calling entity.applyEvent(..)
-                  this.applyEntityEvents(loadedEvents, entity);
-
-                  const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
-
-                  const events = processCommandMethod.call(entity, command);
-
-                  return this.esClient.update(entityTypeName, entityId, entityVersion, events, options);
-                },
-                err => {
-                  logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
-                  logger.error(err);
-                  return Promise.reject(err);
+                if (!entityVersion) {
+                  return reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
                 }
-              )
-              .then(
-                result => {
 
-                  logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
-                  return Promise.resolve(result);
+                //iterate through the events calling entity.applyEvent(..)
+                this.applyEntityEvents(loadedEvents, entity);
 
-                },
-                error => {
+                const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
 
-                  logger.error(`Update entity failed: ${EntityClass.name} ${entityId} ${entityVersion}`);
-                  logger.error(error);
+                const events = processCommandMethod.call(entity, command);
 
-                  if (error.statusCode == 409) {
+                return this.esClient.update(entityTypeName, entityId, entityVersion, events, options);
+              },
+              err => {
+                logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
+                logger.error(err);
+                return Promise.reject(err);
+              }
+            )
+            .then(
+              result => {
 
-                    logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+                logger.debug(`Updated entity: ${EntityClass.name} ${entityId} ${JSON.stringify(result)}`);
+                return Promise.resolve(result);
 
-                    delete options.triggeringEventToken;
+              },
+              error => {
 
-                    return this.loadEvents(entityTypeName, entityId, options)
-                  }
+                logger.error(`Update entity failed: ${EntityClass.name} ${entityId}`);
+                logger.error(error);
 
-                  return Promise.reject(error)
-                    .then(
-                      loadedEvents => {
+                if (error.statusCode == 409) {
 
-                        logger.info('loadedEvents:', loadedEvents);
-                        return Promise.resolve(loadedEvents.pop());
-                      },
-                      err => {
+                  logger.debug(`Updated before, loading events instead - ${EntityClass.name} ${entityId}`);
 
-                        logger.error('err:', err);
-                        return Promise.reject(err);
-                      }
-                    );
+                  delete options.triggeringEventToken;
+
+                  logger.debug('entityTypeName, entityId, options', entityTypeName, entityId, options);
+                  return this.loadEvents({ entityTypeName, entityId })
                 }
-              )
+
+                return Promise.reject(error);
+              }
+            )
+            .then(
+              loadedEvents => {
+
+                const lastEvent = loadedEvents[loadedEvents.length -1];
+                logger.info('loadedEvents:', loadedEvents);
+                const result = {
+                  entityIdTypeAndVersion: {
+                    entityId,
+                    entityVersion
+                  },
+                  eventIds: [ lastEvent.id ]
+                };
+
+                return Promise.resolve(result);
+              },
+              err => {
+
+              logger.error('err:', err);
+              return Promise.reject(err);
+            }
+          );
         }
       });
   }
@@ -114,13 +126,13 @@ export default class AggregateRepository {
 
     return function () {
 
-      let args = [].slice.call(arguments);
+      var args = [].slice.call(arguments);
 
       return new Promise((resolve, reject) => {
-        let count = times;
+        var count = times;
         let innerCtx = this || ctx;
 
-        let worker = function () {
+        var worker = function () {
           fn.apply(innerCtx, args)
             .then(result => {
 
@@ -136,7 +148,7 @@ export default class AggregateRepository {
                   return reject(err);
                 }
 
-                logger.debugq(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
+                logger.debug(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
                 setTimeout(worker, 100);
 
                 return;
