@@ -67,7 +67,7 @@ describe('AggregateRepository: function createEntity()', function () {
 
     aggregateRepository.updateEntity({ EntityClass, entityId, command })
       .then(updatedEntityAndEventInfo => {
-
+      console.log('updateEntity result:' , updatedEntityAndEventInfo);
       helpers.expectCommandResult(updatedEntityAndEventInfo, done);
       })
       .catch(done);
@@ -90,7 +90,7 @@ describe('AggregateRepository: function createEntity()', function () {
 
         done();
 
-        /*describe('Test getApplyMethod() method', function () {
+        describe('Test getApplyMethod() method', function () {
 
           it('should return a function', () => {
 
@@ -124,7 +124,7 @@ describe('AggregateRepository: function createEntity()', function () {
             expect(processCommandMethod).to.be.a('Function');
           });
 
-        });*/
+        });
 
       })
       .catch(done);
@@ -150,7 +150,6 @@ describe('EventDispatcher', function () {
 
     function handleMyEntityWasCreatedEvent(event) {
 
-      console.log('event:', event);
       helpers.expectEvent(event);
 
       if (event.eventData.timestamp == createdTimestamp) {
@@ -162,7 +161,6 @@ describe('EventDispatcher', function () {
 
     function handleMyEntityWasUpdatedEvent(event) {
 
-      console.log('event:', event);
       helpers.expectEvent(event);
 
       if (event.eventData.timestamp == updateTimestamp) {

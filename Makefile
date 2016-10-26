@@ -9,6 +9,7 @@ test:
 		test/EsServerErrorClass-spec.js \
 		test/EsClient-spec.js \
 		test/EsClientPromises-spec.js \
+		test/EsClientTriggeringEventToken-spec.js \
 		test/AckOrderTracker-spec.js \
 		test/stomp-spec.js \
 		test/subscribe-spec.js \
@@ -16,6 +17,7 @@ test:
 		test/subscribeManyEvents-spec.js \
 		test/subscribeWithOptions-spec.js \
 		test/AggregateRepository-spec.js \
+		test/AggregateRepositoryWithTriggeringEventToken-spec.js \
 		test/ObservableQueue-spec.js \
 		test/EventTypeSwimlaneDispatcher-spec.js
 

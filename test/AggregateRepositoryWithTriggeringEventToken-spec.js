@@ -24,7 +24,7 @@ const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 
 const aggregateRepository = new AggregateRepository();
 
-const timeout = 200000;
+const timeout = 20000;
 
 let entityId;
 let triggeringEventToken;
@@ -63,8 +63,6 @@ describe('AggregateRepository with triggeringEventToken', function () {
     };
 
     function handleMyEntityCreateEvent(event) {
-
-      //console.log('event:', event);
 
       helpers.expectEvent(event);
 
@@ -128,14 +126,10 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
     aggregateRepository.updateEntity({ EntityClass, entityId, command, options })
       .then(result => {
-        console.log('result2:', result);
         helpers.expectCommandResult(result);
 
         done();
       })
       .catch(done);
-
-    done();
-
   });
 });

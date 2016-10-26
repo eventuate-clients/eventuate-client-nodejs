@@ -1,6 +1,7 @@
 import util from 'util';
 import EsClient from './EsClient';
 import { getLogger } from './logger';
+import { retryNTimes } from './utils';
 
 const logger = getLogger({ title: 'AggregateRepository' });
 
@@ -32,7 +33,7 @@ export default class AggregateRepository {
 
     this.esClient = new EsClient(esClientOpts);
 
-    this.updateEntity = this.retryNTimes(
+    this.updateEntity = retryNTimes(
       {
         times: EVENT_STORE_UTILS_RETRIES_COUNT,
         fn: ({ EntityClass, entityId, command, options }) => {
@@ -46,10 +47,12 @@ export default class AggregateRepository {
             .then(
               loadedEvents => {
 
+                logger.debug('loadedEvents result:', loadedEvents);
+
                 entityVersion = this.getEntityVersionFromEvents(loadedEvents);
 
                 if (!entityVersion) {
-                  return reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
+                  return Promise.reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
                 }
 
                 //iterate through the events calling entity.applyEvent(..)
@@ -87,80 +90,35 @@ export default class AggregateRepository {
 
                   logger.debug('entityTypeName, entityId, options', entityTypeName, entityId, options);
                   return this.loadEvents({ entityTypeName, entityId })
+                    .then(
+                      loadedEvents => {
+
+                      const lastEvent = loadedEvents[loadedEvents.length -1];
+                      logger.info('loadedEvents:', loadedEvents);
+                      const result = {
+                        entityIdTypeAndVersion: {
+                          entityId,
+                          entityVersion
+                        },
+                        eventIds: [ lastEvent.id ]
+                      };
+
+                      return Promise.resolve(result);
+                    },
+                      err => {
+
+                      logger.error('err:', err);
+                      return Promise.reject(err);
+                    }
+                  );
                 }
 
                 return Promise.reject(error);
               }
             )
-            .then(
-              loadedEvents => {
 
-                const lastEvent = loadedEvents[loadedEvents.length -1];
-                logger.info('loadedEvents:', loadedEvents);
-                const result = {
-                  entityIdTypeAndVersion: {
-                    entityId,
-                    entityVersion
-                  },
-                  eventIds: [ lastEvent.id ]
-                };
-
-                return Promise.resolve(result);
-              },
-              err => {
-
-              logger.error('err:', err);
-              return Promise.reject(err);
-            }
-          );
         }
       });
-  }
-
-  retryNTimes({ times, fn, ctx, errConditionFn }) {
-
-
-    if (typeof errConditionFn !== 'function') {
-      errConditionFn = err => err;
-    }
-
-    return function () {
-
-      var args = [].slice.call(arguments);
-
-      return new Promise((resolve, reject) => {
-        var count = times;
-        let innerCtx = this || ctx;
-
-        var worker = function () {
-          fn.apply(innerCtx, args)
-            .then(result => {
-
-              return resolve(result);
-            })
-            .catch(err => {
-
-              if (errConditionFn(err)) {
-
-                count--;
-
-                if (!count) {
-                  return reject(err);
-                }
-
-                logger.debug(`retryNTimes  ${count} - ${args[1]} - ${util.inspect(args[2])}`);
-                setTimeout(worker, 100);
-
-                return;
-              }
-
-              reject(err);
-            });
-        };
-
-        worker();
-      });
-    };
   }
 
   createEntity({ EntityClass, command, options }) {
@@ -178,7 +136,7 @@ export default class AggregateRepository {
       },
       err => {
         logger.error(`Create entity failed: ${EntityClass.name}`);
-        return err;
+        return Promise.reject(err);
       })
   }
 

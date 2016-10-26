@@ -156,7 +156,6 @@ export default class EsClient {
       const result = new Result({ resolve, reject, callback });
 
       //check input params
-      console.log('entityTypeName, entityId:', entityTypeName, entityId);
       if (!entityTypeName || !entityId) {
         return result.failure(new Error('Incorrect input parameters for loadEvents'));
       }
@@ -483,20 +482,20 @@ export default class EsClient {
   }
 
   disconnect() {
+
+    logger.debug('disconnect()');
+
     this.closed = true;
 
     invariant(this._connPromise, 'Disconnect without connection promise spotted.');
 
-    this._connPromise.then(conn => {
-      conn.disconnect();
-      if (this.stompClient) {
-        try {
-          this.stompClient.disconnect();
-        } catch (e) {
-          logger.error(e);
-        }
+    if (this.stompClient) {
+      try {
+        this.stompClient.disconnect();
+      } catch (e) {
+        logger.error(e);
       }
-    });
+    }
   }
 
   makeEvent(eventStr, ack) {

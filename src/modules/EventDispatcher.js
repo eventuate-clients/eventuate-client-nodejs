@@ -24,13 +24,13 @@ export default class EventDispatcher {
       .map(createObservable.call(this, this.getEventHandler))
       .merge(1)
       .subscribe(
-      (ack) => {
+        ack => {
         if (ack) {
           this.logger.debug('acknowledge: ', ack);
           subscription.acknowledge(ack);
         }
       },
-      (err) => this.logger.error('Subscribe Error', err),
+        err => this.logger.error('Event handler error:', err),
       () => this.logger.debug('Disconnected!')
     );
   }
@@ -47,13 +47,14 @@ function createObservable(getEventHandler) {
       return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
     }
 
-    eventHandler(event).then(
-      result => {
+    eventHandler(event)
+      .then(result => {
         observer.onNext(event.ack);
         observer.onCompleted();
-      },
-      observer.onError
-    );
+      })
+      .catch(err => {
+        observer.onError(err);
+      });
   });
 
 }

@@ -3,6 +3,8 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const escapeStr = require('../dist/modules/specialChars').escapeStr;
 const parseJSON = require('../dist/modules/utils').parseJSON;
+const retryNTimes = require('../dist/modules/utils').retryNTimes;
+const timeout = 15000;
 
 const esClient = helpers.createEsClient();
 
@@ -71,7 +73,7 @@ describe('Test static API ', () => {
   });
 
 
-  describe('Test serialiseObject() function', () => {
+/*  describe('Test serialiseObject() function', () => {
 
     it('should have function serialiseObject()', () => {
 
@@ -170,7 +172,6 @@ describe('Test static API ', () => {
       parseJSON(jsonStr)
         .then( res => {
 
-          console.log('res:', res);
           expect(res).to.be.an('Object');
           expect(res).to.have.property('a');
           expect(res).to.have.property('b');
@@ -191,6 +192,67 @@ describe('Test static API ', () => {
           done();
         });
     });
+  });*/
+
+  describe('Test retryNTimes()', function () {
+
+    this.timeout(timeout);
+    it('should run a function 6 times and return "success"', done => {
+
+      let i = 0;
+
+      function workerFn(b) {
+
+
+        return new Promise((resolve, reject) => {
+
+          if (i < 5) {
+
+            i = i + b;
+            return reject(new Error('Failure'));
+          }
+
+          return resolve('success');
+
+        });
+      }
+
+      const retryA = retryNTimes({ times: 6, fn: workerFn });
+
+
+      retryA(1)
+        .then(result => {
+
+          expect(result).to.equal('success');
+          done();
+        })
+        .catch(done);
+    });
+
+    it('should return error', done => {
+
+      function workerFn(b) {
+
+
+        return new Promise((resolve, reject) => {
+
+          reject(new Error('Failure'));
+        });
+      }
+
+      const retryA = retryNTimes({ times: 6, fn: workerFn });
+
+
+      retryA(1)
+        .then()
+        .catch(err => {
+
+          expect(err).to.be.instanceof(Error);
+          done();
+        });
+    });
   });
+
+
 
 });

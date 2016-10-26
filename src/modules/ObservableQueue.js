@@ -27,7 +27,7 @@ export default class ObservableQueue {
           }
         },
         err => {
-          this.logger.error('Subscribe Error', err);
+          this.logger.error('Event handler error:', err);
         },
         () => this.logger.debug('Disconnected!')
       );

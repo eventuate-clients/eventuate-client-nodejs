@@ -43,7 +43,8 @@ export default class Subscriber {
       return this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
 
         if (err) {
-          return callback(err);
+          this.logger.error('Subscribe error:', err);
+          return;
         }
 
         this.logger.info(`The subscription has been established receipt-id: ${receiptId}`);
