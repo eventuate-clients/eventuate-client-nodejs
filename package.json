@@ -2,28 +2,40 @@
   "name": "@eventuateinc/eventuate-nodejs-client",
   "version": "1.0.12",
   "description": "NodeJS-based client for the Eventuate Platform",
-  "main": "modules/es.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "mocha --reporter spec --ui bdd test/structure-spec.js test/specialChars-spec.js test/esClient-spec.js test/subscribe1-spec.js test/subscribe2-spec.js test/subscribe3-spec.js test/EventStoreUtils-spec.js",
-    "compile": "babel --presets es2015,stage-0 --plugins add-module-exports -d modules/ src/"
+    "test": "mocha --reporter spec --ui bdd test/staticAPI-spec.js test/specialChars-spec.js test/EsServerErrorClass-spec.js test/EsClient-spec.js test/EsClientPromises-spec.js test/EsClientTriggeringEventToken-spec.js test/AckOrderTracker-spec.js test/stomp-spec.js test/subscribe-spec.js test/subscribeTwoSubscribers-spec.js test/subscribeManyEvents-spec.js test/subscribeWithOptions-spec.js test/AggregateRepository-spec.js test/AggregateRepositoryWithTriggeringEventToken-spec.js  test/ObservableQueue-spec.js test/EventTypeSwimlaneDispatcher-spec.js",
+    "compile": "rm -fr dist/* && babel --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/"
   },
   "author": "",
   "license": "Apache License, Version 2",
   "dependencies": {
     "agentkeepalive": "^2.0.2",
     "babel-polyfill": "^6.3.14",
-    "promise": "^6.1.0",
+    "invariant": "^2.2.1",
+    "log4js": "^0.6.38",
     "rx": "^2.4.1",
     "stomp": "^0.1.1",
-    "underscore": "^1.8.3",
     "uuid": "^2.0.2"
   },
   "devDependencies": {
-    "babel-plugin-add-module-exports": "^0.1.2",
+    "babel-cli": "^6.9.0",
+    "babel-plugin-add-module-exports": "^0.1.4",
     "babel-preset-es2015": "^6.3.13",
     "babel-preset-stage-0": "^6.3.13",
+    "chai": "^3.5.0",
     "mocha": "^2.1.0",
+    "mocha.parallel": "^0.13.0",
     "should": "^4.6.3",
     "uuid": "^2.0.1"
+  },
+  "babel": {
+    "presets": [
+      "es2015",
+      "stage-0"
+    ],
+    "plugins": [
+      "add-module-exports"
+    ]
   }
 }
