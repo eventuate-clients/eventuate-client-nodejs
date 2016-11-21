@@ -22,7 +22,8 @@ const EntityClass = require('./lib/EntityClass');
 const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
-const aggregateRepository = new AggregateRepository();
+const eventuateClient = helpers.createEventuateClient();
+const aggregateRepository = new AggregateRepository({ eventuateClient });
 
 const timeout = 20000;
 

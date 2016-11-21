@@ -9,29 +9,13 @@ const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_CO
 
 export default class AggregateRepository {
 
-  constructor({ apiKey = {} } = {}) {
+  constructor({ eventuateClient = {} } = {}) {
 
-    if (!apiKey.id) {
-      apiKey.id = process.env.EVENTUATE_API_KEY_ID || process.env.EVENT_STORE_USER_ID;
+    if (!eventuateClient) {
+      throw new Error('The option `eventuateClient` is not provided.')
     }
 
-    if (!apiKey.secret) {
-      apiKey.secret = process.env.EVENTUATE_API_KEY_SECRET || process.env.EVENT_STORE_PASSWORD;
-    }
-
-    if (!apiKey.id || !apiKey.secret) {
-      throw new Error('Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set Event Store auth data');
-    }
-
-    const eventuateClientOpts = {
-      apiKey: apiKey,
-      httpKeepAlive: true,
-      spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
-    };
-
-    logger.debug('Using EventuateClient options:', eventuateClientOpts);
-
-    this.eventuateClient = new EventuateClient(eventuateClientOpts);
+    this.eventuateClient = eventuateClient;
 
     this.updateEntity = retryNTimes(
       {
