@@ -189,7 +189,7 @@ describe('EventDispatcher', function () {
       }
     ];
 
-    const subscriber = new Subscriber({ subscriptions });
+    const subscriber = new Subscriber({ eventuateClient, subscriptions });
 
     subscriber.subscribe().forEach(subscription => {
       //Create EventDispatcher instance

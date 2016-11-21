@@ -72,7 +72,7 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     });
 
-    const subscriber = new Subscriber({ subscriptions });
+    const subscriber = new Subscriber({ eventuateClient, subscriptions });
 
     subscriber.subscribe().forEach(subscription => {
 
