@@ -2,7 +2,7 @@ import 'babel-polyfill';
 import util from 'util';
 import Rx from 'rx';
 import Agent, { HttpsAgent } from 'agentkeepalive';
-import url from 'url';
+import urlUtils from 'url';
 import uuid from 'uuid';
 import http from 'http';
 import https from 'https';
@@ -13,7 +13,7 @@ import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
 import EventuateServerError from './EventuateServerError';
-import { parseIsTrue, parseJSON } from './utils';
+import { parseJSON } from './utils';
 import { getLogger } from './logger';
 import Result from './Result';
 
@@ -21,25 +21,22 @@ const logger = getLogger({ title: 'EventuateClient' });
 
 export default class EventuateClient {
 
-  constructor({ apiKey, spaceName, httpKeepAlive, debug }) {
-
-    this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
-    this.stompHost = process.env.EVENTUATE_STOMP_SERVER_HOST || process.env.EVENT_STORE_STOMP_SERVER_HOST || 'api.eventuate.io';
-    this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
+  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug }) {
 
     this.apiKey = apiKey;
-    this.spaceName = spaceName || '';
+    this.url =  url;
+    this.stompHost = stompHost;
+    this.stompPort = stompPort;
+    this.spaceName = spaceName;
+    this.debug = debug;
 
-    this.urlObj = url.parse(this.url);
+    this.urlObj = urlUtils.parse(this.url);
 
     this.determineIfSecure();
     this.setupHttpClient();
     this.setupKeepAliveAgent(httpKeepAlive);
 
     this.baseUrlPath = '/entity';
-    this.debug = debug;
-
-
     this.subscriptions = {};
     this.receipts = {};
 
@@ -65,12 +62,6 @@ export default class EventuateClient {
   }
 
   setupKeepAliveAgent(httpKeepAlive) {
-
-    if (typeof httpKeepAlive === 'undefined') {
-      this.httpKeepAlive = true;
-    } else {
-      this.httpKeepAlive = parseIsTrue(httpKeepAlive);
-    }
 
     if (this.httpKeepAlive ) {
 

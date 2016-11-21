@@ -22,7 +22,7 @@ npm i @eventuateinc/eventuate-nodejs-client
     EVENTUATE_STOMP_SERVER_HOST(default api.eventuate.io)
     EVENTUATE_STOMP_SERVER_PORT(default 61614)
     EVENTUATE_SPACE_NAME
-    HTTP_KEEP_ALIVE(default true)
+    EVENTUATE_HTTP_KEEP_ALIVE(default true)
         
 # Configuration
 

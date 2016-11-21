@@ -1,8 +1,8 @@
-//import EventuateClient from '../src/modules/EventuateClient';
 const expect = require('chai').expect;
 const EventuateClient = require('../../dist');
 const uuid = require('uuid');
 const specialChars = require('../../dist/modules/specialChars');
+const EventuateClientConfiguration = require('../../dist/modules/EventuateClientConfiguration');
 
 module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {
@@ -117,20 +117,7 @@ module.exports.parseAck = (event, done) => {
 
 module.exports.createEventuateClient = () => {
 
-  const apiKey = {
-    id: process.env.EVENTUATE_API_KEY_ID,
-    secret: process.env.EVENTUATE_API_KEY_SECRET
-  };
-
-  if (!apiKey.id || !apiKey.secret) {
-    throw new Error("Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-  }
-
-  const eventuateClientOpts = {
-    apiKey,
-    spaceName: process.env.EVENTUATE_SPACE_NAME || false,
-    debug: false
-  };
+  const eventuateClientOpts = new EventuateClientConfiguration();
 
   return new EventuateClient(eventuateClientOpts);
 };
