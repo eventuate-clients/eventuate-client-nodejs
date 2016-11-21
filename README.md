@@ -66,14 +66,14 @@ esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', cre
 
 #High level client
 
-For an example of usage, please look at `test/EventStoreUtils-spec.js`
+For an example of usage, please look at `test/AggregateRepository-spec.js`
 
-Don't edit `modules/EventStoreUtils.js` and `modules/WorkflowEvents.js`. These files are generated with Babel.
+Don't edit `modules/AggregateRepository.js` and `modules/EventDispatcher.js`. These files are generated with Babel.
 
 The source code files are:
 
-    src/EventStoreUtils.js
-    src/WorkflowEvents.js
+    src/modules/AggregateRepository.js
+    src/modules/EventDispatcher.js
     
 These modules are written in ES6. If you are modifying these files you can use this command to recompile:
     
