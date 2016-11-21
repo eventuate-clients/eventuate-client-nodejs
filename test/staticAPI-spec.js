@@ -6,7 +6,7 @@ const parseJSON = require('../dist/modules/utils').parseJSON;
 const retryNTimes = require('../dist/modules/utils').retryNTimes;
 const timeout = 15000;
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 describe('Test static API ', () => {
 
@@ -14,13 +14,13 @@ describe('Test static API ', () => {
 
     it('should have function makeEvent()', () => {
 
-      expect(esClient).to.have.property('makeEvent');
-      expect(esClient.makeEvent).to.be.a('Function');
+      expect(eventuateClient).to.have.property('makeEvent');
+      expect(eventuateClient.makeEvent).to.be.a('Function');
     });
 
     it('should return error for empty string', () => {
 
-      const result = esClient.makeEvent('');
+      const result = eventuateClient.makeEvent('');
       expect(result).to.have.property('error');
       expect(result.error).to.be.instanceof(Error);
     });
@@ -29,7 +29,7 @@ describe('Test static API ', () => {
 
       const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
 
-      const result = esClient.makeEvent(eventStr);
+      const result = eventuateClient.makeEvent(eventStr);
       expect(result).to.have.property('error');
       expect(result.error).to.be.instanceof(Error);
 
@@ -55,7 +55,7 @@ describe('Test static API ', () => {
           eventType: 'net.chrisrichardson.eventstore.example.MyEntityWasCreated' } };
 
 
-      const result = esClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
+      const result = eventuateClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
 
 
       if (result.error) {
@@ -77,14 +77,14 @@ describe('Test static API ', () => {
 
     it('should have function serialiseObject()', () => {
 
-      expect(esClient).to.have.property('serialiseObject');
-      expect(esClient.serialiseObject).to.be.a('Function');
+      expect(eventuateClient).to.have.property('serialiseObject');
+      expect(eventuateClient.serialiseObject).to.be.a('Function');
     });
 
     it('should return serialised object', () => {
 
       const obj = { a: 1, b: 2, c: 3 };
-      const serialised = esClient.serialiseObject(obj);
+      const serialised = eventuateClient.serialiseObject(obj);
       expect(serialised).to.equal('a=1&b=2&c=3');
     });
 
@@ -93,8 +93,8 @@ describe('Test static API ', () => {
   describe('Test addBodyOptions() function', () => {
 
     it('should have function addBodyOptions()', () => {
-      expect(esClient).to.have.property('addBodyOptions');
-      expect(esClient.addBodyOptions).to.be.a.Function;
+      expect(eventuateClient).to.have.property('addBodyOptions');
+      expect(eventuateClient.addBodyOptions).to.be.a.Function;
     });
 
     it('should add new options into jsonData', () => {
@@ -103,7 +103,7 @@ describe('Test static API ', () => {
       };
       const options = { a: 1, b: 2, c: 3 };
 
-      esClient.addBodyOptions(jsonData, options);
+      eventuateClient.addBodyOptions(jsonData, options);
 
       expect(jsonData).to.contain.deep(options);
 
@@ -114,17 +114,17 @@ describe('Test static API ', () => {
   describe('Test checkEvents() function', () => {
 
     it('should have function checkEvents()', () => {
-      expect(esClient).to.have.property('checkEvents');
-      expect(esClient.checkEvents).to.be.a('Function');
+      expect(eventuateClient).to.have.property('checkEvents');
+      expect(eventuateClient.checkEvents).to.be.a('Function');
     });
 
     it('should return false for empty events array', () => {
-      expect(esClient.checkEvents([])).to.be.false;
+      expect(eventuateClient.checkEvents([])).to.be.false;
     });
 
     it('should return false for {}', () => {
       const event = {};
-      expect(esClient.checkEvents([ event ])).to.be.false;
+      expect(eventuateClient.checkEvents([ event ])).to.be.false;
     });
 
     it('should return false for incorrect event', () => {
@@ -132,20 +132,20 @@ describe('Test static API ', () => {
         eventType: 'event1'
       };
 
-      expect(esClient.checkEvents(event)).to.be.false;
+      expect(eventuateClient.checkEvents(event)).to.be.false;
 
       event = {
         eventData: { a: 1 }
       };
 
-      expect(esClient.checkEvents(event)).to.be.false;
+      expect(eventuateClient.checkEvents(event)).to.be.false;
 
       event = {
         eventType: 'event1',
         eventData: '{"a": }'
       };
 
-      expect(esClient.checkEvents([event])).to.be.false;
+      expect(eventuateClient.checkEvents([event])).to.be.false;
     });
 
     it('should return true for correct event', () => {
@@ -159,7 +159,7 @@ describe('Test static API ', () => {
         eventData: { a: 1 }
       };
 
-      expect(esClient.checkEvents([event1, event2])).to.be.true;
+      expect(eventuateClient.checkEvents([event1, event2])).to.be.true;
     });
 
   });

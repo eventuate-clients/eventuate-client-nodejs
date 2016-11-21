@@ -6,7 +6,7 @@ const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const subscriberId = `subscriber-${helpers.getUniqueID()}`;
 
@@ -29,7 +29,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
     //create events
     const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
-    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
+    eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
       if (err) {
         return done(err);
       }
@@ -44,7 +44,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
         { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"George"}' }
       ];
 
-      esClient.update(entityTypeName, entityId, entityVersion, updateEvents, (err, updatedEntityAndEventInfo) => {
+      eventuateClient.update(entityTypeName, entityId, entityVersion, updateEvents, (err, updatedEntityAndEventInfo) => {
         if (err) {
           return done(err);
         }
@@ -54,7 +54,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
         let processedMessagesNumber = 0;
 
         //subscribe for events
-        const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
+        const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
           if (err) {
             return done(err)
           }

@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const subscriberId = 'subscribeManyEvents-test';
 
@@ -25,7 +25,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
     //create events
     const createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);
 
-    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
+    eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 
       if (err) {
         return done(err);
@@ -38,7 +38,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
       let processedMessagesNumber = 0;
 
       //subscribe for events
-      const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
+      const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
         if (err) {
           return done(err);
         }

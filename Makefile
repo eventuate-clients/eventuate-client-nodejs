@@ -6,10 +6,10 @@ test:
 		--ui bdd \
 		test/staticAPI-spec.js \
 		test/specialChars-spec.js \
-		test/EsServerErrorClass-spec.js \
-		test/EsClient-spec.js \
-		test/EsClientPromises-spec.js \
-		test/EsClientTriggeringEventToken-spec.js \
+		test/EventuateServerError-spec.js \
+		test/EventuateClient-spec.js \
+		test/EventuateClientPromises-spec.js \
+		test/EventuateClientTriggeringEventToken-spec.js \
 		test/AckOrderTracker-spec.js \
 		test/stomp-spec.js \
 		test/subscribe-spec.js \

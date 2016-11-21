@@ -2,9 +2,9 @@
 const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
-const EsServerError = require('../dist/modules/EsServerError');
+const EsServerError = require('../dist/modules/EventuateServerError');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 25000;
 
@@ -30,7 +30,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
     //create events
     const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
 
-    esClient.create(entityTypeName, createEvents)
+    eventuateClient.create(entityTypeName, createEvents)
       .then(createdEntityAndEventInfo => {
         helpers.expectCommandResult(createdEntityAndEventInfo);
         done();
@@ -40,7 +40,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
 
   it('should subscribe for events and update with triggeringEventToken', done => {
     //subscribe for events
-    const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, err => {
+    const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
       if (err) {
         return done(err)
       }
@@ -57,7 +57,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
         entityId = event.entityId;
         triggeringEventToken = event.eventToken;
 
-        esClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
+        eventuateClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
           .then(loadedEvents => {
 
             helpers.expectLoadedEvents(loadedEvents);
@@ -67,7 +67,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
               { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"George"}' }
             ];
 
-            return esClient.update(entityTypeName, entityId, entityVersion, updateEvents, { triggeringEventToken })
+            return eventuateClient.update(entityTypeName, entityId, entityVersion, updateEvents, { triggeringEventToken })
           })
           .then(updatedEntityAndEventInfo => {
             console.log('updatedEntityAndEventInfo:', updatedEntityAndEventInfo);
@@ -90,7 +90,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
     expect(triggeringEventToken).to.be.ok;
     expect(entityId).to.be.ok;
 
-    esClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
+    eventuateClient.loadEvents(entityTypeName, entityId, { triggeringEventToken })
       .then(loadedEvents => {
 
         helpers.expectLoadedEvents(loadedEvents);
@@ -100,7 +100,7 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
           { eventType: 'net.chrisrichardson.eventstore.example.MyEntityNameChanged', eventData: '{"name":"Bob"}' }
         ];
 
-        return esClient.update(entityTypeName, entityId, entityVersion, updateEvents)
+        return eventuateClient.update(entityTypeName, entityId, entityVersion, updateEvents)
       })
       .then()
       .catch(err => {

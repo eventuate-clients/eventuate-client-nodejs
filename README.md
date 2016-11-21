@@ -44,15 +44,15 @@ if (!apiKey.id || !apiKey.secret) {
   throw new Error("", "Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
 }
 
-var esClientOpts = {
+var eventuateClientOpts = {
   apiKey: apiKey
 };
 
-var esClient = new es.Client(esClientOpts);
+var eventuateClient = new EventuateClient(eventuateClientOpts);
 
 var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Fred' } } ];
 
-esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', createEvents, function (err, createdEntityAndEventInfo) {
+eventuateClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', createEvents, function (err, createdEntityAndEventInfo) {
 
   if (err) {
     console.error(err);

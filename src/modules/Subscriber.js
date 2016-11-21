@@ -1,4 +1,4 @@
-import EsClient from './EsClient';
+import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 
 export default class Subscriber {
@@ -9,10 +9,10 @@ export default class Subscriber {
     this.subscriptions = subscriptions;
     this.apiKey = apiKey;
 
-    this.esClient = this.createEsClientInstance()
+    this.eventuateClient = this.createEventuateClientInstance()
   }
 
-  createEsClientInstance() {
+  createEventuateClientInstance() {
     if (!this.apiKey.id) {
       this.apiKey.id = process.env.EVENTUATE_API_KEY_ID || process.env.EVENT_STORE_USER_ID;
     }
@@ -25,7 +25,7 @@ export default class Subscriber {
       throw new Error('Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set Event Store auth data');
     }
 
-    let esClientOpts = {
+    let eventuateClientOpts = {
       apiKey: this.apiKey,
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME,
@@ -33,14 +33,14 @@ export default class Subscriber {
 
     };
 
-    return new EsClient(esClientOpts);
+    return new EventuateClient(eventuateClientOpts);
   }
 
   subscribe() {
 
     return this.subscriptions.map(({ subscriberId, entityTypesAndEvents }) => {
 
-      return this.esClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
+      return this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
 
         if (err) {
           this.logger.error('Subscribe error:', err);

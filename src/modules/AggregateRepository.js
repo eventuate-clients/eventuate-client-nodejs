@@ -1,5 +1,5 @@
 import util from 'util';
-import EsClient from './EsClient';
+import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 import { retryNTimes } from './utils';
 
@@ -23,15 +23,15 @@ export default class AggregateRepository {
       throw new Error('Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set Event Store auth data');
     }
 
-    const esClientOpts = {
+    const eventuateClientOpts = {
       apiKey: apiKey,
       httpKeepAlive: true,
       spaceName: process.env.EVENTUATE_SPACE_NAME || process.env.EVENT_STORE_SPACE_NAME
     };
 
-    logger.debug('Using EsClient options:', esClientOpts);
+    logger.debug('Using EventuateClient options:', eventuateClientOpts);
 
-    this.esClient = new EsClient(esClientOpts);
+    this.eventuateClient = new EventuateClient(eventuateClientOpts);
 
     this.updateEntity = retryNTimes(
       {
@@ -62,7 +62,7 @@ export default class AggregateRepository {
 
                 const events = processCommandMethod.call(entity, command);
 
-                return this.esClient.update(entityTypeName, entityId, entityVersion, events, options);
+                return this.eventuateClient.update(entityTypeName, entityId, entityVersion, events, options);
               },
               err => {
                 logger.error(`Load events failed: ${entityTypeName} ${entityId}`);
@@ -129,7 +129,7 @@ export default class AggregateRepository {
 
     const events = processCommandMethod.call(entity, command);
 
-    return this.esClient.create(entity.entityTypeName, events, options)
+    return this.eventuateClient.create(entity.entityTypeName, events, options)
       .then(result=> {
         logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
         return result;
@@ -142,7 +142,7 @@ export default class AggregateRepository {
 
   loadEvents({ entityTypeName, entityId, options }) {
 
-    return this.esClient.loadEvents(entityTypeName, entityId, options);
+    return this.eventuateClient.loadEvents(entityTypeName, entityId, options);
   }
 
 

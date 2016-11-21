@@ -3,7 +3,7 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const uuid = require('uuid');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
 const eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
@@ -21,29 +21,28 @@ describe('ES Node.js Client: function create()', function () {
   this.timeout(timeout);
 
   it('function create() should return entityAndEventInfo object', done => {
-    
-    esClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 
-      if (err) {
-        return done(err);
-      }
+    eventuateClient.create(entityTypeName, createEvents)
+      .then(createdEntityAndEventInfo => {
 
-      helpers.expectCommandResult(createdEntityAndEventInfo);
+        helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
-      entityVersion = createdEntityAndEventInfo.eventIds[0];
+        entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
+        entityVersion = createdEntityAndEventInfo.eventIds[0];
 
-      done();
-    })
+        done();
+      })
+      .catch(done);
   });
 
   it('function create() should return error', done => {
 
-    esClient.create('', [], err => {
-
-      expect(err).to.be.instanceof(Error);
-      done();
-    });
+    eventuateClient.create('', [])
+      .then()
+      .catch(err => {
+        expect(err).to.be.instanceof(Error);
+        done();
+      });
   });
 
 });
@@ -58,24 +57,21 @@ describe('ES Node.js Client: function update()', function () {
     expect(entityId).to.be.ok;
     expect(entityVersion).to.be.ok;
 
-    esClient.update(entityTypeName, entityId, entityVersion, updateEvents, (err, updatedEntityAndEventInfo) => {
-
-      if (err) {
-        return done(err);
-      }
-
-      helpers.expectCommandResult(updatedEntityAndEventInfo, done);
-
-    });
+    eventuateClient.update(entityTypeName, entityId, entityVersion, updateEvents)
+      .then(updatedEntityAndEventInfo => {
+        helpers.expectCommandResult(updatedEntityAndEventInfo, done);
+      })
+      .catch(done);
   });
 
   it('function update() should return error', done => {
 
-    esClient.create('', [], err => {
-
-      expect(err).to.be.instanceof(Error);
-      done();
-    });
+    eventuateClient.update('', [])
+      .then()
+      .catch(err => {
+        expect(err).to.be.instanceof(Error);
+        done();
+      });
   });
 });
 
@@ -88,26 +84,25 @@ describe('ES Node.js Client: function loadEvents()', function () {
 
     expect(entityId).to.be.ok;
 
-    esClient.loadEvents(entityTypeName, entityId, (err, loadedEvents) => {
+    eventuateClient.loadEvents(entityTypeName, entityId)
+      .then(loadedEvents => {
 
-      if (err) {
-        return done(err);
-      }
+        helpers.expectLoadedEvents(loadedEvents);
+        helpers.testLoadedEvents(loadedEvents, createEvents, updateEvents);
+        done();
 
-      helpers.expectLoadedEvents(loadedEvents);
-      helpers.testLoadedEvents(loadedEvents, createEvents, updateEvents);
-      done();
-
-    });
+      })
+      .catch(done);
   });
 
   it('function loadEvents() should return error', done => {
 
-    esClient.loadEvents('', '', err => {
-
-      expect(err).to.be.instanceof(Error);
-      done();
-    });
+    eventuateClient.loadEvents('', '')
+      .then()
+      .catch(err => {
+        expect(err).to.be.instanceof(Error);
+        done();
+      });
   });
 
 });
@@ -124,17 +119,15 @@ describe('ES Node.js Client: function create() custom entityId', function () {
 
     const options = { entityId };
 
-    esClient.create(entityTypeName, createEvents, options, (err, createdEntityAndEventInfo) => {
+    eventuateClient.create(entityTypeName, createEvents, options)
+      .then(createdEntityAndEventInfo => {
 
-      if (err) {
-        return done(err);
-      }
+        helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      helpers.expectCommandResult(createdEntityAndEventInfo);
-
-      expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
-      done();
-    });
+        expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
+        done();
+      })
+      .catch(done);
   });
 
 });
@@ -150,16 +143,14 @@ describe('ES Node.js Client: function create() eventData contains unicode string
 
     const options = { entityId };
 
-    esClient.create(entityTypeName, createEvents, options, (err, createdEntityAndEventInfo) => {
+    eventuateClient.create(entityTypeName, createEvents, options)
+      .then(createdEntityAndEventInfo => {
 
-      if (err) {
-        return done(err);
-      }
+        helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      helpers.expectCommandResult(createdEntityAndEventInfo);
-
-      expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
-      done();
-    });
+        expect(createdEntityAndEventInfo.entityIdTypeAndVersion.entityId).to.equal(entityId);
+        done();
+      })
+      .catch(done);
   })
 });

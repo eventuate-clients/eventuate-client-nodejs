@@ -12,14 +12,14 @@ import invariant from 'invariant';
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
-import EsServerError from './EsServerError';
+import EventuateServerError from './EventuateServerError';
 import { parseIsTrue, parseJSON } from './utils';
 import { getLogger } from './logger';
 import Result from './Result';
 
-const logger = getLogger({ title: 'EsClient' });
+const logger = getLogger({ title: 'EventuateClient' });
 
-export default class EsClient {
+export default class EventuateClient {
 
   constructor({ apiKey, spaceName, httpKeepAlive, debug }) {
 
@@ -635,7 +635,7 @@ function statusCodeError(statusCode, message) {
 
   if (statusCode != 200) {
 
-    return new EsServerError({
+    return new EventuateServerError({
       error: `Server returned status code ${statusCode}`,
       statusCode,
       message
