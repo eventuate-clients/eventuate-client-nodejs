@@ -1,5 +1,4 @@
 import 'babel-polyfill';
-import util from 'util';
 import Rx from 'rx';
 import Agent, { HttpsAgent } from 'agentkeepalive';
 import urlUtils from 'url';
@@ -22,6 +21,7 @@ const logger = getLogger({ title: 'EventuateClient' });
 export default class EventuateClient {
 
   constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug }) {
+
 
     this.apiKey = apiKey;
     this.url =  url;

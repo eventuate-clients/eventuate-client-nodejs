@@ -2,7 +2,7 @@ const expect = require('chai').expect;
 const EventuateClient = require('../../dist');
 const uuid = require('uuid');
 const specialChars = require('../../dist/modules/specialChars');
-const EventuateClientConfiguration = require('../../dist/modules/EventuateClientConfiguration');
+const EventuateClientConfiguration = require('../../dist').EventuateClientConfiguration;
 
 module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {

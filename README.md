@@ -35,18 +35,11 @@ Setup environment variables:
 # Usage
 
 ```javascript
-var apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
 
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("", "Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
+var EventuateClient = require('@eventuateinc/eventuate-nodejs-client');
+var EventuateClientConfiguration = EventuateClient.EventuateClientConfiguration;
 
-var eventuateClientOpts = {
-  apiKey: apiKey
-};
+const eventuateClientOpts = new EventuateClientConfiguration({ debug: true });
 
 var eventuateClient = new EventuateClient(eventuateClientOpts);
 
