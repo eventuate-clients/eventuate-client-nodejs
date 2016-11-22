@@ -63,14 +63,8 @@ eventuateClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreate
 
 #High level client
 
-For an example of usage, please look at `test/AggregateRepository-spec.js`
+For an example of usage, please see `test/AggregateRepository-spec.js`, `test/AggregateRepositoryWithTriggeringEventToken-spec.js` and `test/EventTypeSwimlaneDispatcher-spec.js`
 
-Don't edit `modules/AggregateRepository.js` and `modules/EventDispatcher.js`. These files are generated with Babel.
-
-The source code files are:
-
-    src/modules/AggregateRepository.js
-    src/modules/EventDispatcher.js
     
     
 #Compilation:
