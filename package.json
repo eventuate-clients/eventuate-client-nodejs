@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "mocha --reporter spec --ui bdd test/*-spec.js",
-    "compile": "rm -fr dist/* && babel --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/"
+    "compile": "rm -fr dist/* && node_modules/babel-cli/bin/babel.js --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/"
   },
   "author": "",
   "license": "Apache License, Version 2",
@@ -26,8 +26,7 @@
     "chai": "^3.5.0",
     "mocha": "^2.1.0",
     "mocha.parallel": "^0.13.0",
-    "should": "^4.6.3",
-    "uuid": "^2.0.1"
+    "should": "^4.6.3"
   },
   "babel": {
     "presets": [

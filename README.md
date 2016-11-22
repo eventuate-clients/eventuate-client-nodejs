@@ -3,6 +3,10 @@ NodeJS-based client for the Eventuate Platform
 
 This is the NodeJS client for the [Eventuate Platform](http://eventuate.io/).
 
+System requirements:
+ - Node.js v0.12 or later
+ - NPM v2 or v3
+
 # Installation
 
 npm i @eventuateinc/eventuate-nodejs-client
@@ -71,6 +75,14 @@ The source code files are:
     
 #Compilation:
 
+Requirements:
+ - Node.js v0.12 or later
+ - NPM v2 or v3
+ 
+Install required Node.js modules:
+
+    npm install
+
 The Eventuate Client and its modules are written in ES6. 
 
 Use next command to transform ES6 code to the ECMAScript 5:
@@ -84,6 +96,11 @@ It will create `dist` directory.
 # Test
 
 Note: you need to compile ES6 sources before.
+
+Requirements:
+ - Node.js v4 or later
+ - NPM v2 or v3
+ - Mocha v3 or later
 
 First install mocha:
 
