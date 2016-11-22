@@ -91,9 +91,5 @@ Run the tests:
 
     npm test
 
-or
-
-    make test
-
 
 # License
