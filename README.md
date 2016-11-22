@@ -75,13 +75,22 @@ The source code files are:
     src/modules/AggregateRepository.js
     src/modules/EventDispatcher.js
     
-These modules are written in ES6. If you are modifying these files you can use this command to recompile:
     
-    npm run compile    
+#Compilation:
+
+The Eventuate Client and its modules are written in ES6. 
+
+Use next command to transform ES6 code to the ECMAScript 5:
+
+    npm run compile
+    
+It will create `dist` directory.
     
 
 
 # Test
+
+Note: you need to compile ES6 sources before.
 
 First install mocha:
 
