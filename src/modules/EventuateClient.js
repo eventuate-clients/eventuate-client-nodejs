@@ -12,7 +12,6 @@ import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
 import EventuateServerError from './EventuateServerError';
-import { parseJSON } from './utils';
 import { getLogger } from './logger';
 import Result from './Result';
 
@@ -105,30 +104,25 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const { entityId, entityVersion, eventIds} = jsonBody;
 
-            const { entityId, entityVersion, eventIds} = jsonBody;
+        if (!entityId || !entityVersion || !eventIds) {
+          return result.failure({
+            error: 'Bad server response',
+            statusCode: httpResponse.statusCode,
+            message: jsonBody
+          });
+        }
 
-            if (!entityId || !entityVersion || !eventIds) {
-              return result.failure({
-                error: 'Bad server response',
-                statusCode: httpResponse.statusCode,
-                message: body
-              });
-            }
-
-            result.success({
-              entityIdTypeAndVersion: { entityId, entityVersion },
-              eventIds
-            })
-            .catch(result.failure);
+        result.success({
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
         });
       });
 
@@ -155,26 +149,18 @@ export default class EventuateClient {
 
       urlPath += '?' + this.serialiseObject(options);
 
-      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
+      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const events = this.eventDataToObject(jsonBody.events);
 
-          const events = this.eventDataToObject(jsonBody.events);
-
-          result.success(events);
-
-        })
-        .catch(result.failure);
-
+        result.success(events);
       });
 
     });
-
   }
 
   update(entityTypeName, entityId, entityVersion, _events, options, callback) {
@@ -203,31 +189,26 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const { entityId, entityVersion, eventIds} = jsonBody;
 
-            const { entityId, entityVersion, eventIds} = jsonBody;
+        if (!entityId || !entityVersion || !eventIds) {
+          return result.failure({
+            error: 'Bad server response',
+            statusCode: httpResponse.statusCode,
+            message: jsonBody
+          });
+        }
 
-            if (!entityId || !entityVersion || !eventIds) {
-              return result.failure({
-                error: 'Bad server response',
-                statusCode: httpResponse.statusCode,
-                message: body
-              });
-            }
-
-            result.success({
-              entityIdTypeAndVersion: { entityId, entityVersion },
-              eventIds
-            });
-          })
-          .catch(result.failure);
+        result.success({
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
+        });
       });
     });
   }
@@ -674,9 +655,16 @@ function _request(path, method, apiKey, jsonData, client, callback) {
     });
 
     res.on('end', () => {
-      callback(null, res, responseData);
-    })
 
+      try {
+
+        callback(null, res, JSON.parse(responseData));
+
+      } catch (err) {
+        callback(err);
+      }
+
+    })
 
   });
 
