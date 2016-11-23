@@ -213,7 +213,11 @@ export default class EventuateClient {
     });
   }
 
-  subscribe(subscriberId, entityTypesAndEvents, options, callback) {
+  subscribe(subscriberId, entityTypesAndEvents, eventHandler, options, callback) {
+
+    if (typeof eventHandler !== 'function') {
+      return callback(new Error('eventHandler should be a function'));
+    }
 
     if (!callback) {
       callback = options;
@@ -237,10 +241,17 @@ export default class EventuateClient {
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 
-    return {
-      acknowledge,
-      observable
-    };
+    observable.subscribe(
+      (event) => {
+
+        eventHandler(null, event, acknowledge);
+
+      },
+      eventHandler,
+      () => {
+        eventHandler(new Error('observable.subscribe() completed'))
+      }
+    );
   }
 
   observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback) {

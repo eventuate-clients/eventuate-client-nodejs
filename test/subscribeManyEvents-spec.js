@@ -37,41 +37,33 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
 
       let processedMessagesNumber = 0;
 
+      const eventHandler = (err, event, acknowledge) => {
+
+        if(err) {
+          done(err);
+        }
+
+        processedMessagesNumber++;
+
+        acknowledge(event.ack);
+
+        helpers.expectEvent(event);
+
+        if (processedMessagesNumber == eventsNumber) {
+          done();
+        }
+
+      };
+
       //subscribe for events
-      const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
+      const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
         if (err) {
           return done(err);
         }
 
         console.log('Subscription established')
       });
-
-      helpers.expectSubscribe(subscribe);
-
-      subscribe.observable.subscribe(
-        event => {
-          subscribe.acknowledge(event.ack);
-
-          helpers.expectEvent(event);
-
-          processedMessagesNumber++;
-
-          if (processedMessagesNumber == eventsNumber) {
-            done();
-          }
-        },
-        err => {
-          console.error(err);
-          done(err);
-        },
-        () => {
-          console.log('Completed');
-          console.log('Processed messages: ', processedMessagesNumber);
-
-          expect(processedMessagesNumber).to.equal(eventsNumber, 'Processed messages number not equal to expected');
-          done();
-        }
-      );
+      
     });
   });
 });

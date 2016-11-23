@@ -84,42 +84,30 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                 let processedMessagesNumber1 = 0;
 
+                const eventHandler1 = (err, event, acknowledge) => {
+                  processedMessagesNumber1++;
+
+                  expect(event.eventData).to.be.an('Object');
+
+                  const ack = helpers.parseAck(event, done);
+
+                  if (ack.receiptHandle.subscriberId != subscriberId1) {
+                    return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
+                  }
+
+                  acknowledge(event.ack);
+
+                  if (processedMessagesNumber1 == shouldBeProcessedNumber) {
+                    done();
+                  }
+                };
                 //subscribe for events
-                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
+                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, eventHandler1, err => {
                   if (err) {
                     return done(err);
                   }
                 });
 
-                helpers.expectSubscribe(subscribe1);
-
-                subscribe1.observable.subscribe(
-                  event => {
-                    processedMessagesNumber1++;
-
-                    expect(event.eventData).to.be.an('Object');
-
-                    //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
-
-                    const ack = helpers.parseAck(event, done);
-
-                    if (ack.receiptHandle.subscriberId != subscriberId1) {
-                      return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
-                    }
-
-                    subscribe1.acknowledge(event.ack);
-
-                    if (processedMessagesNumber1 == shouldBeProcessedNumber) {
-                      done();
-                    }
-                  },
-                  err => {
-                    return done(err);
-                  },
-                  () => {
-                    console.log('Completed');
-                  }
-                );
               });
             });//subscribe1
 
@@ -130,41 +118,33 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
               it(`should subscribe for ${entityTypeName2} events`, done => {
 
                 let processedMessagesNumber2 = 0;
+
+                const eventHandler2 = (err, event, acknowledge) => {
+                  processedMessagesNumber2++;
+
+                  acknowledge(event.ack);
+
+                  expect(event.eventData).to.be.an('Object');
+
+                  const ack = helpers.parseAck(event, done);
+
+                  if (ack.receiptHandle.subscriberId != subscriberId2) {
+                    return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
+                  }
+
+                  if (processedMessagesNumber2 == shouldBeProcessedNumber) {
+                    done();
+                  }
+                };
+
                 //subscribe for events
-                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
+                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, eventHandler2, err => {
                   if (err) {
                     return done(err);
                   }
 
                 });
 
-                helpers.expectSubscribe(subscribe2);
-
-                subscribe2.observable.subscribe(
-                  event => {
-
-                    processedMessagesNumber2++;
-
-                    expect(event.eventData).to.be.an('Object');
-
-                    const ack = helpers.parseAck(event, done);
-
-                    if (ack.receiptHandle.subscriberId != subscriberId2) {
-                      return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
-                    }
-
-                    subscribe2.acknowledge(event.ack);
-                    if (processedMessagesNumber2 == shouldBeProcessedNumber) {
-                      done();
-                    }
-                  },
-                  err => {
-                    return done(err);
-                  },
-                  () => {
-                    console.log('Completed');
-                  }
-                );
               });
             });//subscribe2
 
