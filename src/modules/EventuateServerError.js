@@ -1,4 +1,4 @@
-export default class EsServerError extends Error {
+export default class EventuateServerError extends Error {
 
   constructor(jsonBody) {
 

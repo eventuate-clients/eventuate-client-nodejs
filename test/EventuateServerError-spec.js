@@ -1,9 +1,9 @@
 'use strict';
 const expect = require('chai').expect;
-const EsServerError = require('../dist/modules/EsServerError.js');
+const EventuateServerError = require('../dist/modules/EventuateServerError');
 
 //TODO: get error from the ES Client
-describe('EsServerError class', () => {
+describe('EventuateServerError class', () => {
   it('should create instance', () => {
 
     const statusCode = 500;
@@ -16,7 +16,7 @@ describe('EsServerError class', () => {
       path: '/entity/net.chrisrichardson.eventstore.example.MyEntity/0000015741a8cc2b-0242ac1100460000'
     };
 
-    const error = new EsServerError({
+    const error = new EventuateServerError({
       error  : `Server returned status code ${statusCode}`,
       statusCode: 500,
       message: body

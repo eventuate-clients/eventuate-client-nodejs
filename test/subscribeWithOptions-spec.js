@@ -4,7 +4,7 @@ const util = require('util');
 const helpers = require('./lib/helpers');
 const unEscapeStr = require('../dist/modules/specialChars').unEscapeStr;
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const subscriberId = 'subscribe-test-5';
 
@@ -23,7 +23,7 @@ describe('Subscribe with options', function () {
   it('should subscribe for events', done => {
 
    //subscribe for events
-    const subscribe = esClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
+    const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
 
       if (err) {
         return done(err);
@@ -31,7 +31,7 @@ describe('Subscribe with options', function () {
 
       console.log('Subscribed');
 
-      const destination = esClient.subscriptions[subscriberId].headers.destination;
+      const destination = eventuateClient.subscriptions[subscriberId].headers.destination;
       const destinationObj = JSON.parse(unEscapeStr(destination));
 
       expect(destinationObj).to.have.property('durability');

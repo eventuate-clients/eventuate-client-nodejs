@@ -4,7 +4,7 @@ const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatch
 const Subscriber = require('../dist').Subscriber;
 const helpers = require('./lib/helpers');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 30000;
 
@@ -62,7 +62,7 @@ describe('EventTypeSwimlaneDispatcher', function () {
       }
     ];
 
-    esClient.create(entityTypeName, events, function (err, createdEntityAndEventInfo) {
+    eventuateClient.create(entityTypeName, events, function (err, createdEntityAndEventInfo) {
 
       if (err) {
         return done(err);
@@ -72,7 +72,7 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     });
 
-    const subscriber = new Subscriber({ subscriptions });
+    const subscriber = new Subscriber({ eventuateClient, subscriptions });
 
     subscriber.subscribe().forEach(subscription => {
 

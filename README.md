@@ -3,6 +3,10 @@ NodeJS-based client for the Eventuate Platform
 
 This is the NodeJS client for the [Eventuate Platform](http://eventuate.io/).
 
+System requirements:
+ - Node.js v0.12 or later
+ - NPM v2 or v3
+
 # Installation
 
 npm i @eventuateinc/eventuate-nodejs-client
@@ -22,7 +26,7 @@ npm i @eventuateinc/eventuate-nodejs-client
     EVENTUATE_STOMP_SERVER_HOST(default api.eventuate.io)
     EVENTUATE_STOMP_SERVER_PORT(default 61614)
     EVENTUATE_SPACE_NAME
-    HTTP_KEEP_ALIVE(default true)
+    EVENTUATE_HTTP_KEEP_ALIVE(default true)
         
 # Configuration
 
@@ -35,24 +39,17 @@ Setup environment variables:
 # Usage
 
 ```javascript
-var apiKey = {
-  id: process.env.EVENTUATE_API_KEY_ID,
-  secret: process.env.EVENTUATE_API_KEY_SECRET
-};
 
-if (!apiKey.id || !apiKey.secret) {
-  throw new Error("", "Use `EVENTUATE_API_KEY_ID` and `EVENTUATE_API_KEY_SECRET` to set auth data");
-}
+var EventuateClient = require('@eventuateinc/eventuate-nodejs-client');
+var EventuateClientConfiguration = EventuateClient.EventuateClientConfiguration;
 
-var esClientOpts = {
-  apiKey: apiKey
-};
+const eventuateClientOpts = new EventuateClientConfiguration({ debug: true });
 
-var esClient = new es.Client(esClientOpts);
+var eventuateClient = new EventuateClient(eventuateClientOpts);
 
 var createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Fred' } } ];
 
-esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', createEvents, function (err, createdEntityAndEventInfo) {
+eventuateClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', createEvents, function (err, createdEntityAndEventInfo) {
 
   if (err) {
     console.error(err);
@@ -66,22 +63,38 @@ esClient.create('net.chrisrichardson.eventstore.example.MyEntityWasCreated', cre
 
 #High level client
 
-For an example of usage, please look at `test/EventStoreUtils-spec.js`
+For an example of usage, please see `test/AggregateRepository-spec.js`, `test/AggregateRepositoryWithTriggeringEventToken-spec.js` and `test/EventTypeSwimlaneDispatcher-spec.js`
 
-Don't edit `modules/EventStoreUtils.js` and `modules/WorkflowEvents.js`. These files are generated with Babel.
-
-The source code files are:
-
-    src/EventStoreUtils.js
-    src/WorkflowEvents.js
     
-These modules are written in ES6. If you are modifying these files you can use this command to recompile:
     
-    npm run compile    
+#Compilation:
+
+Requirements:
+ - Node.js v0.12 or later
+ - NPM v2 or v3
+ 
+Install required Node.js modules:
+
+    npm install
+
+The Eventuate Client and its modules are written in ES6. 
+
+Use next command to transform ES6 code to the ECMAScript 5:
+
+    npm run compile
+    
+It will create `dist` directory.
     
 
 
 # Test
+
+Note: you need to compile ES6 sources before.
+
+Requirements:
+ - Node.js v4 or later
+ - NPM v2 or v3
+ - Mocha v3 or later
 
 First install mocha:
 
@@ -90,10 +103,6 @@ First install mocha:
 Run the tests:
 
     npm test
-
-or
-
-    make test
 
 
 # License

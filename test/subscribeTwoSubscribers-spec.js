@@ -9,7 +9,7 @@ const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
 
-const esClient = helpers.createEsClient();
+const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 25000;
 const timeStamp = new Date().getTime();
@@ -55,7 +55,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
   it(`should create First Entity: ${entityTypeName1}`, done => {
 
     //create events
-    esClient.create(entityTypeName1, createEvents1, (err, createdEntityAndEventInfo) => {
+    eventuateClient.create(entityTypeName1, createEvents1, (err, createdEntityAndEventInfo) => {
       if (err) {
         return done(err);
       }
@@ -69,7 +69,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
         it(`should create Second Entity: ${entityTypeName2}`, done => {
 
           //create events
-          esClient.create(entityTypeName2, createEvents2, (err, createdEntityAndEventInfo) => {
+          eventuateClient.create(entityTypeName2, createEvents2, (err, createdEntityAndEventInfo) => {
             if (err) {
               return done(err);
             }
@@ -85,7 +85,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                 let processedMessagesNumber1 = 0;
 
                 //subscribe for events
-                const subscribe1 = esClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
+                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
                   if (err) {
                     return done(err);
                   }
@@ -131,7 +131,7 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                 let processedMessagesNumber2 = 0;
                 //subscribe for events
-                const subscribe2 = esClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
+                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
                   if (err) {
                     return done(err);
                   }

@@ -1,8 +1,7 @@
 import 'babel-polyfill';
-import util from 'util';
 import Rx from 'rx';
 import Agent, { HttpsAgent } from 'agentkeepalive';
-import url from 'url';
+import urlUtils from 'url';
 import uuid from 'uuid';
 import http from 'http';
 import https from 'https';
@@ -12,34 +11,31 @@ import invariant from 'invariant';
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
 import { escapeStr, unEscapeStr } from './specialChars';
-import EsServerError from './EsServerError';
-import { parseIsTrue, parseJSON } from './utils';
+import EventuateServerError from './EventuateServerError';
 import { getLogger } from './logger';
 import Result from './Result';
 
-const logger = getLogger({ title: 'EsClient' });
+const logger = getLogger({ title: 'EventuateClient' });
 
-export default class EsClient {
+export default class EventuateClient {
 
-  constructor({ apiKey, spaceName, httpKeepAlive, debug }) {
+  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug }) {
 
-    this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
-    this.stompHost = process.env.EVENTUATE_STOMP_SERVER_HOST || process.env.EVENT_STORE_STOMP_SERVER_HOST || 'api.eventuate.io';
-    this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
 
     this.apiKey = apiKey;
-    this.spaceName = spaceName || '';
+    this.url =  url;
+    this.stompHost = stompHost;
+    this.stompPort = stompPort;
+    this.spaceName = spaceName;
+    this.debug = debug;
 
-    this.urlObj = url.parse(this.url);
+    this.urlObj = urlUtils.parse(this.url);
 
     this.determineIfSecure();
     this.setupHttpClient();
     this.setupKeepAliveAgent(httpKeepAlive);
 
     this.baseUrlPath = '/entity';
-    this.debug = debug;
-
-
     this.subscriptions = {};
     this.receipts = {};
 
@@ -65,12 +61,6 @@ export default class EsClient {
   }
 
   setupKeepAliveAgent(httpKeepAlive) {
-
-    if (typeof httpKeepAlive === 'undefined') {
-      this.httpKeepAlive = true;
-    } else {
-      this.httpKeepAlive = parseIsTrue(httpKeepAlive);
-    }
 
     if (this.httpKeepAlive ) {
 
@@ -114,30 +104,25 @@ export default class EsClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const { entityId, entityVersion, eventIds} = jsonBody;
 
-            const { entityId, entityVersion, eventIds} = jsonBody;
+        if (!entityId || !entityVersion || !eventIds) {
+          return result.failure({
+            error: 'Bad server response',
+            statusCode: httpResponse.statusCode,
+            message: jsonBody
+          });
+        }
 
-            if (!entityId || !entityVersion || !eventIds) {
-              return result.failure({
-                error: 'Bad server response',
-                statusCode: httpResponse.statusCode,
-                message: body
-              });
-            }
-
-            result.success({
-              entityIdTypeAndVersion: { entityId, entityVersion },
-              eventIds
-            })
-            .catch(result.failure);
+        result.success({
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
         });
       });
 
@@ -164,26 +149,18 @@ export default class EsClient {
 
       urlPath += '?' + this.serialiseObject(options);
 
-      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, body) => {
+      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const events = this.eventDataToObject(jsonBody.events);
 
-          const events = this.eventDataToObject(jsonBody.events);
-
-          result.success(events);
-
-        })
-        .catch(result.failure);
-
+        result.success(events);
       });
 
     });
-
   }
 
   update(entityTypeName, entityId, entityVersion, _events, options, callback) {
@@ -212,31 +189,26 @@ export default class EsClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, body) => {
+      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, body))) {
+        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
           return result.failure(err);
         }
 
-        parseJSON(body)
-          .then(jsonBody => {
+        const { entityId, entityVersion, eventIds} = jsonBody;
 
-            const { entityId, entityVersion, eventIds} = jsonBody;
+        if (!entityId || !entityVersion || !eventIds) {
+          return result.failure({
+            error: 'Bad server response',
+            statusCode: httpResponse.statusCode,
+            message: jsonBody
+          });
+        }
 
-            if (!entityId || !entityVersion || !eventIds) {
-              return result.failure({
-                error: 'Bad server response',
-                statusCode: httpResponse.statusCode,
-                message: body
-              });
-            }
-
-            result.success({
-              entityIdTypeAndVersion: { entityId, entityVersion },
-              eventIds
-            });
-          })
-          .catch(result.failure);
+        result.success({
+          entityIdTypeAndVersion: { entityId, entityVersion },
+          eventIds
+        });
       });
     });
   }
@@ -635,7 +607,7 @@ function statusCodeError(statusCode, message) {
 
   if (statusCode != 200) {
 
-    return new EsServerError({
+    return new EventuateServerError({
       error: `Server returned status code ${statusCode}`,
       statusCode,
       message
@@ -683,9 +655,16 @@ function _request(path, method, apiKey, jsonData, client, callback) {
     });
 
     res.on('end', () => {
-      callback(null, res, responseData);
-    })
 
+      try {
+
+        callback(null, res, JSON.parse(responseData));
+
+      } catch (err) {
+        callback(err);
+      }
+
+    })
 
   });
 

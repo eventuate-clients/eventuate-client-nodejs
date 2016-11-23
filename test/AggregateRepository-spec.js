@@ -22,7 +22,8 @@ const EntityClass = require('./lib/EntityClass');
 const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
-const aggregateRepository = new AggregateRepository();
+const eventuateClient = helpers.createEventuateClient();
+const aggregateRepository = new AggregateRepository({ eventuateClient });
 
 const timeout = 20000;
 
@@ -188,7 +189,7 @@ describe('EventDispatcher', function () {
       }
     ];
 
-    const subscriber = new Subscriber({ subscriptions });
+    const subscriber = new Subscriber({ eventuateClient, subscriptions });
 
     subscriber.subscribe().forEach(subscription => {
       //Create EventDispatcher instance

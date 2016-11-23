@@ -2,7 +2,7 @@ import 'babel-polyfill';
 import Rx from 'rx';
 import util from 'util';
 
-import EsClient from './EsClient';
+import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 
 
