@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
-const Subscriber = require('../dist').Subscriber;
+const SubscriptionManager = require('../dist').SubscriptionManager;
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
@@ -102,7 +102,7 @@ describe('AggregateRepository with triggeringEventToken', function () {
       }
     ];
 
-    const subscriber = new Subscriber({ eventuateClient, subscriptions });
+    const subscriber = new SubscriptionManager({ eventuateClient, subscriptions });
 
     subscriber.subscribe().forEach(subscription => {
       //Create EventDispatcher instance

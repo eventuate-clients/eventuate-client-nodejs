@@ -1,7 +1,7 @@
 'use strict';
 const expect = require('chai').expect;
 const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
-const Subscriber = require('../dist').Subscriber;
+const Subscriber = require('../dist').SubscriptionManager;
 const helpers = require('./lib/helpers');
 
 const eventuateClient = helpers.createEventuateClient();

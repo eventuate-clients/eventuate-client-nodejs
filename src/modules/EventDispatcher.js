@@ -8,39 +8,39 @@ import { getLogger } from './logger';
 
 export default class EventDispatcher {
 
-  constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {}} = {}) {
+  constructor({ eventHandlers, subscriptions = [] , logger = null, worker = {}} = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventDispatcher' });
     }
 
-    Object.assign(this, { getEventHandler, subscriptions, logger, worker });
+    Object.assign(this, { eventHandlers, subscriptions, logger, worker });
 
   }
 
   run(subscription) {
 
     subscription.observable
-      .map(createObservable.call(this, this.getEventHandler))
+      .map(createObservable.call(this, this.eventHandlers))
       .merge(1)
       .subscribe(
-        ack => {
-        if (ack) {
-          this.logger.debug('acknowledge: ', ack);
-          subscription.acknowledge(ack);
-        }
-      },
-        err => this.logger.error('Event handler error:', err),
-      () => this.logger.debug('Disconnected!')
-    );
+        ({ ack, acknowledge }) => {
+          if (ack) {
+            this.logger.debug('acknowledge: ', ack);
+            acknowledge(ack);
+          }
+        },
+          err => this.logger.error('Event handler error:', err),
+        () => this.logger.debug('Disconnected!')
+      );
   }
 
 };
 
-function createObservable(getEventHandler) {
-  return event => Rx.Observable.create(observer => {
+function createObservable(eventHandlers) {
+  return ({ event, acknowledge }) => Rx.Observable.create(observer => {
 
-    const eventHandler = getEventHandler.call(this.worker, event.eventType);
+    const eventHandler = eventHandlers[event.entityTypeName][event.eventType];
 
 
     if (!eventHandler) {
@@ -49,7 +49,7 @@ function createObservable(getEventHandler) {
 
     eventHandler(event)
       .then(result => {
-        observer.onNext(event.ack);
+        observer.onNext({ ack: event.ack, acknowledge });
         observer.onCompleted();
       })
       .catch(err => {

@@ -117,7 +117,7 @@ module.exports.parseAck = (event, done) => {
 
 module.exports.createEventuateClient = () => {
 
-  const eventuateClientOpts = new EventuateClientConfiguration();
+  const eventuateClientOpts = new EventuateClientConfiguration({ debug: true });
 
   return new EventuateClient(eventuateClientOpts);
 };

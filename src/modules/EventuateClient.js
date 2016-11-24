@@ -465,7 +465,7 @@ export default class EventuateClient {
 
     try {
 
-      const { id: eventId, eventType, entityId, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
+      const { id: eventId, eventType, entityId, entityType, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
 
       const eventData = JSON.parse(eventDataStr);
 
