@@ -1,4 +1,4 @@
-import EventuateClient from './EventuateClient';
+import Rx from 'rx';
 import { getLogger } from './logger';
 
 export default class SubscriptionManager {
@@ -6,7 +6,6 @@ export default class SubscriptionManager {
   constructor({ eventuateClient, dispatcher, logger } = {}) {
 
     this.logger = logger || getLogger({ title: 'SubscriptionManager' });
-    this.subscriptions = subscriptions;
     this.dispatcher = dispatcher;
 
     if (!eventuateClient) {
@@ -28,7 +27,7 @@ export default class SubscriptionManager {
 
   }
 
-  subscribe(subscriberId, eventHandlers) {
+  subscribe({ subscriberId, eventHandlers }) {
 
     /*return this.subscriptions.map(({ subscriberId, entityTypesAndEvents }) => {
 
@@ -46,22 +45,23 @@ export default class SubscriptionManager {
     });*/
 
     const entityTypesAndEvents = this.eventHandlersToEntityTypesAndEvents(eventHandlers);
+    this.logger.debug('entityTypesAndEvents:', entityTypesAndEvents);
 
-
+    let acknowledge;
 
     const createFn = (observer) => {
 
-      const eventHandler = (err, event, acknowledge) => {
+      const eventHandler = (err, event) => {
 
         if (err) {
           return observer.onError(err);
         }
 
-        observer.onNext({ event, acknowledge });
+        observer.onNext(event);
 
       };
 
-      this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
+      acknowledge = this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
 
         if (err) {
           throw new Error(err);
@@ -76,6 +76,6 @@ export default class SubscriptionManager {
 
     const observable = Rx.Observable.create(createFn);
 
-    this.dispatcher.run({ observable });
+    this.dispatcher.run({ observable, acknowledge });
   }
 }

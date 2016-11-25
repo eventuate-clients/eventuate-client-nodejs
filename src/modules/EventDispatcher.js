@@ -2,29 +2,28 @@ import 'babel-polyfill';
 import Rx from 'rx';
 import util from 'util';
 
-import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 
 
 export default class EventDispatcher {
 
-  constructor({ eventHandlers, subscriptions = [] , logger = null, worker = {}} = {}) {
+  constructor({ eventHandlers, logger = null, worker = {}} = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventDispatcher' });
     }
 
-    Object.assign(this, { eventHandlers, subscriptions, logger, worker });
+    Object.assign(this, { eventHandlers, logger, worker });
 
   }
 
-  run(subscription) {
+  run({ observable, acknowledge }) {
 
-    subscription.observable
+    observable
       .map(createObservable.call(this, this.eventHandlers))
       .merge(1)
       .subscribe(
-        ({ ack, acknowledge }) => {
+        (ack) => {
           if (ack) {
             this.logger.debug('acknowledge: ', ack);
             acknowledge(ack);
@@ -38,10 +37,9 @@ export default class EventDispatcher {
 };
 
 function createObservable(eventHandlers) {
-  return ({ event, acknowledge }) => Rx.Observable.create(observer => {
+  return (event) => Rx.Observable.create(observer => {
 
-    const eventHandler = eventHandlers[event.entityTypeName][event.eventType];
-
+    const eventHandler = eventHandlers[event.entityType][event.eventType];
 
     if (!eventHandler) {
       return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
@@ -49,7 +47,7 @@ function createObservable(eventHandlers) {
 
     eventHandler(event)
       .then(result => {
-        observer.onNext({ ack: event.ack, acknowledge });
+        observer.onNext(event.ack);
         observer.onCompleted();
       })
       .catch(err => {
