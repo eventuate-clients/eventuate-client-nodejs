@@ -84,22 +84,26 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                 let processedMessagesNumber1 = 0;
 
-                const eventHandler1 = (err, event, acknowledge) => {
-                  processedMessagesNumber1++;
+                const eventHandler1 = (event) => {
 
-                  expect(event.eventData).to.be.an('Object');
+                  return new Promise((resolve, reject) => {
+                    processedMessagesNumber1++;
 
-                  const ack = helpers.parseAck(event, done);
+                    expect(event.eventData).to.be.an('Object');
 
-                  if (ack.receiptHandle.subscriberId != subscriberId1) {
-                    return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
-                  }
+                    const ack = helpers.parseAck(event, done);
 
-                  acknowledge(event.ack);
+                    if (ack.receiptHandle.subscriberId != subscriberId1) {
+                      return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
+                    }
 
-                  if (processedMessagesNumber1 == shouldBeProcessedNumber) {
-                    done();
-                  }
+                    resolve(event.ack);
+
+                    if (processedMessagesNumber1 == shouldBeProcessedNumber) {
+                      done();
+                    }
+                  });
+
                 };
                 //subscribe for events
                 const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, eventHandler1, err => {
@@ -119,22 +123,27 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                 let processedMessagesNumber2 = 0;
 
-                const eventHandler2 = (err, event, acknowledge) => {
-                  processedMessagesNumber2++;
+                const eventHandler2 = (event) => {
 
-                  acknowledge(event.ack);
+                  return new Promise((resolve, reject) => {
 
-                  expect(event.eventData).to.be.an('Object');
+                    processedMessagesNumber2++;
 
-                  const ack = helpers.parseAck(event, done);
+                    resolve(event.ack);
 
-                  if (ack.receiptHandle.subscriberId != subscriberId2) {
-                    return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
-                  }
+                    expect(event.eventData).to.be.an('Object');
 
-                  if (processedMessagesNumber2 == shouldBeProcessedNumber) {
-                    done();
-                  }
+                    const ack = helpers.parseAck(event, done);
+
+                    if (ack.receiptHandle.subscriberId != subscriberId2) {
+                      return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
+                    }
+
+                    if (processedMessagesNumber2 == shouldBeProcessedNumber) {
+                      done();
+                    }
+                  });
+
                 };
 
                 //subscribe for events

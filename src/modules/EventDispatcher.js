@@ -7,7 +7,7 @@ import { getLogger } from './logger';
 
 export default class EventDispatcher {
 
-  constructor({ eventHandlers, logger = null, worker = {}} = {}) {
+  constructor({ eventHandlers, logger = null, worker = {} } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventDispatcher' });
@@ -17,42 +17,19 @@ export default class EventDispatcher {
 
   }
 
-  run({ observable, acknowledge }) {
+  dispatch(event) {
 
-    observable
-      .map(createObservable.call(this, this.eventHandlers))
-      .merge(1)
-      .subscribe(
-        (ack) => {
-          if (ack) {
-            this.logger.debug('acknowledge: ', ack);
-            acknowledge(ack);
-          }
-        },
-          err => this.logger.error('Event handler error:', err),
-        () => this.logger.debug('Disconnected!')
-      );
+    const { entityType, eventType } = event;
+
+    console.log('entityType, eventType ', entityType, eventType);
+
+    const eventHandler = this.eventHandlers[entityType][eventType];
+
+    if (!eventHandler) {
+      return Promise.reject(new Error(`No event handler for eventType: ${eventType}`));
+    }
+
+    return eventHandler(event);
   }
 
 };
-
-function createObservable(eventHandlers) {
-  return (event) => Rx.Observable.create(observer => {
-
-    const eventHandler = eventHandlers[event.entityType][event.eventType];
-
-    if (!eventHandler) {
-      return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
-    }
-
-    eventHandler(event)
-      .then(result => {
-        observer.onNext(event.ack);
-        observer.onCompleted();
-      })
-      .catch(err => {
-        observer.onError(err);
-      });
-  });
-
-}

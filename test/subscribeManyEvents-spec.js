@@ -37,26 +37,25 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
 
       let processedMessagesNumber = 0;
 
-      const eventHandler = (err, event, acknowledge) => {
+      const eventHandler = (event) => {
 
-        if(err) {
-          done(err);
-        }
+        return new Promise((resolve, reject) => {
 
-        processedMessagesNumber++;
+          processedMessagesNumber++;
 
-        acknowledge(event.ack);
+          resolve(event.ack);
 
-        helpers.expectEvent(event);
+          helpers.expectEvent(event);
 
-        if (processedMessagesNumber == eventsNumber) {
-          done();
-        }
+          if (processedMessagesNumber == eventsNumber) {
+            done();
+          }
+        })
 
       };
 
       //subscribe for events
-      const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
+      eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
         if (err) {
           return done(err);
         }

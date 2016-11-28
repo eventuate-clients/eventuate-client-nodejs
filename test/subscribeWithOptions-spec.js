@@ -24,12 +24,15 @@ describe('Subscribe with options', function () {
 
     const eventHandler = (err, event, acknowledge) => {
 
-      console.log('Event:', event);
-      acknowledge(event.ack);
+      return new Promise((resolve, reject) => {
+        console.log('Event:', event);
+        resolve(event.ack);
+      });
+
     };
 
    //subscribe for events
-    const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
+    eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
 
       if (err) {
         return done(err);

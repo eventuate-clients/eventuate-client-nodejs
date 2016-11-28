@@ -2,8 +2,8 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
-const EventDispatcher = require('../dist').EventDispatcher;
-const SubscriptionManager = require('../dist').SubscriptionManager;
+const EventDispatcher = require('../src').EventDispatcher;
+const SubscriptionManager = require('../src').SubscriptionManager;
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
@@ -26,7 +26,7 @@ let updateTimestamp;
 let entityId;
 
 
-xdescribe('AggregateRepository: function createEntity()', function () {
+describe('AggregateRepository: function createEntity()', function () {
 
   this.timeout(timeout);
 
@@ -138,7 +138,8 @@ describe('EventDispatcher', function () {
 
     //Define event handlers
     function handleMyEntityWasCreatedEvent(event) {
-      
+      console.log('handleMyEntityWasCreatedEvent()');
+
       helpers.expectEvent(event);
 
       if (event.eventData.timestamp == createdTimestamp) {
@@ -149,6 +150,8 @@ describe('EventDispatcher', function () {
     }
 
     function handleMyEntityWasUpdatedEvent(event) {
+
+      console.log('handleMyEntityWasUpdatedEvent()');
 
       helpers.expectEvent(event);
 

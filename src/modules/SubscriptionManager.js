@@ -29,53 +29,27 @@ export default class SubscriptionManager {
 
   subscribe({ subscriberId, eventHandlers }) {
 
-    /*return this.subscriptions.map(({ subscriberId, entityTypesAndEvents }) => {
-
-      return this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, (err, receiptId) => {
-
-        if (err) {
-          this.logger.error('Subscribe error:', err);
-          return;
-        }
-
-        this.logger.info(`The subscription has been established receipt-id: ${receiptId}`);
-
-      });
-
-    });*/
-
     const entityTypesAndEvents = this.eventHandlersToEntityTypesAndEvents(eventHandlers);
     this.logger.debug('entityTypesAndEvents:', entityTypesAndEvents);
 
-    let acknowledge;
+    const eventHandler = (event) => {
 
-    const createFn = (observer) => {
-
-      const eventHandler = (err, event) => {
-
-        if (err) {
-          return observer.onError(err);
-        }
-
-        observer.onNext(event);
-
-      };
-
-      acknowledge = this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
-
-        if (err) {
-          throw new Error(err);
-        }
-
-        this.logger.info(`The subscription has been established: ${receiptId}`);
-
-      });
-
+      this.logger.debug('event:', event);
+      return this.dispatcher.dispatch(event)
+        .then(() => event.ack)
+        .catch((err) => {
+          return Promise.reject(err);
+        });
     };
 
+    this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
 
-    const observable = Rx.Observable.create(createFn);
+      if (err) {
+        throw new Error(err);
+      }
 
-    this.dispatcher.run({ observable, acknowledge });
+      this.logger.info(`The subscription has been established: ${receiptId}`);
+
+    });
   }
 }

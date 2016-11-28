@@ -224,14 +224,7 @@ export default class EventuateClient {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    const ackOrderTracker = new AckOrderTracker();
-
-    const acknowledge = (ack) => {
-      ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
-    };
-
-
-    const messageCallback = this.createMessageCallback(eventHandler, ackOrderTracker);
+    const messageCallback = this.createMessageCallback(eventHandler);
 
     this.connectToStompServer().then(
       () => {
@@ -241,11 +234,15 @@ export default class EventuateClient {
       callback
     );
 
-    return acknowledge;
-
   }
 
-  createMessageCallback(eventHandler, ackOrderTracker) {
+  createMessageCallback(eventHandler) {
+
+    const ackOrderTracker = new AckOrderTracker();
+
+    const acknowledge = (ack) => {
+      ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
+    };
 
     return (body, headers) => {
 
@@ -253,13 +250,17 @@ export default class EventuateClient {
 
       body.forEach(eventStr => {
 
-        const result = this.makeEvent(eventStr, headers.ack);
+        const { error, event } = this.makeEvent(eventStr, headers.ack);
 
-        if (result.error) {
-          return eventHandler(result.error);
+        if (error) {
+          throw new Error(error);
         }
 
-        eventHandler(null, result.event);
+        eventHandler(event)
+          .then(acknowledge)
+          .catch(err => {
+            logger.error('eventHandler error', err);
+          });
       });
     }
   }
@@ -468,7 +469,6 @@ export default class EventuateClient {
 
     try {
 
-      console.log('eventStr:', eventStr);
       const { id: eventId, eventType, entityId, entityType, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
 
       const eventData = JSON.parse(eventDataStr);
