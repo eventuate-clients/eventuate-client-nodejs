@@ -9,13 +9,8 @@ const SubscriptionManager = require('../dist').SubscriptionManager;
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
 const MyEntityCreateEvent = eventConfig.MyEntityCreateEvent;
-const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 
-const entityTypesAndEvents = {
-  [entityTypeName]: [
-    MyEntityCreateEvent
-  ]
-};
+const subscriberId = 'test-EventStoreUtilsWithTriggeringEventToken';
 
 
 const EntityClass = require('./lib/EntityClass');
@@ -50,18 +45,12 @@ describe('AggregateRepository with triggeringEventToken', function () {
         done();
       })
       .catch(err => {
-        console.log('error', err);
         done(err);
       });
   });
 
 
   it('should subscribe for events and update', done => {
-
-    //Define event handlers
-    const eventHandlers = {
-      [MyEntityCreateEvent]: handleMyEntityCreateEvent
-    };
 
     function handleMyEntityCreateEvent(event) {
 
@@ -88,28 +77,16 @@ describe('AggregateRepository with triggeringEventToken', function () {
         .catch(done);
     }
 
-    function getEventHandler (eventType) {
-      if (typeof eventHandlers[eventType] != 'undefined') {
-        return eventHandlers[eventType]
+    const eventHandlers = {
+      [entityTypeName]: {
+        [MyEntityCreateEvent]: handleMyEntityCreateEvent
       }
-    }
+    };
 
-    //Define subscriptions
-    const subscriptions = [
-      {
-        subscriberId: 'test-EventStoreUtilsWithTriggeringEventToken',
-        entityTypesAndEvents
-      }
-    ];
+    const dispatcher = new EventDispatcher({ eventHandlers });
+    const subscriber = new SubscriptionManager({ eventuateClient, dispatcher });
 
-    const subscriber = new SubscriptionManager({ eventuateClient, subscriptions });
-
-    subscriber.subscribe().forEach(subscription => {
-      //Create EventDispatcher instance
-      const dispatcher = new EventDispatcher({ getEventHandler, subscription });
-      dispatcher.run(subscription);
-
-    });
+    subscriber.subscribe({ subscriberId, eventHandlers });
   });
 
   it('should update with old triggeredEventToken', done => {

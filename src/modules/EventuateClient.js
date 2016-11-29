@@ -241,7 +241,7 @@ export default class EventuateClient {
     const ackOrderTracker = new AckOrderTracker();
 
     const acknowledge = (ack) => {
-      logger.debug('acknowledge: ' + ack);
+      
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 
