@@ -9,11 +9,6 @@ const eventType = 'net.chrisrichardson.eventstore.example.MyEntityWasUpdatedEven
 const swimlane = 2;
 const events = helpers.makeEventsArr(10, eventType, swimlane);
 
-
-const acknowledgeFn = ack => {
-
-};
-
 describe('ObservableQueue', function () {
 
   this.timeout(timeout);
@@ -35,10 +30,14 @@ describe('ObservableQueue', function () {
       });
     };
 
-    const queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });
+    const queue = new ObservableQueue({ eventType, swimlane, eventHandler });
 
-    events.forEach(queue.queueEvent.bind(queue));
+    events.forEach((event) => {
+      new Promise((resolve, reject) => {
 
+        queue.queueEvent({ event, resolve, reject });
+      });
+    });
   });
 
   it('should stop processing if handler error', done => {
@@ -65,9 +64,16 @@ describe('ObservableQueue', function () {
       });
     };
 
-    const queue = new ObservableQueue({ eventType, swimlane, eventHandler, acknowledgeFn });
+    const queue = new ObservableQueue({ eventType, swimlane, eventHandler });
 
-    events.forEach(queue.queueEvent.bind(queue));
+    events.forEach((event) => {
+      new Promise((resolve, reject) => {
+
+        queue.queueEvent({ event, resolve, reject });
+      });
+    });
+
+
   });
 
 });

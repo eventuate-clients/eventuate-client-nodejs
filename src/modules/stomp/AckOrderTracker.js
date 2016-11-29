@@ -17,7 +17,7 @@ export default class AckOrderTracker {
     });
 
     if (!pendingHeader) {
-      console.error(`Didn't find ${ackHeader}`);
+      console.error(`ACK Header not found: ${ackHeader}`);
       return [];
     }
 

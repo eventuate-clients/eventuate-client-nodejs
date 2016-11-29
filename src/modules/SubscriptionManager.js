@@ -33,13 +33,7 @@ export default class SubscriptionManager {
     this.logger.debug('entityTypesAndEvents:', entityTypesAndEvents);
 
     const eventHandler = (event) => {
-
-      this.logger.debug('event:', event);
-      return this.dispatcher.dispatch(event)
-        .then(() => event.ack)
-        .catch((err) => {
-          return Promise.reject(err);
-        });
+      return this.dispatcher.dispatch(event);
     };
 
     this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {

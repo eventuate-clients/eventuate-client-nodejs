@@ -2,8 +2,8 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
-const EventDispatcher = require('../src').EventDispatcher;
-const SubscriptionManager = require('../src').SubscriptionManager;
+const EventDispatcher = require('../dist').EventDispatcher;
+const SubscriptionManager = require('../dist').SubscriptionManager;
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;

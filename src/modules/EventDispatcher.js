@@ -7,13 +7,13 @@ import { getLogger } from './logger';
 
 export default class EventDispatcher {
 
-  constructor({ eventHandlers, logger = null, worker = {} } = {}) {
+  constructor({ eventHandlers, logger = null, executor = {} } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventDispatcher' });
     }
 
-    Object.assign(this, { eventHandlers, logger, worker });
+    Object.assign(this, { eventHandlers, logger, executor });
 
   }
 
@@ -21,15 +21,17 @@ export default class EventDispatcher {
 
     const { entityType, eventType } = event;
 
-    console.log('entityType, eventType ', entityType, eventType);
-
     const eventHandler = this.eventHandlers[entityType][eventType];
 
     if (!eventHandler) {
       return Promise.reject(new Error(`No event handler for eventType: ${eventType}`));
     }
 
-    return eventHandler(event);
+    return eventHandler(event)
+      .then(() => event.ack)
+      .catch((err) => {
+        return Promise.reject(err);
+      });
   }
 
 };
