@@ -3,7 +3,8 @@ const expect = require('chai').expect;
 const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
 const SubscriptionManager = require('../dist').SubscriptionManager;
 const helpers = require('./lib/helpers');
-
+const ExecutorClass = helpers.Executor;
+const executor = new ExecutorClass();
 const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 30000;
@@ -74,8 +75,6 @@ describe('EventTypeSwimlaneDispatcher', function () {
       .then(createdEntityAndEventInfo => {
         helpers.expectCommandResult(createdEntityAndEventInfo);
 
-        const executor = new Executor();
-
         const dispatcher = new EventTypeSwimlaneDispatcher({ eventHandlers, executor });
         const subscriber = new SubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
         subscriber.subscribe({ subscriberId, eventHandlers });
@@ -94,17 +93,10 @@ describe('EventTypeSwimlaneDispatcher', function () {
   });
 });
 
-
-class Executor {
-  getClassName() {
-    return Executor.name;
-  }
-}
-
 function handleMyEntityWasCreatedEvent(event) {
   console.log('Running handleMyEntityWasCreatedEvent');
 
-  expect(this.getClassName()).to.equal(Executor.name);
+  expect(this.getClassName()).to.equal(ExecutorClass.name);
   helpers.expectEvent(event);
   expect(event.eventType).to.equal(myEntityWasCreatedEvent);
   expect(event.eventData).to.have.property('timestamp');
@@ -117,7 +109,7 @@ function handleMyEntityWasCreatedEvent(event) {
 function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
 
-  expect(this.getClassName()).to.equal(Executor.name);
+  expect(this.getClassName()).to.equal(ExecutorClass.name);
   helpers.expectEvent(event);
   expect(event.eventType).to.equal(myEntityWasUpdatedEvent);
   expect(event.eventData).to.have.property('timestamp');

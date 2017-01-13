@@ -1,3 +1,5 @@
+'use strict';
+
 const expect = require('chai').expect;
 const EventuateClient = require('../../dist');
 const uuid = require('uuid');
@@ -151,3 +153,11 @@ module.exports.testLoadedEvents = (loadedEvents, createEvents, updateEvents) => 
   expect(firstItem).to.deep.equal(createEvents[0]);
   expect(secondItem).to.deep.equal(updateEvents[0]);
 };
+
+class Executor {
+  getClassName() {
+    return Executor.name;
+  }
+}
+
+module.exports.Executor = Executor;

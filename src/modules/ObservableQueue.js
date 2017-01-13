@@ -46,17 +46,22 @@ export default class ObservableQueue {
         return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
       }
 
-      this.eventHandler.call(this.executor, event).then(
-        result => {
+      try {
+        this.eventHandler.call(this.executor, event)
+          .then(
+            result => {
 
-          // this.logger.debug('processed event:', event);
-          observer.onNext({ ack: event.ack, resolve });
-          observer.onCompleted();
-        }
-      )
-      .catch(err => {
-          observer.onError({ err, reject });
-      });
+              // this.logger.debug('processed event:', event);
+              observer.onNext({ ack: event.ack, resolve });
+              observer.onCompleted();
+            })
+          .catch(err => {
+            observer.onError({ err, reject });
+          });
+      } catch (err) {
+        observer.onError({ err, reject });
+      }
+
     });
 
   }

@@ -4,6 +4,8 @@ const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
 const SubscriptionManager = require('../dist').SubscriptionManager;
+const ExecutorClass = helpers.Executor;
+const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
@@ -177,7 +179,8 @@ describe('EventDispatcher', function () {
     const subscriberId = 'test-AggregateRepository';
 
     const eventuateClient = helpers.createEventuateClient();
-    const dispatcher = new EventDispatcher({ eventHandlers });
+    const dispatcher = new EventDispatcher({ eventHandlers, executor });
+
 
     const subscriber = new SubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
 

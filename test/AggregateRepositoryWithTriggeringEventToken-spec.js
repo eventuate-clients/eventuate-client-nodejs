@@ -5,6 +5,8 @@ const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
 const SubscriptionManager = require('../dist').SubscriptionManager;
+const ExecutorClass = helpers.Executor;
+const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
@@ -83,7 +85,7 @@ describe('AggregateRepository with triggeringEventToken', function () {
       }
     };
 
-    const dispatcher = new EventDispatcher({ eventHandlers });
+    const dispatcher = new EventDispatcher({ eventHandlers, executor });
     const subscriber = new SubscriptionManager({ eventuateClient, dispatcher });
 
     subscriber.subscribe({ subscriberId, eventHandlers });

@@ -6,7 +6,7 @@ import { getLogger } from './logger';
 
 export default class EventTypeSwimlaneDispatcher {
 
-  constructor({ eventHandlers, logger, executor } = {}) {
+  constructor({ eventHandlers, logger, executor = {} } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
