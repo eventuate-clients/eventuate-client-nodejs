@@ -2,59 +2,36 @@ import 'babel-polyfill';
 import Rx from 'rx';
 import util from 'util';
 
-import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 
 
 export default class EventDispatcher {
 
-  constructor({ getEventHandler, subscriptions = [] , logger = null, worker = {}} = {}) {
+  constructor({ eventHandlers, logger = null, executor = {} } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventDispatcher' });
     }
 
-    Object.assign(this, { getEventHandler, subscriptions, logger, worker });
+    Object.assign(this, { eventHandlers, logger, executor });
 
   }
 
-  run(subscription) {
+  dispatch(event) {
 
-    subscription.observable
-      .map(createObservable.call(this, this.getEventHandler))
-      .merge(1)
-      .subscribe(
-        ack => {
-        if (ack) {
-          this.logger.debug('acknowledge: ', ack);
-          subscription.acknowledge(ack);
-        }
-      },
-        err => this.logger.error('Event handler error:', err),
-      () => this.logger.debug('Disconnected!')
-    );
+    const { entityType, eventType } = event;
+
+    const eventHandler = this.eventHandlers[entityType][eventType];
+
+    if (!eventHandler) {
+      return Promise.reject(new Error(`No event handler for eventType: ${eventType}`));
+    }
+
+    return eventHandler.call(this.executor, event)
+      .then(() => event.ack)
+      .catch((err) => {
+        return Promise.reject(err);
+      });
   }
 
 };
-
-function createObservable(getEventHandler) {
-  return event => Rx.Observable.create(observer => {
-
-    const eventHandler = getEventHandler.call(this.worker, event.eventType);
-
-
-    if (!eventHandler) {
-      return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
-    }
-
-    eventHandler(event)
-      .then(result => {
-        observer.onNext(event.ack);
-        observer.onCompleted();
-      })
-      .catch(err => {
-        observer.onError(err);
-      });
-  });
-
-}

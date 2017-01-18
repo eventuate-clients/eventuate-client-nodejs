@@ -53,39 +53,30 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
         let processedMessagesNumber = 0;
 
-        //subscribe for events
-        const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
-          if (err) {
-            return done(err)
-          }
-        });
+        const eventHandler = (event) => {
 
-        helpers.expectSubscribe(subscribe);
-
-        subscribe.observable.subscribe(
-          event => {
-
+          return new Promise((resolve, reject) => {
             processedMessagesNumber++;
-
-            subscribe.acknowledge(event.ack);
+            resolve(event.ack);
 
             expect(event.eventData).to.be.an('Object');
 
             if (processedMessagesNumber == shouldBeProcessedNumber) {
               done();
             }
-          },
-          err => {
-            done(err);
-          },
-          () => {
-            console.log('Completed');
-            console.log('Processed messages: ', processedMessagesNumber);
+          });
 
-            expect(processedMessagesNumber).to.equal(shouldBeProcessedNumber, 'Processed messages number not equal to expected');
-            done();
+
+        };
+        //subscribe for events
+        eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
+          if (err) {
+            return done(err)
           }
-        );
+
+          console.log('The subscription has been established.')
+        });
+
       });
     });
   });

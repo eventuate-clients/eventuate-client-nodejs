@@ -84,22 +84,12 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                 let processedMessagesNumber1 = 0;
 
-                //subscribe for events
-                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, err => {
-                  if (err) {
-                    return done(err);
-                  }
-                });
+                const eventHandler1 = (event) => {
 
-                helpers.expectSubscribe(subscribe1);
-
-                subscribe1.observable.subscribe(
-                  event => {
+                  return new Promise((resolve, reject) => {
                     processedMessagesNumber1++;
 
                     expect(event.eventData).to.be.an('Object');
-
-                    //console.log('Event'+processedMessagesNumber1+' subscribe1: ', event);
 
                     const ack = helpers.parseAck(event, done);
 
@@ -107,19 +97,21 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                       return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
                     }
 
-                    subscribe1.acknowledge(event.ack);
+                    resolve(event.ack);
 
                     if (processedMessagesNumber1 == shouldBeProcessedNumber) {
                       done();
                     }
-                  },
-                  err => {
+                  });
+
+                };
+                //subscribe for events
+                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, eventHandler1, err => {
+                  if (err) {
                     return done(err);
-                  },
-                  () => {
-                    console.log('Completed');
                   }
-                );
+                });
+
               });
             });//subscribe1
 
@@ -130,20 +122,14 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
               it(`should subscribe for ${entityTypeName2} events`, done => {
 
                 let processedMessagesNumber2 = 0;
-                //subscribe for events
-                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, err => {
-                  if (err) {
-                    return done(err);
-                  }
 
-                });
+                const eventHandler2 = (event) => {
 
-                helpers.expectSubscribe(subscribe2);
-
-                subscribe2.observable.subscribe(
-                  event => {
+                  return new Promise((resolve, reject) => {
 
                     processedMessagesNumber2++;
+
+                    resolve(event.ack);
 
                     expect(event.eventData).to.be.an('Object');
 
@@ -153,18 +139,21 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                       return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
                     }
 
-                    subscribe2.acknowledge(event.ack);
                     if (processedMessagesNumber2 == shouldBeProcessedNumber) {
                       done();
                     }
-                  },
-                  err => {
+                  });
+
+                };
+
+                //subscribe for events
+                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, eventHandler2, err => {
+                  if (err) {
                     return done(err);
-                  },
-                  () => {
-                    console.log('Completed');
                   }
-                );
+
+                });
+
               });
             });//subscribe2
 

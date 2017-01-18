@@ -22,8 +22,17 @@ describe('Subscribe with options', function () {
 
   it('should subscribe for events', done => {
 
+    const eventHandler = (err, event, acknowledge) => {
+
+      return new Promise((resolve, reject) => {
+        console.log('Event:', event);
+        resolve(event.ack);
+      });
+
+    };
+
    //subscribe for events
-    const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
+    eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, { durability: '100', readFrom: 'begin', progressNotifications: true }, err => {
 
       if (err) {
         return done(err);
@@ -42,8 +51,5 @@ describe('Subscribe with options', function () {
 
     });
 
-    helpers.expectSubscribe(subscribe);
-
-    subscribe.observable.subscribe();
   });
 });

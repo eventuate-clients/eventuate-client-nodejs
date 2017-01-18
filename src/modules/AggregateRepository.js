@@ -1,5 +1,3 @@
-import util from 'util';
-import EventuateClient from './EventuateClient';
 import { getLogger } from './logger';
 import { retryNTimes } from './utils';
 

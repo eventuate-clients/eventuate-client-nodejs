@@ -6,55 +6,48 @@ import { getLogger } from './logger';
 
 export default class EventTypeSwimlaneDispatcher {
 
-  constructor({ logger = null, getEventHandler, subscription, executor } = {}) {
+  constructor({ eventHandlers, logger, executor = {} } = {}) {
 
     if (!logger) {
       logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
     }
 
-    this.getEventHandler =  getEventHandler;
+    this.eventHandlers =  eventHandlers;
     this.logger = logger;
-    this.subscription = subscription;
     this.executor = executor;
 
     this.queues = {};
 
   }
 
-  run() {
-
-    this.subscription.observable.subscribe(
-      event => {
-        //this.logger.debug(event);
-        this.dispatch(event);
-      },
-      err => {
-        this.logger.error(err);
-      },
-      () => {
-        this.logger.debug('Completed')
-      }
-    )
-  }
-
   dispatch(event) {
 
-    const { eventType, swimlane } = event;
+    return new Promise((resolve, reject) => {
 
-    this.logger.debug(`eventType: ${eventType}, swimlane: ${swimlane}`);
+      const { eventType, swimlane, entityType } = event;
 
-    let queue = this.getQueue({ eventType, swimlane });
+      this.logger.debug(`eventType: ${eventType}, swimlane: ${swimlane}, entityType: ${entityType}`);
 
-    if (!queue) {
-      this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
+      let queue = this.getQueue({ eventType, swimlane });
 
-      const eventHandler = this.getEventHandler(eventType);
-      queue = new ObservableQueue({ eventType, swimlane, eventHandler, executor: this.executor, acknowledgeFn: this.subscription.acknowledge });
+      if (!queue) {
+        this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
 
-      this.saveQueue(queue);
-    }
+        const eventHandler = this.eventHandlers[entityType][eventType];
 
-    queue.queueEvent(event);
+        if (!eventHandler) {
+          return Promise.reject(new Error(`No event handler for eventType: ${eventType}`));
+        }
+
+        queue = new ObservableQueue({ eventType, swimlane, eventHandler, executor: this.executor });
+
+        this.saveQueue(queue);
+      }
+
+      queue.queueEvent( { event, resolve, reject });
+
+    });
+
   }
 
   getQueue({ eventType, swimlane }) {

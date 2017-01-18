@@ -213,65 +213,57 @@ export default class EventuateClient {
     });
   }
 
-  subscribe(subscriberId, entityTypesAndEvents, options, callback) {
+  subscribe(subscriberId, entityTypesAndEvents, eventHandler, options, callback) {
 
     if (!callback) {
       callback = options;
       options = undefined;
     }
 
-    const ackOrderTracker = new AckOrderTracker();
-
-    if (!subscriberId || !Object.keys(entityTypesAndEvents).length) {
+    if (!subscriberId || !Object.keys(entityTypesAndEvents).length || ( typeof eventHandler !== 'function')) {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    const createFn = this.observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback);
+    const messageCallback = this.createMessageCallback(eventHandler);
 
-    const observable = Rx.Observable.create(createFn);
+    this.connectToStompServer().then(
+      () => {
+        this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, callback);
+        this.doClientSubscribe(subscriberId);
+      },
+      callback
+    );
 
-    const acknowledge = ack => {
+  }
 
-      //logger.debug('acknowledge fn:', ack);
+  createMessageCallback(eventHandler) {
 
+    const ackOrderTracker = new AckOrderTracker();
+
+    const acknowledge = (ack) => {
+      
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 
-    return {
-      acknowledge,
-      observable
-    };
-  }
+    return (body, headers) => {
 
-  observableCreateAndSubscribe(subscriberId, entityTypesAndEvents, ackOrderTracker, options, callback) {
+      ackOrderTracker.add(headers.ack);
 
-    return observer => {
+      body.forEach(eventStr => {
 
-      const messageCallback = (body, headers) => {
+        const { error, event } = this.makeEvent(eventStr, headers.ack);
 
-        ackOrderTracker.add(headers.ack);
+        if (error) {
+          throw new Error(error);
+        }
 
-        body.forEach(eventStr => {
-
-          const result = this.makeEvent(eventStr, headers.ack);
-
-          if (result.error) {
-            return observer.onError(result.error);
-          }
-
-          observer.onNext(result.event);
-        });
-      };
-
-      this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, callback);
-
-      this.connectToStompServer().then(
-        () => {
-          this.doClientSubscribe(subscriberId);
-        },
-        callback
-      );
-    };
+        eventHandler(event)
+          .then(acknowledge)
+          .catch(err => {
+            logger.error('eventHandler error', err);
+          });
+      });
+    }
   }
 
   addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
@@ -321,82 +313,86 @@ export default class EventuateClient {
 
     return this._connPromise || (this._connPromise = new Promise((resolve, reject) => {
 
-        // Do not reconnect if self-invoked
-        if (this.closed) {
-          return reject();
+      // Do not reconnect if self-invoked
+      if (this.closed) {
+        return reject();
+      }
+
+      const { stompPort: port, stompHost: host, useHttps: ssl, debug } = this;
+      const { id: login, secret: passcode } = this.apiKey;
+      const heartBeat = [5000, 5000];
+      const timeout = 50000;
+      const keepAlive = false;
+
+      invariant(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
+      const stompArgs = { port, host, login, passcode, heartBeat, timeout, keepAlive, ssl, debug };
+
+      this.stompClient = new Stomp(stompArgs);
+      this.stompClient.connect();
+
+      this.addStompClientListeners(resolve);
+    }));
+  }
+
+  addStompClientListeners(resolve) {
+    this.stompClient.on('socketConnected', () => {
+
+      //reset interval
+      this.reconnectInterval = this.reconnectIntervalStart;
+    });
+
+    this.stompClient.on('connected', () => {
+
+      resolve();
+      this.connectionCount++;
+    });
+
+    this.stompClient.on('disconnected', () => {
+      this.stompClient = null;
+      this._connPromise = null;
+
+      // Do not reconnect if self-invoked
+      if (!this.closed) {
+
+        if (this.reconnectInterval < 16000) {
+          this.reconnectInterval = this.reconnectInterval * 2;
         }
 
-        const { stompPort: port, stompHost: host, useHttps: ssl, debug } = this;
-        const { id: login, secret: passcode } = this.apiKey;
-        const heartBeat = [5000, 5000];
-        const timeout = 50000;
-        const keepAlive = false;
+        this.reconnectStompServer(this.reconnectInterval);
+      }
 
-        invariant(port && host && login && passcode && heartBeat && timeout, 'Incorrect STOMP connection parameters');
-        const stompArgs = { port, host, login, passcode, heartBeat, timeout, keepAlive, ssl, debug };
+    });
 
-        this.stompClient = new Stomp(stompArgs);
-        this.stompClient.connect();
+    this.stompClient.on('message', frame => {
 
-        this.stompClient.on('socketConnected', () => {
+      const headers = frame.headers;
+      const body = frame.body;
 
-          //reset interval
-          this.reconnectInterval = this.reconnectIntervalStart;
-        });
+      const ack = JSON.parse(unEscapeStr(headers.ack));
 
-        this.stompClient.on('connected', () => {
+      const subscriberId = ack.receiptHandle.subscriberId;
 
-          resolve();
-          this.connectionCount++;
-        });
+      if (this.subscriptions.hasOwnProperty(subscriberId)) {
+        //call message callback;
+        this.subscriptions[subscriberId].messageCallback( body, headers);
+      } else {
+        logger.error(`Can't find massageCallback for subscriber: ${subscriberId}`);
+      }
+    });
 
-        this.stompClient.on('disconnected', () => {
-          this.stompClient = null;
-          this._connPromise = null;
+    this.stompClient.on('receipt', receiptId => {
 
-          // Do not reconnect if self-invoked
-          if (!this.closed) {
+      if (this.receipts.hasOwnProperty(receiptId)) {
+        //call Client.subscribe callback
+        this.receipts[receiptId].clientSubscribeCallback(null, receiptId);
+      }
+    });
 
-            if (this.reconnectInterval < 16000) {
-              this.reconnectInterval = this.reconnectInterval * 2;
-            }
+    this.stompClient.on('error', error => {
+      logger.error('stompClient ERROR');
+      logger.error(error);
+    });
 
-            this.reconnectStompServer(this.reconnectInterval);
-          }
-
-        });
-
-        this.stompClient.on('message', frame => {
-
-          const headers = frame.headers;
-          const body = frame.body;
-
-          const ack = JSON.parse(unEscapeStr(headers.ack));
-
-          const subscriberId = ack.receiptHandle.subscriberId;
-
-          if (this.subscriptions.hasOwnProperty(subscriberId)) {
-            //call message callback;
-            this.subscriptions[subscriberId].messageCallback( body, headers);
-          } else {
-            logger.error(`Can't find massageCallback for subscriber: ${subscriberId}`);
-          }
-        });
-
-        this.stompClient.on('receipt', receiptId => {
-
-          if (this.receipts.hasOwnProperty(receiptId)) {
-            //call Client.subscribe callback
-            this.receipts[receiptId].clientSubscribeCallback(null, receiptId);
-          }
-        });
-
-        this.stompClient.on('error', error => {
-          logger.error('stompClient ERROR');
-          logger.error(error);
-        });
-
-      }));
   }
 
   reconnectStompServer(interval) {
@@ -474,7 +470,7 @@ export default class EventuateClient {
 
     try {
 
-      const { id: eventId, eventType, entityId, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
+      const { id: eventId, eventType, entityId, entityType, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
 
       const eventData = JSON.parse(eventDataStr);
 
@@ -485,7 +481,8 @@ export default class EventuateClient {
         swimlane,
         eventData,
         eventToken,
-        ack
+        ack,
+        entityType: entityType.split('/').pop(),
       };
 
       return { event };

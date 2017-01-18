@@ -1,16 +1,14 @@
 import Rx from 'rx';
-
 import { getLogger } from './logger';
 
 export default class ObservableQueue {
 
-  constructor({ eventType, swimlane, eventHandler, executor, acknowledgeFn }) {
+  constructor({ eventType, swimlane, eventHandler, executor }) {
 
     this.eventType = eventType;
     this.swimlane = swimlane;
     this.eventHandler = eventHandler;
     this.executor = executor;
-    this.acknowledgeFn = acknowledgeFn;
 
     this.logger = getLogger({ title: `Queue-${this.eventType}-${this.swimlane}` });
 
@@ -20,14 +18,12 @@ export default class ObservableQueue {
       .map(this.createObservableHandler())
       .merge(1)
       .subscribe(
-        ack => {
-          if (ack) {
-            this.logger.debug('acknowledge: ', ack);
-            this.acknowledgeFn(ack);
-          }
+        ({ ack, resolve }) => {
+          resolve(ack);
         },
-        err => {
+        ({ err, reject}) => {
           this.logger.error('Event handler error:', err);
+          reject(err);
         },
         () => this.logger.debug('Disconnected!')
       );
@@ -37,27 +33,35 @@ export default class ObservableQueue {
     this.observer = observer;
   }
 
-  queueEvent(event) {
-    this.observer.onNext(event);
+  queueEvent({ event, resolve, reject }) {
+    this.observer.onNext({ event, resolve, reject });
   }
 
   createObservableHandler() {
 
-    return event => Rx.Observable.create(observer => {
+    return ({ event, resolve, reject }) => Rx.Observable.create(observer => {
 
+      // this.logger.debug('processing event: ', event);
       if (!this.eventHandler) {
         return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
       }
 
-      this.eventHandler.call(this.executor, event).then(
-        result => {
-          observer.onNext(event.ack);
-          observer.onCompleted();
-        }
-      )
-      .catch(err => {
-          observer.onError(err);
-      });
+      try {
+        this.eventHandler.call(this.executor, event)
+          .then(
+            result => {
+
+              // this.logger.debug('processed event:', event);
+              observer.onNext({ ack: event.ack, resolve });
+              observer.onCompleted();
+            })
+          .catch(err => {
+            observer.onError({ err, reject });
+          });
+      } catch (err) {
+        observer.onError({ err, reject });
+      }
+
     });
 
   }

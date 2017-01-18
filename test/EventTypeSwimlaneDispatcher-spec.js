@@ -1,39 +1,31 @@
 'use strict';
 const expect = require('chai').expect;
 const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
-const Subscriber = require('../dist').Subscriber;
+const SubscriptionManager = require('../dist').SubscriptionManager;
 const helpers = require('./lib/helpers');
-
+const ExecutorClass = helpers.Executor;
+const executor = new ExecutorClass();
 const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 30000;
 
 const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
 const myEntityWasCreatedEvent = 'net.chrisrichardson.eventstore.example.MyEntityWasCreatedEvent';
-const myEntityWasUpdatedEvent = 'net.chrisrichardson.eventstore.example.MyEntityWasCreatedEvent';
+const myEntityWasUpdatedEvent = 'net.chrisrichardson.eventstore.example.MyEntityWasUpdatedEvent';
 
-const entityTypesAndEvents = {
- [entityTypeName]: [
-    myEntityWasCreatedEvent,
-    myEntityWasUpdatedEvent
-  ]
-};
-
-console.log(entityTypesAndEvents);
-
-const subscriptions = [
-  {
-    subscriberId: 'EventTypeSwimlaneDispatcher-test',
-    entityTypesAndEvents: entityTypesAndEvents
-  }
-];
+const subscriberId = 'EventTypeSwimlaneDispatcher-test';
 
 const eventHandlers = {
-  [myEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
-  [myEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+  [entityTypeName]: {
+    [myEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
+    [myEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+  }
 };
 
+console.log('eventHandlers:', eventHandlers);
+
 let processed = 0;
+const timestamp = new Date().getTime();
 
 describe('EventTypeSwimlaneDispatcher', function () {
 
@@ -45,64 +37,70 @@ describe('EventTypeSwimlaneDispatcher', function () {
       {
         eventType: myEntityWasCreatedEvent,
         eventData: {
-          action: 'created'
+          action: 'created',
+          timestamp
         }
       },
       {
         eventType: myEntityWasUpdatedEvent,
         eventData: {
-          action: 'updated'
+          action: 'updated',
+          timestamp
         }
       },
       {
         eventType: myEntityWasUpdatedEvent,
         eventData: {
-          action: 'updated'
+          action: 'updated',
+          timestamp
+        }
+      },
+      {
+        eventType: myEntityWasUpdatedEvent,
+        eventData: {
+          action: 'updated',
+          timestamp
+        }
+      },
+      {
+        eventType: myEntityWasUpdatedEvent,
+        eventData: {
+          action: 'updated',
+          timestamp
         }
       }
     ];
 
-    eventuateClient.create(entityTypeName, events, function (err, createdEntityAndEventInfo) {
+    eventuateClient.create(entityTypeName, events)
+      .then(createdEntityAndEventInfo => {
+        helpers.expectCommandResult(createdEntityAndEventInfo);
 
-      if (err) {
-        return done(err);
-      }
+        const dispatcher = new EventTypeSwimlaneDispatcher({ eventHandlers, executor });
+        const subscriber = new SubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
+        subscriber.subscribe({ subscriberId, eventHandlers });
 
-      helpers.expectCommandResult(createdEntityAndEventInfo);
 
-    });
+        const interval = setInterval(() => {
+          if (processed == events.length) {
+            clearInterval(interval);
+            done();
+          }
 
-    const subscriber = new Subscriber({ eventuateClient, subscriptions });
+        }, 1000)
 
-    subscriber.subscribe().forEach(subscription => {
-
-      const dispatcher = new EventTypeSwimlaneDispatcher({ getEventHandler, subscription, executor: new Executor() });
-      dispatcher.run();
-
-    });
-
-    const interval = setInterval(() => {
-      if (processed == events.length) {
-        clearInterval(interval);
-        done();
-      }
-
-    }, 1000)
+      })
+      .catch(done);
   });
 });
-
-
-class Executor {
-  getClassName() {
-    return Executor.name;
-  }
-}
 
 function handleMyEntityWasCreatedEvent(event) {
   console.log('Running handleMyEntityWasCreatedEvent');
 
-  expect(this.getClassName()).to.equal(Executor.name);
+  expect(this.getClassName()).to.equal(ExecutorClass.name);
   helpers.expectEvent(event);
+  expect(event.eventType).to.equal(myEntityWasCreatedEvent);
+  expect(event.eventData).to.have.property('timestamp');
+  expect(event.eventData.timestamp).to.equal(timestamp);
 
   processed++;
   return Promise.resolve();
@@ -111,15 +109,14 @@ function handleMyEntityWasCreatedEvent(event) {
 function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
 
-  expect(this.getClassName()).to.equal(Executor.name);
+  expect(this.getClassName()).to.equal(ExecutorClass.name);
   helpers.expectEvent(event);
+  expect(event.eventType).to.equal(myEntityWasUpdatedEvent);
+  expect(event.eventData).to.have.property('timestamp');
+  expect(event.eventData.timestamp).to.equal(timestamp);
+
   processed++;
   //return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));
   return Promise.resolve();
 }
 
-function getEventHandler (eventType) {
-  if (typeof eventHandlers[eventType] != 'undefined') {
-    return eventHandlers[eventType]
-  }
-}

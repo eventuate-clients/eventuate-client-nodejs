@@ -39,19 +39,13 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
   });
 
   it('should subscribe for events and update with triggeringEventToken', done => {
-    //subscribe for events
-    const subscribe = eventuateClient.subscribe(subscriberId, entityTypesAndEvents, err => {
-      if (err) {
-        return done(err)
-      }
-    });
 
-    helpers.expectSubscribe(subscribe);
+    const eventHandler = (event) => {
 
-    subscribe.observable.subscribe(
-      event => {
+      return new Promise((resolve, reject) => {
 
-        subscribe.acknowledge(event.ack);
+        resolve(event.ack);
+
         helpers.expectEvent(event);
 
         entityId = event.entityId;
@@ -77,13 +71,17 @@ describe('Create entity, subscribe for event and update with triggeringEventToke
             done();
           })
           .catch(done);
+      });
 
-      },
-      done,
-      () => {
-        console.log('Completed');
+    };
+
+    //subscribe for events
+    eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
+      if (err) {
+        return done(err)
       }
-    );
+    });
+
   });
 
   it('should got error 409', done => {

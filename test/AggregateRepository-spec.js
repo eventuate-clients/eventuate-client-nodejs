@@ -3,19 +3,14 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
-const Subscriber = require('../dist').Subscriber;
+const SubscriptionManager = require('../dist').SubscriptionManager;
+const ExecutorClass = helpers.Executor;
+const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
 const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
-
-const entityTypesAndEvents = {
-  [entityTypeName]: [
-    MyEntityWasCreatedEvent,
-    MyEntityWasUpdatedEvent
-  ]
-};
 
 
 const EntityClass = require('./lib/EntityClass');
@@ -144,12 +139,8 @@ describe('EventDispatcher', function () {
     const expectedEventCount = 2;
 
     //Define event handlers
-    const eventHandlers = {
-      [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
-      [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
-    };
-
     function handleMyEntityWasCreatedEvent(event) {
+      console.log('handleMyEntityWasCreatedEvent()');
 
       helpers.expectEvent(event);
 
@@ -161,6 +152,8 @@ describe('EventDispatcher', function () {
     }
 
     function handleMyEntityWasUpdatedEvent(event) {
+
+      console.log('handleMyEntityWasUpdatedEvent()');
 
       helpers.expectEvent(event);
 
@@ -175,28 +168,23 @@ describe('EventDispatcher', function () {
       return Promise.resolve();
     }
 
-    function getEventHandler (eventType) {
-      if (typeof eventHandlers[eventType] != 'undefined') {
-        return eventHandlers[eventType]
+    const eventHandlers = {
+      [entityTypeName]: {
+        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent,
+        [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
       }
-    }
+    };
 
-    //Define subscriptions
-    const subscriptions = [
-      {
-        subscriberId: 'test-AggregateRepository',
-        entityTypesAndEvents
-      }
-    ];
+    console.log('eventHandlers:', eventHandlers);
+    const subscriberId = 'test-AggregateRepository';
 
-    const subscriber = new Subscriber({ eventuateClient, subscriptions });
+    const eventuateClient = helpers.createEventuateClient();
+    const dispatcher = new EventDispatcher({ eventHandlers, executor });
 
-    subscriber.subscribe().forEach(subscription => {
-      //Create EventDispatcher instance
-      const dispatcher = new EventDispatcher({ getEventHandler, subscription });
-      dispatcher.run(subscription);
 
-    });
+    const subscriber = new SubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
+
+    subscriber.subscribe({ subscriberId, eventHandlers });
   });
 
 });
