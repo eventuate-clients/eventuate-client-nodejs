@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "mocha --reporter spec --ui bdd test/*-spec.js",
-    "compile": "rm -fr dist/* && node_modules/babel-cli/bin/babel.js --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/"
+    "compile": "rm -fr dist/* && node_modules/babel-cli/bin/babel.js --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/",
+    "prepublish": "npm run compile && npm test"
   },
   "author": "",
   "license": "Apache License, Version 2",
