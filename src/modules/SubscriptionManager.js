@@ -1,18 +1,19 @@
-import Rx from 'rx';
+import EventDispatcher from './EventDispatcher';
 import { getLogger } from './logger';
 
 export default class SubscriptionManager {
 
-  constructor({ eventuateClient, dispatcher, logger } = {}) {
+  constructor({ eventuateClient, logger } = {}) {
 
     this.logger = logger || getLogger({ title: 'SubscriptionManager' });
-    this.dispatcher = dispatcher;
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
     }
 
     this.eventuateClient = eventuateClient;
+
+    this.dispatchers = new Map();
   }
 
   eventHandlersToEntityTypesAndEvents(eventHandlers) {
@@ -27,14 +28,22 @@ export default class SubscriptionManager {
 
   }
 
-  subscribe({ subscriberId, eventHandlers }) {
+  subscribe({ subscriberId, eventHandlers, executor }) {
 
     const entityTypesAndEvents = this.eventHandlersToEntityTypesAndEvents(eventHandlers);
+
+    this.dispatchers.set(subscriberId, new EventDispatcher({ eventHandlers, executor }));
+
     this.logger.debug('entityTypesAndEvents:', entityTypesAndEvents);
 
     const eventHandler = (event) => {
-      return this.dispatcher.dispatch(event);
+      this.logger.debug('event:', event);
+
+      const dispatcher = this.dispatchers.get(subscriberId);
+      return dispatcher.dispatch(event);
     };
+
+
 
     this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
 

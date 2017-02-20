@@ -71,7 +71,7 @@ describe('ES Node.js Client: function update()', function () {
 
   it('function update() should return error', done => {
 
-    eventuateClient.create('', [], err => {
+    eventuateClient.update('', [], err => {
 
       expect(err).to.be.instanceof(Error);
       done();
