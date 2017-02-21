@@ -1,11 +1,11 @@
 import EventDispatcher from './EventDispatcher';
 import { getLogger } from './logger';
 
-export default class SubscriptionManager {
+export default class EventuateSubscriptionManager {
 
   constructor({ eventuateClient, logger } = {}) {
 
-    this.logger = logger || getLogger({ title: 'SubscriptionManager' });
+    this.logger = logger || getLogger({ title: 'EventuateSubscriptionManager' });
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
@@ -34,10 +34,10 @@ export default class SubscriptionManager {
 
     this.dispatchers.set(subscriberId, new EventDispatcher({ eventHandlers, executor }));
 
-    this.logger.debug('entityTypesAndEvents:', entityTypesAndEvents);
+    this.logger.debug(`Subscribe "${subscriberId}" for:`, entityTypesAndEvents);
 
     const eventHandler = (event) => {
-      this.logger.debug('event:', event);
+      this.logger.debug(`Event for subscriber "${subscriberId}":`, event);
 
       const dispatcher = this.dispatchers.get(subscriberId);
       return dispatcher.dispatch(event);
@@ -51,7 +51,7 @@ export default class SubscriptionManager {
         throw new Error(err);
       }
 
-      this.logger.info(`The subscription has been established: ${receiptId}`);
+      this.logger.info(`${subscriberId} subscribed: ${receiptId}`);
 
     });
   }

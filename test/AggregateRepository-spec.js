@@ -2,8 +2,9 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
-const SubscriptionManager = require('../dist').SubscriptionManager;
+const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
 const ExecutorClass = helpers.Executor;
+const HandlersManager = helpers.HandlersManager;
 const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
@@ -18,7 +19,7 @@ const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 const eventuateClient = helpers.createEventuateClient();
 const aggregateRepository = new AggregateRepository({ eventuateClient });
-const subscriptionManager = new SubscriptionManager({ eventuateClient });
+const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
 const timeout = 20000;
 
@@ -129,41 +130,22 @@ describe('AggregateRepository: function createEntity()', function () {
 
 });
 
-describe('SubscriptionManager', function () {
+describe('EventuateSubscriptionManager', function () {
 
   this.timeout(timeout);
 
   it('should subscribe two subscribers and receive events', done => {
 
-    function handleMyEntityWasCreatedEvent(event) {
+    const handleMyEntityWasCreatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasCreatedEvent()');
+      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+    });
 
-      return new Promise((resolve, reject) => {
-        helpers.expectEvent(event);
-        expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
-
-        setTimeout(() => {
-          resolve(event);
-        }, 1000);
-      });
-    }
-
-    function handleMyEntityWasUpdatedEvent(event) {
-
+    const handleMyEntityWasUpdatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasUpdatedEvent()');
-
-      return new Promise((resolve, reject) => {
-
-        helpers.expectEvent(event);
-        expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
-
-        setTimeout(() => {
-          resolve(event);
-          done();
-        }, 1000);
-
-      });
-    }
+      expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
+      done();
+    });
 
     const entityCreatedEventHandlers = {
       [entityTypeName]: {
@@ -192,57 +174,47 @@ describe('SubscriptionManager', function () {
 
   it('should create entity with 10 events and subscribe', done => {
 
-    //create events
-    let processedEventsNumber = 0;
+    let processedEventsNumber1 = 0;
+    let processedEventsNumber2 = 0;
     const expectedEventsNumber = 10;
-    const events = helpers.makeEventsArr(expectedEventsNumber, MyEntityWasCreatedEvent);
 
-    eventuateClient.create(entityTypeName, events)
-      .then(createdEntityAndEventInfo => {
+    const handlersManager = new HandlersManager({ done });
 
-        console.log('Entity created');
+    const handleMyEntityWasCreatedEvent1 = helpers.createEventHandler((event) => {
 
-        helpers.expectCommandResult(createdEntityAndEventInfo);
-      })
-      .catch(done);
-
-    function handleMyEntityWasCreatedEvent1(event) {
-      console.log('handleMyEntityWasCreatedEvent()');
-
-      helpers.expectEvent(event);
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      processedEventsNumber1++;
 
-      processedEventsNumber++;
-
-      if (processedEventsNumber == expectedEventsNumber) {
-        console.log(`processed ${processedEventsNumber} events`);
-        done();
+      if (processedEventsNumber1 == expectedEventsNumber) {
+        console.log(`handleMyEntityWasCreatedEvent1() processed ${processedEventsNumber1} events`);
+        handlersManager.setCompleted('handleMyEntityWasCreatedEvent1');
       }
+    });
 
-      return Promise.resolve();
-    }
+    const handleMyEntityWasCreatedEvent2 = helpers.createEventHandler((event) => {
 
-    function handleMyEntityWasCreatedEvent2(event) {
-      console.log('handleMyEntityWasCreatedEvent()');
-
-      helpers.expectEvent(event);
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      processedEventsNumber2++;
 
-      processedEventsNumber++;
-
-      if (processedEventsNumber == expectedEventsNumber) {
-        console.log(`processed ${processedEventsNumber} events`);
-        done();
+      if (processedEventsNumber2 == expectedEventsNumber) {
+        console.log(`handleMyEntityWasCreatedEvent2() processed ${processedEventsNumber2} events`);
+        handlersManager.setCompleted('handleMyEntityWasCreatedEvent2');
       }
+    });
 
-      return Promise.resolve();
-    }
+    handlersManager.setHandlers([ 'handleMyEntityWasCreatedEvent1', 'handleMyEntityWasCreatedEvent2' ]);
 
     const entityCreatedEventHandlers1 = {
       [entityTypeName]: {
         [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
       }
     };
+
+    subscriptionManager.subscribe({
+      subscriberId: 'test-SubscriptionManager-subscriber1',
+      eventHandlers: entityCreatedEventHandlers1,
+      executor
+    });
 
     const entityCreatedEventHandlers2 = {
       [entityTypeName]: {
@@ -251,17 +223,23 @@ describe('SubscriptionManager', function () {
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber1',
-      eventHandlers: entityCreatedEventHandlers1,
-      executor
-    });
-
-    subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber2',
+      subscriberId: 'test-SubscriptionManager-subscriber2',
       eventHandlers: entityCreatedEventHandlers2,
       executor
     });
 
-  });
+    const events = helpers.makeEventsArr(expectedEventsNumber, MyEntityWasCreatedEvent);
 
+    setTimeout(() => {
+      eventuateClient.create(entityTypeName, events)
+        .then(createdEntityAndEventInfo => {
+
+          console.log('Entity created');
+
+          helpers.expectCommandResult(createdEntityAndEventInfo);
+        })
+        .catch(done);
+
+    }, 2000);
+  });
 });

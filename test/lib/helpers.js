@@ -119,7 +119,7 @@ module.exports.parseAck = (event, done) => {
 
 module.exports.createEventuateClient = () => {
 
-  const eventuateClientOpts = new EventuateClientConfiguration();
+  const eventuateClientOpts = new EventuateClientConfiguration({ debug: false });
 
   return new EventuateClient(eventuateClientOpts);
 };
@@ -161,3 +161,59 @@ class Executor {
 }
 
 module.exports.Executor = Executor;
+
+class HandlersManager {
+  constructor(options) {
+    this.done = options.done;
+    this.doneCalled = false;
+  }
+
+  setHandlers(handlersArr) {
+
+    const iterable = handlersArr.map(handlerName => {
+      return [ handlerName, false ];
+    });
+
+    this.handlers = new Map(iterable);
+  }
+
+  setCompleted(handlerName) {
+    this.handlers.set(handlerName, true);
+    this.doneIfAllCompleted()
+  }
+
+  doneIfAllCompleted() {
+
+    const values = this.handlers.values();
+
+    for(let completed of values) {
+
+      if (!completed) {
+        return;
+      }
+    }
+
+    if (!this.doneCalled){
+      this.doneCalled = true;
+      this.done();
+    }
+  }
+}
+
+module.exports.HandlersManager = HandlersManager;
+
+module.exports.createEventHandler = (callback) => {
+
+  return (event) => {
+
+    return new Promise((resolve) => {
+
+      resolve(event);//Acknowledge event
+
+      module.exports.expectEvent(event);
+
+      callback(event);
+
+    });
+  }
+};

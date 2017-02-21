@@ -2,9 +2,7 @@ import { parseIsTrue } from './utils';
 
 export default class EventuateClientConfiguration {
 
-  constructor({
-    debug = false
-    } = {}) {
+  constructor({ debug = false } = {}) {
 
     const apiKey = {
       id: process.env.EVENTUATE_API_KEY_ID,

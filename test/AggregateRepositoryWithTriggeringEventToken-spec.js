@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
-const SubscriptionManager = require('../dist').SubscriptionManager;
+const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
 const ExecutorClass = helpers.Executor;
 const executor = new ExecutorClass();
 
@@ -21,7 +21,7 @@ const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 
 const eventuateClient = helpers.createEventuateClient();
 const aggregateRepository = new AggregateRepository({ eventuateClient });
-const subscriptionManager = new SubscriptionManager({ eventuateClient });
+const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
 const timeout = 20000;
 

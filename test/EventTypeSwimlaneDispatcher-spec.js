@@ -1,7 +1,7 @@
 'use strict';
 const expect = require('chai').expect;
 const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
-const SubscriptionManager = require('../dist').SubscriptionManager;
+const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
 const helpers = require('./lib/helpers');
 const ExecutorClass = helpers.Executor;
 const executor = new ExecutorClass();
@@ -76,7 +76,7 @@ describe('EventTypeSwimlaneDispatcher', function () {
         helpers.expectCommandResult(createdEntityAndEventInfo);
 
         const dispatcher = new EventTypeSwimlaneDispatcher({ eventHandlers, executor });
-        const subscriber = new SubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
+        const subscriber = new EventuateSubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
         subscriber.subscribe({ subscriberId, eventHandlers });
 
 

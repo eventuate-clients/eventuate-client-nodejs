@@ -223,6 +223,10 @@ export default class EventuateClient {
       return callback(new Error('Incorrect input parameters'));
     }
 
+    if (this.subscriptions[subscriberId]) {
+      return callback(new Error(`The subscriberId "${subscriberId}" already used! Try another subscriberId.`))
+    }
+
     const messageCallback = this.createMessageCallback(eventHandler);
 
     this.connectToStompServer().then(
