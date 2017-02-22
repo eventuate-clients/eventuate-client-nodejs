@@ -1,6 +1,5 @@
 'use strict';
 const expect = require('chai').expect;
-const EventTypeSwimlaneDispatcher = require('../dist').EventTypeSwimlaneDispatcher;
 const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
 const helpers = require('./lib/helpers');
 const ExecutorClass = helpers.Executor;
@@ -75,9 +74,8 @@ describe('EventTypeSwimlaneDispatcher', function () {
       .then(createdEntityAndEventInfo => {
         helpers.expectCommandResult(createdEntityAndEventInfo);
 
-        const dispatcher = new EventTypeSwimlaneDispatcher({ eventHandlers, executor });
-        const subscriber = new EventuateSubscriptionManager({ eventuateClient, dispatcher, eventHandlers });
-        subscriber.subscribe({ subscriberId, eventHandlers });
+        const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient, eventHandlers });
+        subscriptionManager.subscribe({ subscriberId, eventHandlers, executor, swimlane: true });
 
 
         const interval = setInterval(() => {

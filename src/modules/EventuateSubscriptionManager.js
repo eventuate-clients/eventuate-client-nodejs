@@ -1,4 +1,5 @@
 import EventDispatcher from './EventDispatcher';
+import EventTypeSwimlaneDispatcher from './EventTypeSwimlaneDispatcher';
 import { getLogger } from './logger';
 
 export default class EventuateSubscriptionManager {
@@ -28,11 +29,20 @@ export default class EventuateSubscriptionManager {
 
   }
 
-  subscribe({ subscriberId, eventHandlers, executor }) {
+  subscribe({ subscriberId, eventHandlers, executor, swimlane = false }) {
 
     const entityTypesAndEvents = this.eventHandlersToEntityTypesAndEvents(eventHandlers);
 
-    this.dispatchers.set(subscriberId, new EventDispatcher({ eventHandlers, executor }));
+    let dispatcher;
+
+    if (swimlane) {
+      dispatcher = new EventTypeSwimlaneDispatcher({ eventHandlers, executor })
+    } else {
+      dispatcher = new EventDispatcher({ eventHandlers, executor });
+    }
+
+
+    this.dispatchers.set(subscriberId, dispatcher);
 
     this.logger.debug(`Subscribe "${subscriberId}" for:`, entityTypesAndEvents);
 

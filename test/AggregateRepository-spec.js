@@ -9,6 +9,7 @@ const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;
+const anotherEntityTypeName = eventConfig.anotherEntityTypeName;
 const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
 
@@ -205,7 +206,7 @@ describe('EventuateSubscriptionManager', function () {
     handlersManager.setHandlers([ 'handleMyEntityWasCreatedEvent1', 'handleMyEntityWasCreatedEvent2' ]);
 
     const entityCreatedEventHandlers1 = {
-      [entityTypeName]: {
+      [anotherEntityTypeName]: {
         [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
       }
     };
@@ -217,7 +218,7 @@ describe('EventuateSubscriptionManager', function () {
     });
 
     const entityCreatedEventHandlers2 = {
-      [entityTypeName]: {
+      [anotherEntityTypeName]: {
         [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent2
       }
     };
@@ -231,7 +232,7 @@ describe('EventuateSubscriptionManager', function () {
     const events = helpers.makeEventsArr(expectedEventsNumber, MyEntityWasCreatedEvent);
 
     setTimeout(() => {
-      eventuateClient.create(entityTypeName, events)
+      eventuateClient.create(anotherEntityTypeName, events)
         .then(createdEntityAndEventInfo => {
 
           console.log('Entity created');

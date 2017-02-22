@@ -88,6 +88,7 @@ export default class EventuateClient {
       }
 
       const result = new Result({ resolve, reject, callback });
+
       //check input params
       if(!entityTypeName || !this.checkEvents(_events)) {
         return result.failure(new Error('Incorrect input parameters for create()'));
