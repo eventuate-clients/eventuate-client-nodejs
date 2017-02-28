@@ -1,7 +1,5 @@
 import 'babel-polyfill';
-
 import { getLogger } from './logger';
-
 
 export default class EventDispatcher {
 

@@ -27,6 +27,7 @@ export default class EventuateClient {
     this.stompPort = stompPort;
     this.spaceName = spaceName;
     this.debug = debug;
+    this.httpKeepAlive = httpKeepAlive;
 
     this.urlObj = urlUtils.parse(this.url);
 
@@ -59,9 +60,9 @@ export default class EventuateClient {
     }
   }
 
-  setupKeepAliveAgent(httpKeepAlive) {
+  setupKeepAliveAgent() {
 
-    if (this.httpKeepAlive ) {
+    if (this.httpKeepAlive) {
 
       const keepAliveOptions = {
         maxSockets: 100,
@@ -147,7 +148,9 @@ export default class EventuateClient {
 
       let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      urlPath += '?' + this.serialiseObject(options);
+      if (options) {
+        urlPath += '?' + this.serialiseObject(options);
+      }
 
       _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, jsonBody) => {
 

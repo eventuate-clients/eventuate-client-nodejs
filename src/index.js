@@ -7,7 +7,5 @@ import EventuateClientConfiguration from './modules/EventuateClientConfiguration
 
 module.exports = EventuateClient;
 module.exports.AggregateRepository = AggregateRepository;
-module.exports.EventDispatcher = EventDispatcher;
-module.exports.EventTypeSwimlaneDispatcher = EventTypeSwimlaneDispatcher;
 module.exports.EventuateSubscriptionManager = EventuateSubscriptionManager;
 module.exports.EventuateClientConfiguration = EventuateClientConfiguration;
