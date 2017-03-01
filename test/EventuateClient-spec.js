@@ -16,11 +16,11 @@ const updateEvents = [ { eventType: eventTypeUpdated, eventData: { name: 'George
 
 const timeout = 30000;
 
-describe('ES Node.js Client: function create()', function () {
+describe('EventuateClient: function create()', function () {
 
   this.timeout(timeout);
 
-  it('function create() should return entityAndEventInfo object', done => {
+  it('should return entityAndEventInfo object', done => {
     
     eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 
@@ -37,7 +37,7 @@ describe('ES Node.js Client: function create()', function () {
     })
   });
 
-  it('function create() should return error', done => {
+  it('should return error', done => {
 
     eventuateClient.create('', [], err => {
 
@@ -49,11 +49,11 @@ describe('ES Node.js Client: function create()', function () {
 });
 
 
-describe('ES Node.js Client: function update()', function () {
+describe('EventuateClient: function update()', function () {
 
   this.timeout(timeout);
 
-  it('function update() should update entity and return entityAndEventInfo object', done => {
+  it('should update entity and return entityAndEventInfo object', done => {
 
     expect(entityId).to.be.ok;
     expect(entityVersion).to.be.ok;
@@ -69,9 +69,9 @@ describe('ES Node.js Client: function update()', function () {
     });
   });
 
-  it('function update() should return error', done => {
+  it('should return error', done => {
 
-    eventuateClient.create('', [], err => {
+    eventuateClient.update('', '', '', [], err => {
 
       expect(err).to.be.instanceof(Error);
       done();
@@ -80,7 +80,7 @@ describe('ES Node.js Client: function update()', function () {
 });
 
 
-describe('ES Node.js Client: function loadEvents()', function () {
+describe('EventuateClient: function loadEvents()', function () {
 
   this.timeout(timeout);
 
@@ -101,7 +101,7 @@ describe('ES Node.js Client: function loadEvents()', function () {
     });
   });
 
-  it('function loadEvents() should return error', done => {
+  it('should return error', done => {
 
     eventuateClient.loadEvents('', '', err => {
 
@@ -112,11 +112,11 @@ describe('ES Node.js Client: function loadEvents()', function () {
 
 });
 
-describe('ES Node.js Client: function create() custom entityId', function () {
+describe('EventuateClient: function create() custom entityId', function () {
 
   this.timeout(timeout);
 
-  it('function create() should create new Entity with custom entityId and return entityAndEventInfo object', done => {
+  it('should create new Entity with custom entityId and return entityAndEventInfo object', done => {
 
     const entityId = uuid.v1().replace(/-/g, '');
 
@@ -139,11 +139,11 @@ describe('ES Node.js Client: function create() custom entityId', function () {
 
 });
 
-describe('ES Node.js Client: function create() eventData contains unicode string', function () {
+describe('EventuateClient: function create() eventData contains unicode string', function () {
 
   this.timeout(timeout);
 
-  it('function create() should return entityAndEventInfo object', done => {
+  it('should return entityAndEventInfo object', done => {
     const entityId = uuid.v1().replace(/-/g, '');
 
     const createEvents = [ { eventType: eventTypeCreated, eventData: { name: 'Крис Ричардсон' } } ];
