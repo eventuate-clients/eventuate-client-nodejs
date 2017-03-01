@@ -4,7 +4,7 @@ const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
 const EventDispatcher = require('../dist').EventDispatcher;
-const SubscriptionManager = require('../dist').SubscriptionManager;
+const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
 const ExecutorClass = helpers.Executor;
 const executor = new ExecutorClass();
 
@@ -21,6 +21,7 @@ const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 
 const eventuateClient = helpers.createEventuateClient();
 const aggregateRepository = new AggregateRepository({ eventuateClient });
+const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
 const timeout = 20000;
 
@@ -85,10 +86,7 @@ describe('AggregateRepository with triggeringEventToken', function () {
       }
     };
 
-    const dispatcher = new EventDispatcher({ eventHandlers, executor });
-    const subscriber = new SubscriptionManager({ eventuateClient, dispatcher });
-
-    subscriber.subscribe({ subscriberId, eventHandlers });
+    subscriptionManager.subscribe({ subscriberId, eventHandlers });
   });
 
   it('should update with old triggeredEventToken', done => {

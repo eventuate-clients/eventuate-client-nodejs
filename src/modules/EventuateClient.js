@@ -1,5 +1,4 @@
 import 'babel-polyfill';
-import Rx from 'rx';
 import Agent, { HttpsAgent } from 'agentkeepalive';
 import urlUtils from 'url';
 import uuid from 'uuid';
@@ -28,6 +27,7 @@ export default class EventuateClient {
     this.stompPort = stompPort;
     this.spaceName = spaceName;
     this.debug = debug;
+    this.httpKeepAlive = httpKeepAlive;
 
     this.urlObj = urlUtils.parse(this.url);
 
@@ -60,9 +60,9 @@ export default class EventuateClient {
     }
   }
 
-  setupKeepAliveAgent(httpKeepAlive) {
+  setupKeepAliveAgent() {
 
-    if (this.httpKeepAlive ) {
+    if (this.httpKeepAlive) {
 
       const keepAliveOptions = {
         maxSockets: 100,
@@ -89,6 +89,7 @@ export default class EventuateClient {
       }
 
       const result = new Result({ resolve, reject, callback });
+
       //check input params
       if(!entityTypeName || !this.checkEvents(_events)) {
         return result.failure(new Error('Incorrect input parameters for create()'));
@@ -147,7 +148,9 @@ export default class EventuateClient {
 
       let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      urlPath += '?' + this.serialiseObject(options);
+      if (options) {
+        urlPath += '?' + this.serialiseObject(options);
+      }
 
       _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, jsonBody) => {
 
@@ -222,6 +225,10 @@ export default class EventuateClient {
 
     if (!subscriberId || !Object.keys(entityTypesAndEvents).length || ( typeof eventHandler !== 'function')) {
       return callback(new Error('Incorrect input parameters'));
+    }
+
+    if (this.subscriptions[subscriberId]) {
+      return callback(new Error(`The subscriberId "${subscriberId}" already used! Try another subscriberId.`))
     }
 
     const messageCallback = this.createMessageCallback(eventHandler);

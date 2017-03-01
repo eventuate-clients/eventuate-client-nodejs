@@ -1,9 +1,5 @@
 import 'babel-polyfill';
-import Rx from 'rx';
-import util from 'util';
-
 import { getLogger } from './logger';
-
 
 export default class EventDispatcher {
 

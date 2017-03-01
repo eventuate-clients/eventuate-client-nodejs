@@ -1,5 +1,4 @@
 import 'babel-polyfill';
-import util from 'util';
 
 import ObservableQueue from './ObservableQueue';
 import { getLogger } from './logger';
@@ -12,9 +11,7 @@ export default class EventTypeSwimlaneDispatcher {
       logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
     }
 
-    this.eventHandlers =  eventHandlers;
-    this.logger = logger;
-    this.executor = executor;
+    Object.assign(this, { eventHandlers, logger, executor });
 
     this.queues = {};
 
