@@ -47,6 +47,8 @@ const createEvents2 = [
 ];
 
 const shouldBeProcessedNumber = createEvents1.length;
+let createdEventIds1;
+let createdEventIds2;
 
 describe(`Create First Entity: ${entityTypeName1}`, function () {
 
@@ -62,6 +64,8 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
       helpers.expectCommandResult(createdEntityAndEventInfo, done);
 
+      createdEventIds1 = createdEntityAndEventInfo.eventIds;
+
       describe(`Create Second Entity: ${entityTypeName2}`, function () {
 
         this.timeout(timeout);
@@ -76,6 +80,8 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
             helpers.expectCommandResult(createdEntityAndEventInfo, done);
 
+            createdEventIds2 = createdEntityAndEventInfo.eventIds;
+
             describe(`Subscribe ${entityTypeName1}`, function () {
 
               this.timeout(timeout);
@@ -87,9 +93,10 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                 const eventHandler1 = (event) => {
 
                   return new Promise((resolve, reject) => {
-                    processedMessagesNumber1++;
 
-                    expect(event.eventData).to.be.an('Object');
+                    resolve(event.ack);
+
+                    helpers.expectEvent(event);
 
                     const ack = helpers.parseAck(event, done);
 
@@ -97,16 +104,19 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                       return done(new Error(`Wrong subscriber: ${ack.receiptHandle.subscriberId}`));
                     }
 
-                    resolve(event.ack);
+                    if (createdEventIds1.indexOf(event.eventId) >=0) {
+                      processedMessagesNumber1++;
 
-                    if (processedMessagesNumber1 == shouldBeProcessedNumber) {
-                      done();
+                      if (processedMessagesNumber1 == shouldBeProcessedNumber) {
+                        done();
+                      }
+                    } else {
+                      console.log('Old event');
                     }
                   });
-
                 };
                 //subscribe for events
-                const subscribe1 = eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, eventHandler1, err => {
+                eventuateClient.subscribe(subscriberId1, entityTypesAndEvents1, eventHandler1, err => {
                   if (err) {
                     return done(err);
                   }
@@ -127,11 +137,9 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
 
                   return new Promise((resolve, reject) => {
 
-                    processedMessagesNumber2++;
-
                     resolve(event.ack);
 
-                    expect(event.eventData).to.be.an('Object');
+                    helpers.expectEvent(event);
 
                     const ack = helpers.parseAck(event, done);
 
@@ -139,15 +147,21 @@ describe(`Create First Entity: ${entityTypeName1}`, function () {
                       return done(new Error('Wrong subscriber: ' + ack.receiptHandle.subscriberId));
                     }
 
-                    if (processedMessagesNumber2 == shouldBeProcessedNumber) {
-                      done();
+
+                    if (createdEventIds2.indexOf(event.eventId) >= 0) {
+                      processedMessagesNumber2++;
+
+                      if (processedMessagesNumber2 == shouldBeProcessedNumber) {
+                        done();
+                      }
+                    } else {
+                      console.log('Old event');
                     }
                   });
-
                 };
 
                 //subscribe for events
-                const subscribe2 = eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, eventHandler2, err => {
+                eventuateClient.subscribe(subscriberId2, entityTypesAndEvents2, eventHandler2, err => {
                   if (err) {
                     return done(err);
                   }
