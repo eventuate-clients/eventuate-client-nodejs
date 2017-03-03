@@ -21,10 +21,13 @@ const eventHandlers = {
   }
 };
 
+const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient, eventHandlers });
+
 console.log('eventHandlers:', eventHandlers);
 
 let processed = 0;
 const timestamp = new Date().getTime();
+let eventIds;
 
 describe('EventTypeSwimlaneDispatcher', function () {
 
@@ -72,20 +75,18 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
     eventuateClient.create(entityTypeName, events)
       .then(createdEntityAndEventInfo => {
+
         helpers.expectCommandResult(createdEntityAndEventInfo);
+        eventIds = createdEntityAndEventInfo.eventIds;
 
-        const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient, eventHandlers });
         subscriptionManager.subscribe({ subscriberId, eventHandlers, executor, swimlane: true });
-
 
         const interval = setInterval(() => {
           if (processed == events.length) {
             clearInterval(interval);
             done();
           }
-
-        }, 1000)
-
+        }, 1000);
       })
       .catch(done);
   });
@@ -93,28 +94,40 @@ describe('EventTypeSwimlaneDispatcher', function () {
 
 function handleMyEntityWasCreatedEvent(event) {
   console.log('Running handleMyEntityWasCreatedEvent');
-
   expect(this.getClassName()).to.equal(ExecutorClass.name);
-  helpers.expectEvent(event);
-  expect(event.eventType).to.equal(myEntityWasCreatedEvent);
-  expect(event.eventData).to.have.property('timestamp');
-  expect(event.eventData.timestamp).to.equal(timestamp);
 
-  processed++;
-  return Promise.resolve();
+  return new Promise((resolve) => {
+    resolve(event.ack);
+
+    helpers.expectEvent(event);
+    expect(event.eventType).to.equal(myEntityWasCreatedEvent);
+    expect(event.eventData).to.have.property('timestamp');
+    expect(event.eventData.timestamp).to.equal(timestamp);
+
+    if (eventIds.indexOf(event.eventId) >= 0) {
+      processed++;
+    } else {
+      console.log('Old event');
+    }
+  });
 }
 
 function handleMyEntityWasUpdatedEvent(event) {
   console.log('Running handleMyEntityWasUpdatedEvent');
-
   expect(this.getClassName()).to.equal(ExecutorClass.name);
-  helpers.expectEvent(event);
-  expect(event.eventType).to.equal(myEntityWasUpdatedEvent);
-  expect(event.eventData).to.have.property('timestamp');
-  expect(event.eventData.timestamp).to.equal(timestamp);
 
-  processed++;
-  //return Promise.reject(new Error('Event handler handleMyEntityWasUpdatedEvent error!'));
-  return Promise.resolve();
+  return new Promise((resolve) => {
+    resolve(event.ack);
+
+    helpers.expectEvent(event);
+    expect(event.eventType).to.equal(myEntityWasUpdatedEvent);
+    expect(event.eventData).to.have.property('timestamp');
+    expect(event.eventData.timestamp).to.equal(timestamp);
+
+    if (eventIds.indexOf(event.eventId) >= 0) {
+      processed++;
+    } else {
+      console.log('Old event');
+    }
+  });
 }
-
