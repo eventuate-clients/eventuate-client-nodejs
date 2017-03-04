@@ -28,7 +28,8 @@ let createdTimestamp;
 let updateTimestamp;
 
 let entityId;
-
+let myEntityWasCreatedEventId;
+let myEntityWasUpdatedEventId;
 
 describe('AggregateRepository: function createEntity()', function () {
 
@@ -47,7 +48,7 @@ describe('AggregateRepository: function createEntity()', function () {
 
         helpers.expectCommandResult(createdEntityAndEventInfo);
         entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
-
+        myEntityWasCreatedEventId = createdEntityAndEventInfo.eventIds[0];
         done();
     })
     .catch(done);
@@ -65,8 +66,12 @@ describe('AggregateRepository: function createEntity()', function () {
 
     aggregateRepository.updateEntity({ EntityClass, entityId, command })
       .then(updatedEntityAndEventInfo => {
-      console.log('updateEntity result:' , updatedEntityAndEventInfo);
-      helpers.expectCommandResult(updatedEntityAndEventInfo, done);
+
+        helpers.expectCommandResult(updatedEntityAndEventInfo);
+
+        myEntityWasUpdatedEventId = updatedEntityAndEventInfo.eventIds[0];
+
+        done();
       })
       .catch(done);
   });
@@ -137,16 +142,29 @@ describe('EventuateSubscriptionManager', function () {
 
   it('should subscribe two subscribers and receive events', done => {
 
+    const handlersManager = new HandlersManager({ done });
+
     const handleMyEntityWasCreatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasCreatedEvent()');
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+
+      if (myEntityWasCreatedEventId == event.eventId) {
+        handlersManager.setCompleted('handleMyEntityWasCreatedEvent');
+      }
     });
 
     const handleMyEntityWasUpdatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasUpdatedEvent()');
       expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
-      done();
+
+      if (myEntityWasUpdatedEventId == event.eventId) {
+        handlersManager.setCompleted('handleMyEntityWasUpdatedEvent');
+      } else {
+        console.log('Old event');
+      }
     });
+
+    handlersManager.setHandlers([ 'handleMyEntityWasCreatedEvent', 'handleMyEntityWasUpdatedEvent' ]);
 
     const entityCreatedEventHandlers = {
       [entityTypeName]: {
@@ -178,28 +196,42 @@ describe('EventuateSubscriptionManager', function () {
     let processedEventsNumber1 = 0;
     let processedEventsNumber2 = 0;
     const expectedEventsNumber = 10;
+    let myEntityWasCreatedEventIds = [];
 
     const handlersManager = new HandlersManager({ done });
 
     const handleMyEntityWasCreatedEvent1 = helpers.createEventHandler((event) => {
 
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
-      processedEventsNumber1++;
 
-      if (processedEventsNumber1 == expectedEventsNumber) {
-        console.log(`handleMyEntityWasCreatedEvent1() processed ${processedEventsNumber1} events`);
-        handlersManager.setCompleted('handleMyEntityWasCreatedEvent1');
+      if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
+
+        processedEventsNumber1++;
+
+        if (processedEventsNumber1 == expectedEventsNumber) {
+          console.log(`handleMyEntityWasCreatedEvent1() processed ${processedEventsNumber1} events`);
+          handlersManager.setCompleted('handleMyEntityWasCreatedEvent1');
+        }
+      } else {
+        console.log('Old event')
       }
+
     });
 
     const handleMyEntityWasCreatedEvent2 = helpers.createEventHandler((event) => {
 
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
-      processedEventsNumber2++;
 
-      if (processedEventsNumber2 == expectedEventsNumber) {
-        console.log(`handleMyEntityWasCreatedEvent2() processed ${processedEventsNumber2} events`);
-        handlersManager.setCompleted('handleMyEntityWasCreatedEvent2');
+      if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
+
+        processedEventsNumber2++;
+
+        if (processedEventsNumber2 == expectedEventsNumber) {
+          console.log(`handleMyEntityWasCreatedEvent2() processed ${processedEventsNumber2} events`);
+          handlersManager.setCompleted('handleMyEntityWasCreatedEvent2');
+        }
+      } else {
+        console.log('Old event')
       }
     });
 
@@ -236,7 +268,10 @@ describe('EventuateSubscriptionManager', function () {
         .then(createdEntityAndEventInfo => {
 
           console.log('Entity created');
+          console.log(createdEntityAndEventInfo);
 
+          myEntityWasCreatedEventIds = myEntityWasCreatedEventIds.concat(createdEntityAndEventInfo.eventIds);
+          console.log('myEntityWasCreatedEventIds:', myEntityWasCreatedEventIds);
           helpers.expectCommandResult(createdEntityAndEventInfo);
         })
         .catch(done);

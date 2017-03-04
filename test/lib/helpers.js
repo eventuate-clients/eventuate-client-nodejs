@@ -178,6 +178,8 @@ class HandlersManager {
   }
 
   setCompleted(handlerName) {
+    console.log(`setCompleted for "${handlerName}"`);
+
     this.handlers.set(handlerName, true);
     this.doneIfAllCompleted()
   }

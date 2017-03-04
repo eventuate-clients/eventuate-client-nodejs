@@ -26,7 +26,6 @@ export default class EventuateSubscriptionManager {
 
         return entityTypesAndEvents;
       }, {});
-
   }
 
   subscribe({ subscriberId, eventHandlers, executor, swimlane = false }) {
@@ -53,8 +52,6 @@ export default class EventuateSubscriptionManager {
       return dispatcher.dispatch(event);
     };
 
-
-
     this.eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, (err, receiptId) => {
 
       if (err) {
@@ -62,7 +59,6 @@ export default class EventuateSubscriptionManager {
       }
 
       this.logger.info(`${subscriberId} subscribed: ${receiptId}`);
-
     });
   }
 }

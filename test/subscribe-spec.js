@@ -21,6 +21,7 @@ const entityTypesAndEvents = {
 
 
 const shouldBeProcessedNumber = 2;
+let eventIds = [];
 
 describe('Create and update entity. Subscribe for 2 events', function () {
   this.timeout(25000);
@@ -29,6 +30,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
     //create events
     const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
+
     eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
       if (err) {
         return done(err);
@@ -36,6 +38,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
+      eventIds = eventIds.concat(createdEntityAndEventInfo.eventIds);
       //update events
       const entityIdTypeAndVersion = createdEntityAndEventInfo.entityIdTypeAndVersion;
       const entityId = entityIdTypeAndVersion.entityId;
@@ -51,22 +54,29 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
         helpers.expectCommandResult(updatedEntityAndEventInfo);
 
+        eventIds = eventIds.concat(updatedEntityAndEventInfo.eventIds);
+
         let processedMessagesNumber = 0;
 
         const eventHandler = (event) => {
 
           return new Promise((resolve, reject) => {
-            processedMessagesNumber++;
+
+            console.log('event:' ,event);
             resolve(event.ack);
 
-            expect(event.eventData).to.be.an('Object');
+            helpers.expectEvent(event);
 
-            if (processedMessagesNumber == shouldBeProcessedNumber) {
-              done();
+            if (eventIds.indexOf(event.eventId) >= 0 ) {
+              processedMessagesNumber++;
+
+              if (processedMessagesNumber == shouldBeProcessedNumber) {
+                done();
+              }
+            } else {
+              console.log('Old event');
             }
           });
-
-
         };
         //subscribe for events
         eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
@@ -76,7 +86,6 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
           console.log('The subscription has been established.')
         });
-
       });
     });
   });

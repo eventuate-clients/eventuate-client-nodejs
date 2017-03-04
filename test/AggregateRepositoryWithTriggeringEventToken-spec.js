@@ -27,6 +27,7 @@ const timeout = 20000;
 
 let entityId;
 let triggeringEventToken;
+let eventId;
 
 describe('AggregateRepository with triggeringEventToken', function () {
 
@@ -44,7 +45,10 @@ describe('AggregateRepository with triggeringEventToken', function () {
 
     aggregateRepository.createEntity({ EntityClass, command })
       .then(createdEntityAndEventInfo => {
+
         helpers.expectCommandResult(createdEntityAndEventInfo);
+        eventId = createdEntityAndEventInfo.eventIds[0];
+
         done();
       })
       .catch(err => {
@@ -75,7 +79,11 @@ describe('AggregateRepository with triggeringEventToken', function () {
           console.log('result:', result);
           helpers.expectCommandResult(result);
 
-          done();
+          if (event.eventId == eventId) {
+            done();
+          } else {
+            console.log('Old event');
+          }
         })
         .catch(done);
     }

@@ -16,6 +16,7 @@ const entityTypesAndEvents = {
 
 const eventsNumber = 500;
 const timeout = 50000;
+let eventIds;
 
 describe('Create entity with ' + eventsNumber + ' events and subscribe', function () {
   this.timeout(timeout);
@@ -35,23 +36,24 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
 
       helpers.expectCommandResult(createdEntityAndEventInfo);
 
+      eventIds = createdEntityAndEventInfo.eventIds;
+
       let processedMessagesNumber = 0;
 
       const eventHandler = (event) => {
 
         return new Promise((resolve, reject) => {
-
-          processedMessagesNumber++;
-
           resolve(event.ack);
-
           helpers.expectEvent(event);
 
-          if (processedMessagesNumber == eventsNumber) {
-            done();
+          if (eventIds.indexOf(event.eventId) >= 0) {
+            processedMessagesNumber++;
+
+            if (processedMessagesNumber == eventsNumber) {
+              done();
+            }
           }
         })
-
       };
 
       //subscribe for events
@@ -62,7 +64,6 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
 
         console.log('Subscription established')
       });
-      
     });
   });
 });
