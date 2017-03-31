@@ -14,7 +14,7 @@ export default class EventuateClientConfiguration {
     }
 
     this.apiKey = apiKey;
-    this.spaceName = process.env.EVENTUATE_SPACE_NAME || '';
+    this.spaceName = process.env.EVENTUATE_SPACE || process.env.EVENTUATE_SPACE_NAME || 'default';
     this.httpKeepAlive = process.env.EVENTUATE_HTTP_KEEP_ALIVE;
     this.debug = debug;
     this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
