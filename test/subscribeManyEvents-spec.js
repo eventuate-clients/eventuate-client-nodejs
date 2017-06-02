@@ -24,7 +24,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
   it('should create entity and subscribe for events', done => {
 
     //create events
-    const createEvents = helpers.makeEventsArr(eventsNumber, entityChangedEvent);
+    const createEvents = helpers.makeEventsArr({ size: eventsNumber, entityType: entityTypeName, eventType: entityChangedEvent });
 
     eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 

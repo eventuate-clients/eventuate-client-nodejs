@@ -1,13 +1,13 @@
 'use strict';
-const expect = require('chai').expect;
 const ObservableQueue = require('../dist/modules/ObservableQueue');
 const helpers = require('./lib/helpers');
 
 const timeout = 10000;
 
+const entityType = 'net.chrisrichardson.eventstore.example.MyTestEntity';
 const eventType = 'net.chrisrichardson.eventstore.example.MyEntityWasUpdatedEvent';
 const swimlane = 2;
-const events = helpers.makeEventsArr(10, eventType, swimlane);
+const events = helpers.makeEventsArr({ size: 10, entityType, eventType, swimlane });
 
 describe('ObservableQueue', function () {
 
@@ -30,7 +30,13 @@ describe('ObservableQueue', function () {
       });
     };
 
-    const queue = new ObservableQueue({ eventType, swimlane, eventHandler });
+    const eventHandlers = {
+      [entityType]: {
+        [eventType]: eventHandler
+      }
+    };
+
+    const queue = new ObservableQueue({ entityType, swimlane, eventHandlers });
 
     events.forEach((event) => {
       new Promise((resolve, reject) => {
@@ -64,7 +70,13 @@ describe('ObservableQueue', function () {
       });
     };
 
-    const queue = new ObservableQueue({ eventType, swimlane, eventHandler });
+    const eventHandlers = {
+      [entityType]: {
+        [eventType]: eventHandler
+      }
+    };
+
+    const queue = new ObservableQueue({ entityType, swimlane, eventHandlers });
 
     events.forEach((event) => {
       new Promise((resolve, reject) => {

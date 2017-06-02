@@ -3,14 +3,14 @@ import { getLogger } from './logger';
 
 export default class ObservableQueue {
 
-  constructor({ eventType, swimlane, eventHandler, executor }) {
+  constructor({ entityType, swimlane, eventHandlers, executor }) {
 
-    this.eventType = eventType;
+    this.entityType = entityType;
     this.swimlane = swimlane;
-    this.eventHandler = eventHandler;
+    this.eventHandlers = eventHandlers;
     this.executor = executor;
 
-    this.logger = getLogger({ title: `Queue-${this.eventType}-${this.swimlane}` });
+    this.logger = getLogger({ title: `Queue-${this.entityType}-${this.swimlane}` });
 
     const observable = Rx.Observable.create(this.observableCreateFn.bind(this));
 
@@ -42,12 +42,17 @@ export default class ObservableQueue {
     return ({ event, resolve, reject }) => Rx.Observable.create(observer => {
 
       // this.logger.debug('processing event: ', event);
-      if (!this.eventHandler) {
-        return observer.onError(new Error(`No event handler for eventType: ${event.eventType}`));
+
+      const { entityType, eventType } = event;
+
+      const eventHandler = this.eventHandlers[entityType][eventType];
+
+      if (!eventHandler) {
+        return reject(new Error(`No event handler for entityType/eventType: ${entityType}/${eventType}`));
       }
 
       try {
-        this.eventHandler.call(this.executor, event)
+        eventHandler.call(this.executor, event)
           .then(
             result => {
 

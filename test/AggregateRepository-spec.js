@@ -261,7 +261,7 @@ describe('EventuateSubscriptionManager', function () {
       executor
     });
 
-    const events = helpers.makeEventsArr(expectedEventsNumber, MyEntityWasCreatedEvent);
+    const events = helpers.makeEventsArr({ size: expectedEventsNumber, entityType: anotherEntityTypeName, eventType: MyEntityWasCreatedEvent });
 
     setTimeout(() => {
       eventuateClient.create(anotherEntityTypeName, events)
