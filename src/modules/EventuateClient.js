@@ -1,4 +1,3 @@
-import 'babel-polyfill';
 import Agent, { HttpsAgent } from 'agentkeepalive';
 import urlUtils from 'url';
 import uuid from 'uuid';

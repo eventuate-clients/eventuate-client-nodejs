@@ -1,5 +1,3 @@
-import 'babel-polyfill';
-
 import ObservableQueue from './ObservableQueue';
 import { getLogger } from './logger';
 

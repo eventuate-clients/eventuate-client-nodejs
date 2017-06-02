@@ -1,5 +1,4 @@
 'use strict';
-const parallel = require('mocha.parallel');
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
