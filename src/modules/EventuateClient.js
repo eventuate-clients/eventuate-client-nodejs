@@ -248,7 +248,7 @@ export default class EventuateClient {
     const ackOrderTracker = new AckOrderTracker();
 
     const acknowledge = (ack) => {
-      
+
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 
@@ -662,7 +662,16 @@ function _request(path, method, apiKey, jsonData, client, callback) {
 
       try {
 
-        callback(null, res, JSON.parse(responseData));
+        var json;
+
+        try {
+          json = JSON.parse(responseData);
+        } catch (e) {
+          console.log("JSON.parse failed", responseData);
+          console.log("JSON.parse failed", e);
+          callback(e);
+        }
+        callback(null, res, json);
 
       } catch (err) {
         callback(err);
