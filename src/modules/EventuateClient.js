@@ -659,25 +659,23 @@ function _request(path, method, apiKey, jsonData, client, callback) {
 
     res.on('end', () => {
 
-      try {
+      if (/^application\/json/ig.test(res.headers['content-type'])) {
 
-        var json;
+        let json;
 
         try {
           json = JSON.parse(responseData);
         } catch (e) {
-          console.log("JSON.parse failed", responseData);
-          console.log("JSON.parse failed", e);
-          callback(e);
+          console.error('JSON.parse failed for:', responseData);
+          console.error('JSON.parse failed with error:', e);
+          return callback(e);
         }
-        callback(null, res, json);
 
-      } catch (err) {
-        callback(err);
+        return callback(null, res, json);
       }
 
+      callback(null, res, responseData);
     })
-
   });
 
   req.on('error', err => {
