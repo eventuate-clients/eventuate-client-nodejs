@@ -12,13 +12,13 @@ import { escapeStr, unEscapeStr } from './specialChars';
 import EventuateServerError from './EventuateServerError';
 import { getLogger } from './logger';
 import Result from './Result';
+import { delay } from './utils';
 
 const logger = getLogger({ title: 'EventuateClient' });
 
 export default class EventuateClient {
 
-  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug }) {
-
+  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber }) {
 
     this.apiKey = apiKey;
     this.url =  url;
@@ -45,6 +45,10 @@ export default class EventuateClient {
 
     this.connectionCount = 0;
     this._connPromise = null;
+
+
+    this.maxRetryNumber = maxRetryNumber;
+    this.retryDelay = 1000;
   }
 
   determineIfSecure() {
@@ -104,14 +108,10 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this)
+      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
+
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
         .then(({ res: httpResponse, body: jsonBody }) => {
-          let err;
-          if (err = statusCodeError(httpResponse.statusCode, jsonBody)) {
-            console.log('httpResponse.statusCode:', httpResponse.statusCode);
-            console.log('jsonBody:', jsonBody);
-            return Promise.reject(err);
-          }
 
           const { entityId, entityVersion, eventIds } = jsonBody;
 
@@ -157,12 +157,10 @@ export default class EventuateClient {
         urlPath += '?' + this.serialiseObject(options);
       }
 
-      _request(urlPath, 'GET', this.apiKey, null, this)
+      const requestOptions = { path: urlPath, method: 'GET', apiKey: this.apiKey, client: this };
+
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
         .then(({ res: httpResponse, body: jsonBody }) => {
-          let err;
-          if (err = statusCodeError(httpResponse.statusCode, jsonBody)) {
-            return Promise.reject(err);
-          }
 
           const events = this.eventDataToObject(jsonBody.events);
 
@@ -179,7 +177,7 @@ export default class EventuateClient {
 
     return new Promise((resolve, reject) => {
 
-      if (!callback && typeof options == 'function') {
+      if (!callback && typeof options === 'function') {
         callback = options;
       }
 
@@ -201,13 +199,10 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this)
-        .then(({ res: httpResponse, body: jsonBody }) => {
+      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-          let err;
-          if (err = statusCodeError(httpResponse.statusCode, jsonBody)) {
-            return result.failure(err);
-          }
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        .then(({ res: httpResponse, body: jsonBody }) => {
 
           const { entityId, entityVersion, eventIds} = jsonBody;
 
@@ -228,6 +223,103 @@ export default class EventuateClient {
           result.failure(err);
         });
     });
+  }
+
+  httpRequest({ path, method, jsonData = null }) {
+
+    return new Promise((resolve, reject) => {
+
+      const apiKey = this.apiKey;
+      const headers = {
+        'Authorization' : `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`
+      };
+
+      let postData;
+      if (method === 'POST') {
+        postData = JSON.stringify(jsonData);
+        headers['Content-Type'] = 'application/json';
+        headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
+      }
+
+      const options = {
+        host: this.urlObj.hostname,
+        port: this.urlObj.port,
+        path,
+        method,
+        headers
+      };
+
+      if (this.httpKeepAlive) {
+        options.agent = this.keepAliveAgent;
+      }
+
+      const req = this.httpClient.request(options, res => {
+
+        res.setEncoding('utf8');
+
+        let responseData = '';
+
+        res.on('data', chunk => {
+
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+
+          if (/^application\/json/ig.test(res.headers['content-type'])) {
+
+            try {
+              responseData = JSON.parse(responseData);
+            } catch (e) {
+              console.error('JSON.parse failed for:', responseData);
+              console.error('JSON.parse failed with error:', e);
+              return reject(e);
+            }
+          }
+
+          let err;
+          if (err = statusCodeError(res.statusCode, responseData)) {
+            return reject(err);
+          }
+
+          resolve({ res, body: responseData });
+        })
+      });
+
+      req.on('error', err => {
+        reject(err);
+      });
+
+      if (method === 'POST') {
+        req.write(postData);
+      }
+
+      req.end();
+    });
+  }
+
+  attemptOperation({ handler, arg, retryNumber = 1, retryConditionFn, context }) {
+
+
+    return handler.call(context, arg)
+      .catch(err => {
+
+        logger.error('attemptOperation error:', err);
+        logger.debug(`Retry ${retryNumber}`);
+
+        if (typeof(retryConditionFn) === 'function') {
+
+          if (retryNumber <= this.maxRetryNumber && retryConditionFn(err)) {
+
+            return delay(this.retryDelay)
+              .then(() => {
+                return context.attemptOperation({ handler, arg, retryNumber: retryNumber + 1, retryConditionFn, context })
+              })
+          }
+        }
+
+        return Promise.reject(err);
+      });
   }
 
   subscribe(subscriberId, entityTypesAndEvents, eventHandler, options, callback) {
@@ -620,7 +712,6 @@ export default class EventuateClient {
   }
 }
 
-
 function statusCodeError(statusCode, message) {
 
   if (statusCode !== 200) {
@@ -634,76 +725,9 @@ function statusCodeError(statusCode, message) {
   }
 }
 
-function _request(path, method, apiKey, jsonData, client) {
+function retryConditionFn (err) {
 
-  return new Promise((resolve, reject) => {
-
-    const headers = {
-      'Authorization' : `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`
-    };
-
-    let postData;
-    if (method === 'POST') {
-      postData = JSON.stringify(jsonData);
-      headers['Content-Type'] = 'application/json';
-      headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
-    }
-
-    const options = {
-      host: client.urlObj.hostname,
-      port: client.urlObj.port,
-      path,
-      method,
-      headers
-    };
-
-    if (client.httpKeepAlive) {
-      options.agent = client.keepAliveAgent;
-    }
-
-    console.log('options:', options);
-
-    const req = client.httpClient.request(options, res => {
-
-      res.setEncoding('utf8');
-
-      let responseData = '';
-
-      res.on('data', chunk => {
-
-        responseData += chunk;
-      });
-
-      res.on('end', () => {
-
-        if (/^application\/json/ig.test(res.headers['content-type'])) {
-
-          let json;
-
-          try {
-            json = JSON.parse(responseData);
-          } catch (e) {
-            console.error('JSON.parse failed for:', responseData);
-            console.error('JSON.parse failed with error:', e);
-            return reject(e);
-          }
-
-          return resolve({ res, body: json });
-        }
-
-        resolve({ res, body: responseData });
-      })
-    });
-
-    req.on('error', err => {
-      console.error('Request error:', err)
-      reject(err);
-    });
-
-    if (method === 'POST') {
-      req.write(postData);
-    }
-
-    req.end();
-  });
+  if (err.statusCode === 503) {
+    return true;
+  }
 }

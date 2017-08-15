@@ -26,6 +26,8 @@ export default class EventuateClientConfiguration {
     } else {
       this.httpKeepAlive = parseIsTrue(this.httpKeepAlive);
     }
+
+    this.maxRetryNumber = process.env.EVENTUATE_RETRIES_NUMBER || 10;
   }
 
   getConfig() {
@@ -36,7 +38,8 @@ export default class EventuateClientConfiguration {
       debug: this.debug,
       url: this.url,
       stompHost: this.stompHost,
-      stompPort: this.stompPort
+      stompPort: this.stompPort,
+      maxRetryNumber: this.maxRetryNumber
     }
   }
 }
