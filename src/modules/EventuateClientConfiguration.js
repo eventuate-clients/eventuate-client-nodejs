@@ -2,7 +2,7 @@ import { parseIsTrue } from './utils';
 
 export default class EventuateClientConfiguration {
 
-  constructor({ debug = false } = {}) {
+  constructor({ debug = false, url, httpKeepAlive } = {}) {
 
     const apiKey = {
       id: process.env.EVENTUATE_API_KEY_ID,
@@ -15,9 +15,15 @@ export default class EventuateClientConfiguration {
 
     this.apiKey = apiKey;
     this.spaceName = process.env.EVENTUATE_SPACE || process.env.EVENTUATE_SPACE_NAME || 'default';
-    this.httpKeepAlive = process.env.EVENTUATE_HTTP_KEEP_ALIVE;
+
+    if (typeof httpKeepAlive !== 'undefined') {
+      this.httpKeepAlive = httpKeepAlive;
+    } else {
+      this.httpKeepAlive = process.env.EVENTUATE_HTTP_KEEP_ALIVE;
+    }
+
     this.debug = debug;
-    this.url =  process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
+    this.url =  url || process.env.EVENTUATE_URL || process.env.EVENT_STORE_URL || 'https://api.eventuate.io';
     this.stompHost = process.env.EVENTUATE_STOMP_SERVER_HOST || process.env.EVENT_STORE_STOMP_SERVER_HOST || 'api.eventuate.io';
     this.stompPort = process.env.EVENTUATE_STOMP_SERVER_PORT || process.env.EVENT_STORE_STOMP_SERVER_PORT || 61614;
 

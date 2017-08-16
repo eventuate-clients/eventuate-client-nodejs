@@ -300,7 +300,6 @@ export default class EventuateClient {
 
   attemptOperation({ handler, arg, retryNumber = 1, retryConditionFn, context }) {
 
-
     return handler.call(context, arg)
       .catch(err => {
 
