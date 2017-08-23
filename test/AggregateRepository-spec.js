@@ -31,7 +31,7 @@ let entityId;
 let myEntityWasCreatedEventId;
 let myEntityWasUpdatedEventId;
 
-describe('AggregateRepository: function createEntity()', function () {
+describe('AggregateRepository', function () {
 
   this.timeout(timeout);
 
@@ -74,6 +74,27 @@ describe('AggregateRepository: function createEntity()', function () {
         done();
       })
       .catch(done);
+  });
+
+  it('function updateEntity() should try to update not existing entity and return error with code 404', done => {
+
+    const command = {
+      commandType: UpdateEntityCommand,
+      updateTimestamp
+    };
+
+    aggregateRepository.updateEntity({ EntityClass, entityId: '0000000000000001', command })
+      .then(() => {
+        done(new Error('Should return error!'));
+      })
+      .catch((err) => {
+        expect(err).to.be.an('Object');
+        expect(err).to.haveOwnProperty('code');
+        expect(err.code).to.equal(404);
+        expect(err).to.haveOwnProperty('message');
+        expect(err.message).to.be.a('String');
+        done();
+      });
   });
 
   it('function loadEvents() should load events', done => {

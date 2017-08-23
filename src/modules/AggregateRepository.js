@@ -34,7 +34,7 @@ export default class AggregateRepository {
                 entityVersion = this.getEntityVersionFromEvents(loadedEvents);
 
                 if (!entityVersion) {
-                  return Promise.reject(new Error(`Can not get entityVersion: no events for ${entityTypeName} ${entityId}`));
+                  return Promise.reject({ code: 404, message: `Can not get entityVersion: no events for ${entityTypeName} ${entityId}`});
                 }
 
                 //iterate through the events calling entity.applyEvent(..)
