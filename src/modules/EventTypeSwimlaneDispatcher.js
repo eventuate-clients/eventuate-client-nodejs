@@ -1,5 +1,3 @@
-import 'babel-polyfill';
-
 import ObservableQueue from './ObservableQueue';
 import { getLogger } from './logger';
 
@@ -25,18 +23,12 @@ export default class EventTypeSwimlaneDispatcher {
 
       this.logger.debug(`eventType: ${eventType}, swimlane: ${swimlane}, entityType: ${entityType}`);
 
-      let queue = this.getQueue({ eventType, swimlane });
+      let queue = this.getQueue({ entityType, swimlane });
 
       if (!queue) {
-        this.logger.debug(`Create new queue for eventType: ${eventType}, swimlane: ${swimlane}`);
+        this.logger.debug(`Create new queue for eventType: ${entityType}, swimlane: ${swimlane}`);
 
-        const eventHandler = this.eventHandlers[entityType][eventType];
-
-        if (!eventHandler) {
-          return Promise.reject(new Error(`No event handler for eventType: ${eventType}`));
-        }
-
-        queue = new ObservableQueue({ eventType, swimlane, eventHandler, executor: this.executor });
+        queue = new ObservableQueue({ entityType, swimlane, eventHandlers: this.eventHandlers, executor: this.executor });
 
         this.saveQueue(queue);
       }
@@ -47,19 +39,19 @@ export default class EventTypeSwimlaneDispatcher {
 
   }
 
-  getQueue({ eventType, swimlane }) {
-    if(!this.queues[eventType]) {
-      this.queues[eventType] = {};
+  getQueue({ entityType, swimlane }) {
+    if(!this.queues[entityType]) {
+      this.queues[entityType] = {};
     }
 
-    return this.queues[eventType][swimlane];
+    return this.queues[entityType][swimlane];
   }
 
   saveQueue(queue) {
 
-    const { eventType, swimlane } = queue;
+    const { entityType, swimlane } = queue;
 
-    this.queues[eventType][swimlane] = queue;
+    this.queues[entityType][swimlane] = queue;
   }
 
 }

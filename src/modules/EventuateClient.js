@@ -1,4 +1,3 @@
-import 'babel-polyfill';
 import Agent, { HttpsAgent } from 'agentkeepalive';
 import urlUtils from 'url';
 import uuid from 'uuid';
@@ -13,13 +12,13 @@ import { escapeStr, unEscapeStr } from './specialChars';
 import EventuateServerError from './EventuateServerError';
 import { getLogger } from './logger';
 import Result from './Result';
+import { delay } from './utils';
 
 const logger = getLogger({ title: 'EventuateClient' });
 
 export default class EventuateClient {
 
-  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug }) {
-
+  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber }) {
 
     this.apiKey = apiKey;
     this.url =  url;
@@ -46,6 +45,10 @@ export default class EventuateClient {
 
     this.connectionCount = 0;
     this._connPromise = null;
+
+
+    this.maxRetryNumber = maxRetryNumber;
+    this.retryDelay = 1000;
   }
 
   determineIfSecure() {
@@ -105,27 +108,29 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
+      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
-          return result.failure(err);
-        }
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        .then(({ res: httpResponse, body: jsonBody }) => {
 
-        const { entityId, entityVersion, eventIds} = jsonBody;
+          const { entityId, entityVersion, eventIds } = jsonBody;
 
-        if (!entityId || !entityVersion || !eventIds) {
-          return result.failure({
-            error: 'Bad server response',
-            statusCode: httpResponse.statusCode,
-            message: jsonBody
+          if (!entityId || !entityVersion || !eventIds) {
+            return result.failure({
+              error: 'Bad server response',
+              statusCode: httpResponse.statusCode,
+              message: jsonBody
+            });
+          }
+
+          result.success({
+            entityIdTypeAndVersion: { entityId, entityVersion },
+            eventIds
           });
-        }
-
-        result.success({
-          entityIdTypeAndVersion: { entityId, entityVersion },
-          eventIds
+        })
+        .catch(err => {
+          result.failure(err);
         });
-      });
 
     });
 
@@ -135,7 +140,7 @@ export default class EventuateClient {
 
     return new Promise((resolve, reject) => {
 
-      if (!callback && typeof options == 'function') {
+      if (!callback && typeof options === 'function') {
         callback = options;
       }
 
@@ -152,16 +157,18 @@ export default class EventuateClient {
         urlPath += '?' + this.serialiseObject(options);
       }
 
-      _request(urlPath, 'GET', this.apiKey, null, this, (err, httpResponse, jsonBody) => {
+      const requestOptions = { path: urlPath, method: 'GET', apiKey: this.apiKey, client: this };
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
-          return result.failure(err);
-        }
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        .then(({ res: httpResponse, body: jsonBody }) => {
 
-        const events = this.eventDataToObject(jsonBody.events);
+          const events = this.eventDataToObject(jsonBody.events);
 
-        result.success(events);
-      });
+          result.success(events);
+        })
+        .catch(err => {
+          result.failure(err);
+        });
 
     });
   }
@@ -170,7 +177,7 @@ export default class EventuateClient {
 
     return new Promise((resolve, reject) => {
 
-      if (!callback && typeof options == 'function') {
+      if (!callback && typeof options === 'function') {
         callback = options;
       }
 
@@ -192,28 +199,126 @@ export default class EventuateClient {
 
       const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
 
-      _request(urlPath, 'POST', this.apiKey, jsonData, this, (err, httpResponse, jsonBody) => {
+      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-        if (err || (err = statusCodeError(httpResponse.statusCode, jsonBody))) {
-          return result.failure(err);
-        }
+      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        .then(({ res: httpResponse, body: jsonBody }) => {
 
-        const { entityId, entityVersion, eventIds} = jsonBody;
+          const { entityId, entityVersion, eventIds} = jsonBody;
 
-        if (!entityId || !entityVersion || !eventIds) {
-          return result.failure({
-            error: 'Bad server response',
-            statusCode: httpResponse.statusCode,
-            message: jsonBody
+          if (!entityId || !entityVersion || !eventIds) {
+            return result.failure({
+              error: 'Bad server response',
+              statusCode: httpResponse.statusCode,
+              message: jsonBody
+            });
+          }
+
+          result.success({
+            entityIdTypeAndVersion: { entityId, entityVersion },
+            eventIds
           });
+        })
+        .catch(err => {
+          result.failure(err);
+        });
+    });
+  }
+
+  httpRequest({ path, method, jsonData = null }) {
+
+    return new Promise((resolve, reject) => {
+
+      const apiKey = this.apiKey;
+      const headers = {
+        'Authorization' : `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`
+      };
+
+      let postData;
+      if (method === 'POST') {
+        postData = JSON.stringify(jsonData);
+        headers['Content-Type'] = 'application/json';
+        headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
+      }
+
+      const options = {
+        host: this.urlObj.hostname,
+        port: this.urlObj.port,
+        path,
+        method,
+        headers
+      };
+
+      if (this.httpKeepAlive) {
+        options.agent = this.keepAliveAgent;
+      }
+
+      const req = this.httpClient.request(options, res => {
+
+        res.setEncoding('utf8');
+
+        let responseData = '';
+
+        res.on('data', chunk => {
+
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+
+          if (/^application\/json/ig.test(res.headers['content-type'])) {
+
+            try {
+              responseData = JSON.parse(responseData);
+            } catch (e) {
+              console.error('JSON.parse failed for:', responseData);
+              console.error('JSON.parse failed with error:', e);
+              return reject(e);
+            }
+          }
+
+          let err;
+          if (err = statusCodeError(res.statusCode, responseData)) {
+            return reject(err);
+          }
+
+          resolve({ res, body: responseData });
+        })
+      });
+
+      req.on('error', err => {
+        reject(err);
+      });
+
+      if (method === 'POST') {
+        req.write(postData);
+      }
+
+      req.end();
+    });
+  }
+
+  attemptOperation({ handler, arg, retryNumber = 1, retryConditionFn, context }) {
+
+    return handler.call(context, arg)
+      .catch(err => {
+
+        logger.error('attemptOperation error:', err);
+        logger.debug(`Retry ${retryNumber}`);
+
+        if (typeof(retryConditionFn) === 'function') {
+
+          if (retryNumber <= this.maxRetryNumber && retryConditionFn(err)) {
+
+            return delay(this.retryDelay)
+              .then(() => {
+                return context.attemptOperation({ handler, arg, retryNumber: retryNumber + 1, retryConditionFn, context })
+              })
+          }
         }
 
-        result.success({
-          entityIdTypeAndVersion: { entityId, entityVersion },
-          eventIds
-        });
+        return Promise.reject(err);
       });
-    });
   }
 
   subscribe(subscriberId, entityTypesAndEvents, eventHandler, options, callback) {
@@ -606,10 +711,9 @@ export default class EventuateClient {
   }
 }
 
-
 function statusCodeError(statusCode, message) {
 
-  if (statusCode != 200) {
+  if (statusCode !== 200) {
 
     return new EventuateServerError({
       error: `Server returned status code ${statusCode}`,
@@ -620,76 +724,9 @@ function statusCodeError(statusCode, message) {
   }
 }
 
-function _request(path, method, apiKey, jsonData, client, callback) {
+function retryConditionFn (err) {
 
-  const auth = `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`;
-
-  const headers = {
-    'Authorization' : auth
-  };
-
-  let postData;
-  if (method == 'POST') {
-    postData = JSON.stringify(jsonData);
-    headers['Content-Type'] = 'application/json';
-    headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
+  if (err.statusCode === 503) {
+    return true;
   }
-
-  const options = {
-    host: client.urlObj.hostname,
-    port: client.urlObj.port,
-    path,
-    method,
-    headers
-  };
-
-  if (client.httpKeepAlive) {
-    options.agent = client.keepAliveAgent;
-  }
-
-  const req = client.httpClient.request(options, res => {
-
-    res.setEncoding('utf8');
-
-    let responseData = '';
-
-    res.on('data', chunk => {
-
-      responseData += chunk;
-    });
-
-    res.on('end', () => {
-
-      try {
-
-        var json;
-
-        try {
-          json = JSON.parse(responseData);
-        } catch (e) {
-          console.log("JSON.parse failed", responseData);
-          console.log("JSON.parse failed", e);
-          callback(e);
-        }
-        callback(null, res, json);
-
-      } catch (err) {
-        callback(err);
-      }
-
-    })
-
-  });
-
-  req.on('error', err => {
-    callback(err);
-  });
-
-  if (method == 'POST') {
-    req.write(postData);
-  }
-
-  req.end();
-
-  return req;
 }

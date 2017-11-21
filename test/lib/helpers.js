@@ -124,7 +124,7 @@ module.exports.createEventuateClient = () => {
   return new EventuateClient(eventuateClientOpts);
 };
 
-module.exports.makeEventsArr = (size, eventType, swimlane) => {
+module.exports.makeEventsArr = ({ size, entityType, eventType, swimlane }) => {
 
   if (typeof swimlane == 'undefined') {
     swimlane = 1;
@@ -134,6 +134,7 @@ module.exports.makeEventsArr = (size, eventType, swimlane) => {
     .apply(null, new Array(size))
     .map((val, index) => {
       return {
+        entityType,
         eventType,
         swimlane,
         eventData: `{ "index": "${index}" }`,

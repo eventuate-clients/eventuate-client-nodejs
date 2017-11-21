@@ -75,7 +75,6 @@ describe('ES Node.js Client: function update()', function () {
   });
 });
 
-
 describe('ES Node.js Client: function loadEvents()', function () {
 
   this.timeout(timeout);

@@ -50,3 +50,10 @@ export const retryNTimes = ({ times, fn, ctx, errConditionFn }) => {
     });
   };
 };
+
+export const delay = (timeout) => {
+  return new Promise((resolve) => {
+
+    setTimeout(resolve, timeout);
+  })
+};

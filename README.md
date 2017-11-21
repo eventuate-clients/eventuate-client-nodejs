@@ -4,7 +4,7 @@ NodeJS-based client for the Eventuate Platform
 This is the NodeJS client for the [Eventuate Platform](http://eventuate.io/).
 
 System requirements:
- - Node.js v0.12 or later
+ - Node.js v4 or later
  - NPM v2 or v3
 
 # Installation
