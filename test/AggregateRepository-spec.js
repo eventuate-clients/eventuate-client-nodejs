@@ -13,13 +13,12 @@ const anotherEntityTypeName = eventConfig.anotherEntityTypeName;
 const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
 const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
 
-
 const EntityClass = require('./lib/EntityClass');
 const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
 const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
 
 const eventuateClient = helpers.createEventuateClient();
-const aggregateRepository = new AggregateRepository({ eventuateClient });
+const aggregateRepository = new AggregateRepository({ eventuateClient, EntityClass });
 const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
 const timeout = 20000;
@@ -97,10 +96,28 @@ describe('AggregateRepository', function () {
       });
   });
 
+  it('Method find() should return updated Aggregate instance', done => {
+    aggregateRepository.find(entityId)
+      .then(entity => {
+        expect(entity).to.be.instanceOf(EntityClass);
+        expect(entity.timestamp).to.equal(updateTimestamp);
+        done();
+      })
+      .catch(done)
+  });
+
+  it('Method find() should return "false" for not existing entityId', done => {
+    const entityId = new Date().getTime().toString();
+    aggregateRepository.find(entityId)
+      .then(entity => {
+        expect(entity).to.be.equal(false);
+        done();
+      })
+      .catch(done);
+  });
+
   it('function loadEvents() should load events', done => {
-
     expect(entityId).to.be.ok;
-
     const entity = new EntityClass();
 
     aggregateRepository.loadEvents({ entityTypeName, entityId })
@@ -149,12 +166,9 @@ describe('AggregateRepository', function () {
           });
 
         });
-
       })
       .catch(done);
-
   });
-
 });
 
 describe('EventuateSubscriptionManager', function () {

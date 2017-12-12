@@ -7,10 +7,14 @@ const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_CO
 
 export default class AggregateRepository {
 
-  constructor({ eventuateClient = {} } = {}) {
+    constructor({ eventuateClient = {}, EntityClass } = {}) {
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
+    }
+
+    if (typeof (EntityClass) === 'function') {
+      this.EntityClass = EntityClass;
     }
 
     this.eventuateClient = eventuateClient;
@@ -184,5 +188,21 @@ export default class AggregateRepository {
 
   }
 
+  find(entityId, options) {
+    const entity = new this.EntityClass();
+    return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
+      .then(loadedEvents => {
+        if (loadedEvents.length > 0) {
+          this.applyEntityEvents(loadedEvents, entity);
+          return entity;
+        }
+
+        return false;
+      })
+      .catch(err => {
+        logger.debug('AggregateRepository error:', err);
+        return Promise.reject(err);
+    });
+  }
 }
 
