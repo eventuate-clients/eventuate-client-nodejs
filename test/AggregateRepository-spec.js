@@ -90,7 +90,7 @@ describe('AggregateRepository', function () {
   });
 
   it('Method find() should return updated Aggregate instance', done => {
-    aggregateRepository.find(entityId)
+    aggregateRepository.find({ EntityClass, entityId })
       .then(entity => {
         expect(entity).to.be.instanceOf(EntityClass);
         expect(entity.timestamp).to.equal(updateTimestamp);
@@ -101,7 +101,7 @@ describe('AggregateRepository', function () {
 
   it('Method find() should return "false" for not existing entityId', done => {
     const entityId = new Date().getTime().toString();
-    aggregateRepository.find(entityId)
+    aggregateRepository.find({ EntityClass, entityId })
       .then(entity => {
         expect(entity).to.be.equal(false);
         done();

@@ -21,20 +21,13 @@ export default class AggregateRepository {
       {
         times: EVENT_STORE_UTILS_RETRIES_COUNT,
         fn: ({ EntityClass, entityId, command, options }) => {
-          let entity;
-          if (typeof (EntityClass) === 'function') {
-            entity = new EntityClass();
-          } else {
-            entity = new this.EntityClass();
-          }
-
+          const entity = this.createEntityInstance(EntityClass);
           const { entityTypeName } = entity;
           let entityVersion;
 
           return this.loadEvents({ entityTypeName, entityId, options })
             .then(
               loadedEvents => {
-
                 logger.debug('loadedEvents result:', loadedEvents);
 
                 entityVersion = this.getEntityVersionFromEvents(loadedEvents);
@@ -102,12 +95,7 @@ export default class AggregateRepository {
   }
 
   createEntity({ EntityClass, command, options }) {
-    let entity;
-    if (typeof (EntityClass) === 'function') {
-      entity = new EntityClass();
-    } else {
-      entity = new this.EntityClass();
-    }
+    const entity = this.createEntityInstance(EntityClass);
     const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
     const events = processCommandMethod.call(entity, command);
 
@@ -170,8 +158,8 @@ export default class AggregateRepository {
     });
   }
 
-  find(entityId, options) {
-    const entity = new this.EntityClass();
+  find({ EntityClass, entityId, options }) {
+    const entity = this.createEntityInstance(EntityClass);
     return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
       .then(loadedEvents => {
         if (loadedEvents.length > 0) {
@@ -185,6 +173,13 @@ export default class AggregateRepository {
         logger.debug('AggregateRepository error:', err);
         return Promise.reject(err);
     });
+  }
+
+  createEntityInstance(EntityClass) {
+    if (typeof (EntityClass) === 'function') {
+      return new EntityClass();
+    }
+    return new this.EntityClass();
   }
 }
 
