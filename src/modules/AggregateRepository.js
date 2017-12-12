@@ -21,10 +21,14 @@ export default class AggregateRepository {
       {
         times: EVENT_STORE_UTILS_RETRIES_COUNT,
         fn: ({ EntityClass, entityId, command, options }) => {
+          let entity;
+          if (typeof (EntityClass) === 'function') {
+            entity = new EntityClass();
+          } else {
+            entity = new this.EntityClass();
+          }
 
-          const entity = new EntityClass();
           const { entityTypeName } = entity;
-
           let entityVersion;
 
           return this.loadEvents({ entityTypeName, entityId, options })
@@ -98,7 +102,12 @@ export default class AggregateRepository {
   }
 
   createEntity({ EntityClass, command, options }) {
-    const entity = new EntityClass();
+    let entity;
+    if (typeof (EntityClass) === 'function') {
+      entity = new EntityClass();
+    } else {
+      entity = new this.EntityClass();
+    }
     const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
     const events = processCommandMethod.call(entity, command);
 
