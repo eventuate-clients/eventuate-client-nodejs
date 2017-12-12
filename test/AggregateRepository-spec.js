@@ -31,11 +31,9 @@ let myEntityWasCreatedEventId;
 let myEntityWasUpdatedEventId;
 
 describe('AggregateRepository', function () {
-
   this.timeout(timeout);
 
   it('function createEntity() should return entityAndEventInfo object', done => {
-
     createdTimestamp = new Date().getTime();
     const command = {
       commandType: CreatedEntityCommand,
@@ -54,7 +52,6 @@ describe('AggregateRepository', function () {
   });
 
   it('function updateEntity() should update entity and return entityAndEventInfo object', done => {
-
     expect(entityId).to.be.ok;
 
     updateTimestamp = new Date().getTime();
@@ -65,18 +62,14 @@ describe('AggregateRepository', function () {
 
     aggregateRepository.updateEntity({ EntityClass, entityId, command })
       .then(updatedEntityAndEventInfo => {
-
         helpers.expectCommandResult(updatedEntityAndEventInfo);
-
         myEntityWasUpdatedEventId = updatedEntityAndEventInfo.eventIds[0];
-
         done();
       })
       .catch(done);
   });
 
   it('function updateEntity() should try to update not existing entity and return error with code 404', done => {
-
     const command = {
       commandType: UpdateEntityCommand,
       updateTimestamp
@@ -122,7 +115,6 @@ describe('AggregateRepository', function () {
 
     aggregateRepository.loadEvents({ entityTypeName, entityId })
       .then(loadedEvents => {
-
         helpers.expectLoadedEvents(loadedEvents);
 
         expect(loadedEvents.length).to.equal(2);
@@ -132,11 +124,9 @@ describe('AggregateRepository', function () {
         done();
 
         describe('Test getApplyMethod() method', function () {
-
           it('should return a function', () => {
 
             loadedEvents.forEach(event => {
-
               const type = event.eventType.split('.').pop();
               const applyMethod = aggregateRepository.getApplyMethod(entity, type);
               expect(applyMethod).to.be.a('Function');
@@ -151,7 +141,6 @@ describe('AggregateRepository', function () {
         });
 
         describe('Test getProcessCommandMethod() method', function () {
-
           it('should return a function', () => {
 
             let processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, CreatedEntityCommand);
@@ -159,12 +148,10 @@ describe('AggregateRepository', function () {
 
             processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, UpdateEntityCommand);
             expect(processCommandMethod).to.be.a('Function');
-
             //check default processCommand() method
             processCommandMethod = aggregateRepository.getProcessCommandMethod(entity, 'unknownCommand');
             expect(processCommandMethod).to.be.a('Function');
           });
-
         });
       })
       .catch(done);
@@ -172,18 +159,16 @@ describe('AggregateRepository', function () {
 });
 
 describe('EventuateSubscriptionManager', function () {
-
   this.timeout(timeout);
 
   it('should subscribe two subscribers and receive events', done => {
-
     const handlersManager = new HandlersManager({ done });
 
     const handleMyEntityWasCreatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasCreatedEvent()');
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
 
-      if (myEntityWasCreatedEventId == event.eventId) {
+      if (myEntityWasCreatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasCreatedEvent');
       }
     });
@@ -192,7 +177,7 @@ describe('EventuateSubscriptionManager', function () {
       console.log('handleMyEntityWasUpdatedEvent()');
       expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
 
-      if (myEntityWasUpdatedEventId == event.eventId) {
+      if (myEntityWasUpdatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasUpdatedEvent');
       } else {
         console.log('Old event');
@@ -227,30 +212,25 @@ describe('EventuateSubscriptionManager', function () {
   });
 
   it('should create entity with 10 events and subscribe', done => {
-
     let processedEventsNumber1 = 0;
     let processedEventsNumber2 = 0;
     const expectedEventsNumber = 10;
     let myEntityWasCreatedEventIds = [];
 
     const handlersManager = new HandlersManager({ done });
-
     const handleMyEntityWasCreatedEvent1 = helpers.createEventHandler((event) => {
 
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
-
         processedEventsNumber1++;
-
-        if (processedEventsNumber1 == expectedEventsNumber) {
+        if (processedEventsNumber1 === expectedEventsNumber) {
           console.log(`handleMyEntityWasCreatedEvent1() processed ${processedEventsNumber1} events`);
           handlersManager.setCompleted('handleMyEntityWasCreatedEvent1');
         }
       } else {
         console.log('Old event')
       }
-
     });
 
     const handleMyEntityWasCreatedEvent2 = helpers.createEventHandler((event) => {
@@ -258,10 +238,8 @@ describe('EventuateSubscriptionManager', function () {
       expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
-
         processedEventsNumber2++;
-
-        if (processedEventsNumber2 == expectedEventsNumber) {
+        if (processedEventsNumber2 === expectedEventsNumber) {
           console.log(`handleMyEntityWasCreatedEvent2() processed ${processedEventsNumber2} events`);
           handlersManager.setCompleted('handleMyEntityWasCreatedEvent2');
         }
@@ -301,7 +279,6 @@ describe('EventuateSubscriptionManager', function () {
     setTimeout(() => {
       eventuateClient.create(anotherEntityTypeName, events)
         .then(createdEntityAndEventInfo => {
-
           console.log('Entity created');
           console.log(createdEntityAndEventInfo);
 
@@ -310,7 +287,6 @@ describe('EventuateSubscriptionManager', function () {
           helpers.expectCommandResult(createdEntityAndEventInfo);
         })
         .catch(done);
-
     }, 2000);
   });
 });
