@@ -14,20 +14,27 @@ class EntityClass {
   
   constructor() {
     this.entityTypeName = entityTypeName;
+    this.timestamp = null;
   }
 
   applyMyEntityCreateEvent(event) {
     console.log('applyMyEntityCreateEvent()');
+    const { eventData: { timestamp } } = event;
+    this.timestamp = timestamp;
     return this;
   }
 
   applyMyEntityWasCreatedEvent(event) {
     console.log('applyMyEntityWasCreatedEvent()');
+    const { eventData: { timestamp } } = event;
+    this.timestamp = timestamp;
     return this;
   }
 
   applyMyEntityWasUpdatedEvent(event) {
     console.log('applyMyEntityWasUpdatedEvent()');
+    const { eventData: { timestamp } } = event;
+    this.timestamp = timestamp;
     return this;
   }
 

@@ -8,7 +8,7 @@ const EventuateClientConfiguration = require('../../dist').EventuateClientConfig
 
 module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {
-    if (typeof (item[propertyName]) != 'undefined') {
+    if (typeof (item[propertyName]) !== 'undefined') {
       delete (item[propertyName]);
     }
     return item;
@@ -28,27 +28,23 @@ module.exports.expectCommandResult = (entityAndEventInfo, done) => {
   expect(entityAndEventInfo.eventIds).to.be.an('Array');
   expect(entityAndEventInfo.eventIds).to.be.not.empty;
 
-  if (typeof(done) == 'function') {
+  if (typeof(done) === 'function') {
     done();
   }
-
 };
 
 module.exports.expectSubscribe = (subscribe, done) => {
-
   expect(subscribe).to.have.property('acknowledge');
   expect(subscribe.acknowledge).to.be.a('Function');
   expect(subscribe).to.have.property('observable');
   expect(subscribe.observable).to.be.an('Object');
 
-  if (typeof(done) == 'function') {
+  if (typeof(done) === 'function') {
     done();
   }
-
 };
 
 module.exports.expectEvent = (event, done) => {
-
   expect(event).to.be.an('Object');
 
   expect(event).to.have.property('eventId');
@@ -75,7 +71,7 @@ module.exports.expectEvent = (event, done) => {
   expect(event.eventToken).to.be.an('String');
   expect(event.eventToken).to.be.not.empty;
 
-  if (typeof(done) == 'function') {
+  if (typeof(done) === 'function') {
     done();
   }
 };
@@ -91,18 +87,16 @@ module.exports.expectLoadedEvents = (loadedEvents, done) => {
     expect(event).to.have.property('eventData');
   });
 
-  if (typeof(done) == 'function') {
+  if (typeof(done) === 'function') {
     done();
   }
 };
 
 module.exports.getUniqueID = () => {
-
   return uuid.v1().replace(new RegExp('-', 'g'), '');
 };
 
 module.exports.expectParsedFrame = frame => {
-
   expect(frame).to.be.an('Object');
   expect(frame).to.have.property('command');
   expect(frame).to.have.property('headers');
@@ -118,15 +112,12 @@ module.exports.parseAck = (event, done) => {
 };
 
 module.exports.createEventuateClient = () => {
-
   const eventuateClientOpts = new EventuateClientConfiguration({ debug: false });
-
   return new EventuateClient(eventuateClientOpts);
 };
 
 module.exports.makeEventsArr = ({ size, entityType, eventType, swimlane }) => {
-
-  if (typeof swimlane == 'undefined') {
+  if (typeof swimlane === 'undefined') {
     swimlane = 1;
   }
 
@@ -144,7 +135,6 @@ module.exports.makeEventsArr = ({ size, entityType, eventType, swimlane }) => {
 };
 
 module.exports.testLoadedEvents = (loadedEvents, createEvents, updateEvents) => {
-
   loadedEvents = module.exports.removeEventsArrProperty(loadedEvents, 'id');
 
   const firstItem = loadedEvents[0];
@@ -170,7 +160,6 @@ class HandlersManager {
   }
 
   setHandlers(handlersArr) {
-
     const iterable = handlersArr.map(handlerName => {
       return [ handlerName, false ];
     });
@@ -180,13 +169,11 @@ class HandlersManager {
 
   setCompleted(handlerName) {
     console.log(`setCompleted for "${handlerName}"`);
-
     this.handlers.set(handlerName, true);
     this.doneIfAllCompleted()
   }
 
   doneIfAllCompleted() {
-
     const values = this.handlers.values();
 
     for(let completed of values) {
@@ -206,17 +193,13 @@ class HandlersManager {
 module.exports.HandlersManager = HandlersManager;
 
 module.exports.createEventHandler = (callback) => {
-
   return (event) => {
 
     return new Promise((resolve) => {
 
       resolve(event);//Acknowledge event
-
       module.exports.expectEvent(event);
-
       callback(event);
-
     });
   }
 };
