@@ -22,7 +22,7 @@ describe('Subscribe with options', function () {
 
   it('should subscribe for events', done => {
 
-    const eventHandler = (err, event, acknowledge) => {
+    const eventHandler = (event) => {
 
       return new Promise((resolve, reject) => {
         console.log('Event:', event);
