@@ -5,7 +5,7 @@ const logger = getLogger({ title: 'AggregateRepository' });
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
 export default class AggregateRepository {
-    constructor({ eventuateClient = {}, EntityClass } = {}) {
+    constructor({ eventuateClient = {}, EntityClass, retryErrConditionFn } = {}) {
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
@@ -16,6 +16,9 @@ export default class AggregateRepository {
     }
 
     this.eventuateClient = eventuateClient;
+    let errConditionFn = retryErrConditionFn || function () {
+      return false;
+    };
 
     this.updateEntity = retryNTimes(
       {
@@ -90,7 +93,8 @@ export default class AggregateRepository {
                 return Promise.reject(error);
               }
             )
-        }
+        },
+        errConditionFn
       });
   }
 
