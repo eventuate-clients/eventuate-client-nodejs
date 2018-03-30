@@ -29,6 +29,7 @@ let updateTimestamp;
 let entityId;
 let myEntityWasCreatedEventId;
 let myEntityWasUpdatedEventId;
+let version;
 
 describe('AggregateRepository', function () {
   this.timeout(timeout);
@@ -89,26 +90,6 @@ describe('AggregateRepository', function () {
       });
   });
 
-  it('Method find() should return updated Aggregate instance', done => {
-    aggregateRepository.find({ EntityClass, entityId })
-      .then(entity => {
-        expect(entity).to.be.instanceOf(EntityClass);
-        expect(entity.timestamp).to.equal(updateTimestamp);
-        done();
-      })
-      .catch(done)
-  });
-
-  it('Method find() should return "false" for not existing entityId', done => {
-    const entityId = new Date().getTime().toString();
-    aggregateRepository.find({ EntityClass, entityId })
-      .then(entity => {
-        expect(entity).to.be.equal(false);
-        done();
-      })
-      .catch(done);
-  });
-
   it('function loadEvents() should load events', done => {
     expect(entityId).to.be.ok;
     const entity = new EntityClass();
@@ -120,6 +101,8 @@ describe('AggregateRepository', function () {
         expect(loadedEvents.length).to.equal(2);
         expect(loadedEvents[0].eventData.timestamp).to.equal(createdTimestamp);
         expect(loadedEvents[1].eventData.timestamp).to.equal(updateTimestamp);
+
+        version = loadedEvents[0].id;
 
         done();
 
@@ -153,6 +136,37 @@ describe('AggregateRepository', function () {
             expect(processCommandMethod).to.be.a('Function');
           });
         });
+      })
+      .catch(done);
+  });
+
+  it('Method find() should return updated Aggregate instance', done => {
+    aggregateRepository.find({ EntityClass, entityId })
+      .then(entity => {
+        expect(entity).to.be.instanceOf(EntityClass);
+        expect(entity.timestamp).to.equal(updateTimestamp);
+        done();
+      })
+      .catch(done)
+  });
+
+  it('Method find() should return updated Aggregate instance for a version', done => {
+    expect(version).to.be.ok;
+    aggregateRepository.find({ EntityClass, entityId, version })
+      .then(entity => {
+        expect(entity).to.be.instanceOf(EntityClass);
+        expect(entity.timestamp).to.equal(createdTimestamp);
+        done();
+      })
+      .catch(done)
+  });
+
+  it('Method find() should return "false" for not existing entityId', done => {
+    const entityId = new Date().getTime().toString();
+    aggregateRepository.find({ EntityClass, entityId })
+      .then(entity => {
+        expect(entity).to.be.equal(false);
+        done();
       })
       .catch(done);
   });

@@ -158,11 +158,17 @@ export default class AggregateRepository {
     });
   }
 
-  find({ EntityClass, entityId, options }) {
+  find({ EntityClass, entityId, version, options }) {
     const entity = this.createEntityInstance(EntityClass);
     return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
       .then(loadedEvents => {
         if (loadedEvents.length > 0) {
+          if (version) {
+            loadedEvents = this.getEventsByVersion(loadedEvents, version);
+            if (!loadedEvents) {
+              return false;
+            }
+          }
           this.applyEntityEvents(loadedEvents, entity);
           return entity;
         }
@@ -180,6 +186,16 @@ export default class AggregateRepository {
       return new EntityClass();
     }
     return new this.EntityClass();
+  }
+
+  getEventsByVersion(loadedEvents, version) {
+    let index = loadedEvents.findIndex(({ id }) => {
+      return id === version;
+    });
+    index++;
+    if (index > 0) {
+      return loadedEvents.slice(0, index);
+    }
   }
 }
 
