@@ -1,14 +1,6 @@
 'use strict';
 
-//events
-const eventConfig = require('./eventConfig'); 
-const MyEntityCreateEvent = eventConfig.MyEntityCreateEvent;
-const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
-const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
-
-const entityTypeName = eventConfig.entityTypeName;
-
-
+const { entityTypeName, MyEntityCreateEvent, MyEntityWasCreatedEvent, MyEntityWasUpdatedEvent } = require('./eventConfig');
 
 class EntityClass {
   
@@ -38,7 +30,6 @@ class EntityClass {
     return this;
   }
 
-
   applyEvent(event) {
     const eventType = event.eventType;
   
@@ -61,7 +52,6 @@ class EntityClass {
     ];
   }
 
-
   processCreatedEntityCommand(command) {
     return [
       {
@@ -83,12 +73,11 @@ class EntityClass {
       }];
   }
 
-  processCommand(command) {
-
-
+  processFailureCommand(command) {
+    throw new Error('Command failed')
   }
 
-
+  processCommand(command) {}
 
   //commands
   static get CreatedEntityCommand() {
@@ -102,7 +91,10 @@ class EntityClass {
   static get UpdateEntityCommand() {
     return 'UpdateEntityCommand';
   }
-}
 
+  static get FailureCommand() {
+    return 'FailureCommand';
+  }
+}
 
 module.exports = EntityClass;

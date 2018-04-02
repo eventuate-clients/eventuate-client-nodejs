@@ -12,13 +12,11 @@ describe('Test static API ', () => {
   describe('Test makeEvent() function', () => {
 
     it('should have function makeEvent()', () => {
-
       expect(eventuateClient).to.have.property('makeEvent');
       expect(eventuateClient.makeEvent).to.be.a('Function');
     });
 
     it('should return error for empty string', () => {
-
       const result = eventuateClient.makeEvent('');
       expect(result).to.have.property('error');
       expect(result.error).to.be.instanceof(Error);
@@ -31,7 +29,6 @@ describe('Test static API ', () => {
       const result = eventuateClient.makeEvent(eventStr);
       expect(result).to.have.property('error');
       expect(result.error).to.be.instanceof(Error);
-
     });
 
     it('should parse event', done => {
@@ -53,40 +50,30 @@ describe('Test static API ', () => {
           eventId: '00000151e8f6932d-0242ac1100320002',
           eventType: 'net.chrisrichardson.eventstore.example.MyEntityWasCreated' } };
 
-
       const result = eventuateClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
-
 
       if (result.error) {
         return done(result.error);
       }
 
       expect(result).to.have.property('event');
-
       const event = result.event;
-
       helpers.expectEvent(event, done);
-
     });
-
   });
-
 
   describe('Test serialiseObject() function', () => {
 
     it('should have function serialiseObject()', () => {
-
       expect(eventuateClient).to.have.property('serialiseObject');
       expect(eventuateClient.serialiseObject).to.be.a('Function');
     });
 
     it('should return serialised object', () => {
-
       const obj = { a: 1, b: 2, c: 3 };
       const serialised = eventuateClient.serialiseObject(obj);
       expect(serialised).to.equal('a=1&b=2&c=3');
     });
-
   });
 
   describe('Test addBodyOptions() function', () => {
@@ -107,7 +94,6 @@ describe('Test static API ', () => {
       expect(jsonData).to.contain.deep(options);
 
     });
-
   });
 
   describe('Test checkEvents() function', () => {
@@ -160,7 +146,6 @@ describe('Test static API ', () => {
 
       expect(eventuateClient.checkEvents([event1, event2])).to.be.true;
     });
-
   });
 
   describe('Test retryNTimes()', function () {
@@ -171,24 +156,18 @@ describe('Test static API ', () => {
       let i = 0;
 
       function workerFn(b) {
-
-
         return new Promise((resolve, reject) => {
 
           if (i < 5) {
-
             i = i + b;
             return reject(new Error('Failure'));
           }
 
           return resolve('success');
-
         });
       }
 
       const retryA = retryNTimes({ times: 6, fn: workerFn });
-
-
       retryA(1)
         .then(result => {
 
@@ -201,8 +180,6 @@ describe('Test static API ', () => {
     it('should return error', done => {
 
       function workerFn(b) {
-
-
         return new Promise((resolve, reject) => {
 
           reject(new Error('Failure'));
@@ -210,8 +187,6 @@ describe('Test static API ', () => {
       }
 
       const retryA = retryNTimes({ times: 6, fn: workerFn });
-
-
       retryA(1)
         .then()
         .catch(err => {
@@ -221,7 +196,4 @@ describe('Test static API ', () => {
         });
     });
   });
-
-
-
 });

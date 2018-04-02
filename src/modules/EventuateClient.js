@@ -725,7 +725,6 @@ function statusCodeError(statusCode, message) {
 }
 
 function retryConditionFn (err) {
-
   if (err.statusCode === 503) {
     return true;
   }

@@ -6,10 +6,6 @@ export const parseIsTrue = val => {
 
 export const retryNTimes = ({ times, fn, ctx, errConditionFn }) => {
 
-  if (typeof errConditionFn !== 'function') {
-    errConditionFn = err => err;
-  }
-
   return function () {
     var args = [].slice.call(arguments);
 

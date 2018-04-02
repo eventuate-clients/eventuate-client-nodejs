@@ -60,7 +60,10 @@ export default class AggregateRepository {
                 return Promise.resolve(result);
               },
               error => {
-                logger.error(`Update entity failed: ${EntityClass.name} ${entityId}`);
+                logger.error(`Update entity failed!`);
+                logger.error(`Entity class: ${EntityClass.name}`);
+                logger.error(`entityId: ${entityId}`);
+                logger.error(`command: ${command}`);
                 logger.error(error);
 
                 if (error.statusCode === 409) {
@@ -99,19 +102,26 @@ export default class AggregateRepository {
   }
 
   createEntity({ EntityClass, command, options }) {
-    const entity = this.createEntityInstance(EntityClass);
-    const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
-    const events = processCommandMethod.call(entity, command);
+    try {
+      const entity = this.createEntityInstance(EntityClass);
+      const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
+      const events = processCommandMethod.call(entity, command);
 
-    return this.eventuateClient.create(entity.entityTypeName, events, options)
-      .then(result=> {
-        logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
-        return result;
-      },
-      err => {
-        logger.error(`Create entity failed: ${EntityClass.name}`);
-        return Promise.reject(err);
-      })
+      return this.eventuateClient.create(entity.entityTypeName, events, options)
+        .then(result=> {
+            logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
+            return result;
+          },
+          err => {
+            logger.error(`Create entity failed: ${EntityClass.name}`);
+            return Promise.reject(err);
+          })
+    } catch (err) {
+      logger.error('Create entity failed!');
+      logger.error(`Entity class: ${EntityClass.name}`);
+      logger.error(`command: ${command}`);
+      return Promise.reject(err);
+    }
   }
 
   loadEvents({ entityTypeName, entityId, options }) {
@@ -162,8 +172,9 @@ export default class AggregateRepository {
     });
   }
 
-  find({ EntityClass, entityId, version, options }) {
+  find({ EntityClass, entityId, options = {} }) {
     const entity = this.createEntityInstance(EntityClass);
+    const { version } = options;
     return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
       .then(loadedEvents => {
         if (loadedEvents.length > 0) {

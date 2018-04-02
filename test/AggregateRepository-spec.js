@@ -1,21 +1,14 @@
 'use strict';
-const expect = require('chai').expect;
+const { expect } = require('chai');
 const helpers = require('./lib/helpers');
-const AggregateRepository = require('../dist').AggregateRepository;
-const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
-const ExecutorClass = helpers.Executor;
-const HandlersManager = helpers.HandlersManager;
+const { AggregateRepository, EventuateSubscriptionManager } = require('../dist');
+const { Executor: ExecutorClass, HandlersManager } = helpers;
 const executor = new ExecutorClass();
 
-const eventConfig = require('./lib/eventConfig');
-const entityTypeName = eventConfig.entityTypeName;
-const anotherEntityTypeName = eventConfig.anotherEntityTypeName;
-const MyEntityWasCreatedEvent = eventConfig.MyEntityWasCreatedEvent;
-const MyEntityWasUpdatedEvent = eventConfig.MyEntityWasUpdatedEvent;
+const { entityTypeName, anotherEntityTypeName, MyEntityWasCreatedEvent, MyEntityWasUpdatedEvent } = require('./lib/eventConfig');
 
 const EntityClass = require('./lib/EntityClass');
-const CreatedEntityCommand = EntityClass.CreatedEntityCommand;
-const UpdateEntityCommand = EntityClass.UpdateEntityCommand;
+const { CreatedEntityCommand, UpdateEntityCommand, FailureCommand } = EntityClass;
 
 const eventuateClient = helpers.createEventuateClient();
 const aggregateRepository = new AggregateRepository({ eventuateClient, EntityClass });
@@ -52,6 +45,19 @@ describe('AggregateRepository', function () {
     .catch(done);
   });
 
+  it('function createEntity() should try to run FailureCommand and get error', done => {
+    const command = { commandType: FailureCommand };
+
+    aggregateRepository.createEntity({ EntityClass, command })
+      .then(() => {
+        done(new Error('Command FailureCommand should return error'));
+      })
+      .catch(err => {
+        console.log(err);
+        done();
+      });
+  });
+
   it('function updateEntity() should update entity and return entityAndEventInfo object', done => {
     expect(entityId).to.be.ok;
 
@@ -86,6 +92,20 @@ describe('AggregateRepository', function () {
         expect(err.code).to.equal(404);
         expect(err).to.haveOwnProperty('message');
         expect(err.message).to.be.a('String');
+        done();
+      });
+  });
+
+  it('function updateEntity() should try to run FailureCommand and get error', done => {
+    expect(entityId).to.be.ok;
+    const command = { commandType: FailureCommand };
+
+    aggregateRepository.updateEntity({ entityId, EntityClass, command })
+      .then(() => {
+        done(new Error('Command FailureCommand should return error'));
+      })
+      .catch(err => {
+        console.log(err);
         done();
       });
   });
@@ -152,7 +172,7 @@ describe('AggregateRepository', function () {
 
   it('Method find() should return updated Aggregate instance for a version', done => {
     expect(version).to.be.ok;
-    aggregateRepository.find({ EntityClass, entityId, version })
+    aggregateRepository.find({ EntityClass, entityId, options: { version } })
       .then(entity => {
         expect(entity).to.be.instanceOf(EntityClass);
         expect(entity.timestamp).to.equal(createdTimestamp);
