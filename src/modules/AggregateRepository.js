@@ -1,5 +1,6 @@
 import { getLogger } from './logger';
 import { retryNTimes } from './utils';
+import util from 'util';
 
 const logger = getLogger({ title: 'AggregateRepository' });
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
@@ -60,10 +61,10 @@ export default class AggregateRepository {
                 return Promise.resolve(result);
               },
               error => {
-                logger.error(`Update entity failed!`);
-                logger.error(`Entity class: ${EntityClass.name}`);
-                logger.error(`entityId: ${entityId}`);
-                logger.error(`command: ${command}`);
+                logger.error(`Update entity failed!
+                Entity class: ${EntityClass.name}
+                entityId: ${entityId}
+                command: ${util.inspect(command, false, 20)}`);
                 logger.error(error);
 
                 if (error.statusCode === 409) {
@@ -117,9 +118,9 @@ export default class AggregateRepository {
             return Promise.reject(err);
           })
     } catch (err) {
-      logger.error('Create entity failed!');
-      logger.error(`Entity class: ${EntityClass.name}`);
-      logger.error(`command: ${command}`);
+      logger.error(`Create entity failed!
+      Entity class: ${EntityClass.name}
+      command: ${util.inspect(command, false, 20)}`);
       return Promise.reject(err);
     }
   }
@@ -174,9 +175,9 @@ export default class AggregateRepository {
 
   find({ EntityClass, entityId, options = {} }) {
     const entity = this.createEntityInstance(EntityClass);
-    const { version } = options;
     return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
       .then(loadedEvents => {
+        const { version } = options;
         if (loadedEvents.length > 0) {
           if (version) {
             loadedEvents = this.getEventsByVersion(loadedEvents, version);
@@ -204,13 +205,9 @@ export default class AggregateRepository {
   }
 
   getEventsByVersion(loadedEvents, version) {
-    let index = loadedEvents.findIndex(({ id }) => {
-      return id === version;
-    });
-    index++;
-    if (index > 0) {
-      return loadedEvents.slice(0, index);
+    const index = loadedEvents.findIndex(({ id }) => id === version);
+    if (index >= 0) {
+      return loadedEvents.slice(0, index +1);
     }
   }
 }
-
