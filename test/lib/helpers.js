@@ -1,10 +1,10 @@
 'use strict';
 
 const expect = require('chai').expect;
-const EventuateClient = require('../../dist');
+const EventuateClient = require('../../src');
 const uuid = require('uuid');
 const specialChars = require('../../dist/modules/specialChars');
-const EventuateClientConfiguration = require('../../dist').EventuateClientConfiguration;
+const EventuateClientConfiguration = require('../../src').EventuateClientConfiguration;
 
 module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {
@@ -111,8 +111,8 @@ module.exports.parseAck = (event, done) => {
   }
 };
 
-module.exports.createEventuateClient = () => {
-  const eventuateClientOpts = new EventuateClientConfiguration({ debug: false });
+module.exports.createEventuateClient = (encryption) => {
+  const eventuateClientOpts = new EventuateClientConfiguration({ debug: false, encryption });
   return new EventuateClient(eventuateClientOpts);
 };
 
