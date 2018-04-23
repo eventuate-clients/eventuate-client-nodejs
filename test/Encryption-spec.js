@@ -1,6 +1,6 @@
 'use strict';
 const { expect } = require('chai');
-const Encryption = require('../src/modules/Encryption');
+const Encryption = require('../dist/modules/Encryption');
 
 const keyId = 'id';
 const keySecret = 'secret';

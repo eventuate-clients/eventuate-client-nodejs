@@ -1,8 +1,7 @@
 'use strict';
-const expect = require('chai').expect;
 const util = require('util');
 const helpers = require('./lib/helpers');
-const Encryption = require('../src/modules/Encryption');
+const Encryption = require('../dist/modules/Encryption');
 
 const encryptionKeyId = 'id';
 const keySecret = 'secret';

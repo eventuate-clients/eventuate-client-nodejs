@@ -106,9 +106,7 @@ export default class EventuateClient {
 
       if (encryptionKeyId && this.encryption) {
         // Encrypt event data;
-        console.log('events:', util.inspect(events));
         events = this.encryptEvens(encryptionKeyId, events);
-        console.log('encrypted events:', events);
       }
 
       const jsonData = { entityTypeName, events };
@@ -199,9 +197,7 @@ export default class EventuateClient {
       let events = this.prepareEvents(_events);
       if (encryptionKeyId && this.encryption) {
         // Encrypt event data;
-        console.log('events:', util.inspect(events));
         events = this.encryptEvens(encryptionKeyId, events);
-        console.log('encrypted events:', events);
       }
       const jsonData = {
         entityId,
