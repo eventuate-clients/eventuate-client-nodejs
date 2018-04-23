@@ -11,9 +11,9 @@ const encryption = new Encryption(encryptionKeyStore);
 
 const eventuateClient = helpers.createEventuateClient(encryption);
 
-const entityTypeName = 'net.chrisrichardson.eventstore.example.MyEntity';
-const eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEntityWasCreated';
-const eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEntityNameChanged';
+const entityTypeName = 'net.chrisrichardson.eventstore.example.MyEncryptedEntity';
+const eventTypeCreated = 'net.chrisrichardson.eventstore.example.MyEncryptedEntityWasCreated';
+const eventTypeUpdated = 'net.chrisrichardson.eventstore.example.MyEncryptedEntityNameChanged';
 
 let entityId;
 let entityVersion;

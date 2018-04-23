@@ -6,9 +6,9 @@ const { Executor: ExecutorClass, HandlersManager, createEventuateClient } = help
 const executor = new ExecutorClass();
 const Encryption = require('../dist/modules/Encryption');
 
-const { entityTypeName, anotherEntityTypeName, MyEntityWasCreatedEvent, MyEntityWasUpdatedEvent } = require('./lib/eventConfig');
+const { MyEncryptedEntityTypeName: entityTypeName, anotherEntityTypeName, MyEncryptedEntityWasCreatedEvent, MyEncryptedEntityWasUpdatedEvent } = require('./lib/eventConfig');
 
-const EntityClass = require('./lib/EntityClass');
+const EntityClass = require('./lib/EncryptedEntityClass');
 const { CreatedEntityCommand, UpdateEntityCommand, FailureCommand } = EntityClass;
 const encryptionKeyId = 'id';
 const keySecret = 'secret';
@@ -202,7 +202,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasCreatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasCreatedEvent()');
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasCreatedEvent');
@@ -211,7 +211,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasUpdatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasUpdatedEvent()');
-      expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasUpdatedEvent);
 
       if (myEntityWasUpdatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasUpdatedEvent');
@@ -224,13 +224,13 @@ describe('EventuateSubscriptionManager', function () {
 
     const entityCreatedEventHandlers = {
       [entityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent
       }
     };
 
     const entityUpdatedEventHandlers = {
       [entityTypeName]: {
-        [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+        [MyEncryptedEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
       }
     };
 
@@ -256,7 +256,7 @@ describe('EventuateSubscriptionManager', function () {
     const handlersManager = new HandlersManager({ done });
     const handleMyEntityWasCreatedEvent1 = helpers.createEventHandler((event) => {
 
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
         processedEventsNumber1++;
@@ -271,7 +271,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasCreatedEvent2 = helpers.createEventHandler((event) => {
 
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
         processedEventsNumber2++;
@@ -288,7 +288,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const entityCreatedEventHandlers1 = {
       [anotherEntityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
       }
     };
 
@@ -300,7 +300,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const entityCreatedEventHandlers2 = {
       [anotherEntityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent2
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent2
       }
     };
 
@@ -310,7 +310,7 @@ describe('EventuateSubscriptionManager', function () {
       executor
     });
 
-    const events = helpers.makeEventsArr({ size: expectedEventsNumber, entityType: anotherEntityTypeName, eventType: MyEntityWasCreatedEvent });
+    const events = helpers.makeEventsArr({ size: expectedEventsNumber, entityType: anotherEntityTypeName, eventType: MyEncryptedEntityWasCreatedEvent });
 
     setTimeout(() => {
       eventuateClient.create(anotherEntityTypeName, events, { encryptionKeyId })

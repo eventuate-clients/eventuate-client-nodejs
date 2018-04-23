@@ -139,7 +139,7 @@ export default class EventuateClient {
     });
   }
 
-  loadEvents(entityTypeName, entityId, options, callback) {
+  loadEvents(entityTypeName, entityId, options = {}, callback) {
     return new Promise((resolve, reject) => {
       if (!callback && typeof options === 'function') {
         callback = options;
@@ -177,7 +177,7 @@ export default class EventuateClient {
     });
   }
 
-  update(entityTypeName, entityId, entityVersion, _events, options, callback) {
+  update(entityTypeName, entityId, entityVersion, _events, options = {}, callback) {
     return new Promise((resolve, reject) => {
 
       if (!callback && typeof options === 'function') {

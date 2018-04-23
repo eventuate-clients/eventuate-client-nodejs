@@ -118,8 +118,9 @@ function getRequestHandler() {
     ++requestCount;
 
     if (requestCount === eventuateClient.maxRetryNumber) {
-
+      console.log('req.method, req.url:', req.method, req.url);
       const body = getResponseBody(req.method, req.url);
+      console.log('body:', body);
 
       res.writeHead(200, {
         'Content-type': 'application/json',
