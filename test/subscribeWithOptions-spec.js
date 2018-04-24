@@ -48,8 +48,6 @@ describe('Subscribe with options', function () {
       expect(destinationObj).to.have.property('progressNotifications');
 
       done();
-
     });
-
   });
 });

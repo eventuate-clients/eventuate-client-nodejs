@@ -19,7 +19,7 @@ const eventuateClient = createEventuateClient(encryption);
 const aggregateRepository = new AggregateRepository({ eventuateClient, EntityClass });
 const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
-const timeout = 20000;
+const timeout = 25000;
 
 let createdTimestamp;
 let updateTimestamp;
@@ -29,7 +29,7 @@ let myEntityWasCreatedEventId;
 let myEntityWasUpdatedEventId;
 let version;
 
-describe('AggregateRepository', function () {
+describe('AggregateRepository with encryption', function () {
   this.timeout(timeout);
 
   it('function createEntity() should return entityAndEventInfo object', done => {
@@ -194,7 +194,7 @@ describe('AggregateRepository', function () {
   });
 });
 
-describe('EventuateSubscriptionManager', function () {
+describe('EventuateSubscriptionManager with encryption', function () {
   this.timeout(timeout);
 
   it('should subscribe two subscribers and receive events', done => {

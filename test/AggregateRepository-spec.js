@@ -14,7 +14,7 @@ const eventuateClient = helpers.createEventuateClient();
 const aggregateRepository = new AggregateRepository({ eventuateClient, EntityClass });
 const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
-const timeout = 20000;
+const timeout = 25000;
 
 let createdTimestamp;
 let updateTimestamp;
