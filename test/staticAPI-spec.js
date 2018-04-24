@@ -149,15 +149,14 @@ describe('Test static API ', () => {
   });
 
   describe('Test retryNTimes()', function () {
-
     this.timeout(timeout);
+    const times = 6;
+
     it('should run a function 6 times and return "success"', done => {
 
       let i = 0;
-
       function workerFn(b) {
         return new Promise((resolve, reject) => {
-
           if (i < 5) {
             i = i + b;
             return reject(new Error('Failure'));
@@ -166,11 +165,11 @@ describe('Test static API ', () => {
           return resolve('success');
         });
       }
+      let errConditionFn = () => true;
 
-      const retryA = retryNTimes({ times: 6, fn: workerFn });
+      const retryA = retryNTimes({ times, fn: workerFn, errConditionFn });
       retryA(1)
         .then(result => {
-
           expect(result).to.equal('success');
           done();
         })
@@ -178,19 +177,18 @@ describe('Test static API ', () => {
     });
 
     it('should return error', done => {
-
       function workerFn(b) {
         return new Promise((resolve, reject) => {
-
           reject(new Error('Failure'));
         });
       }
 
-      const retryA = retryNTimes({ times: 6, fn: workerFn });
+      let errConditionFn = () => true;
+
+      const retryA = retryNTimes({ times, fn: workerFn, errConditionFn });
       retryA(1)
         .then()
         .catch(err => {
-
           expect(err).to.be.instanceof(Error);
           done();
         });

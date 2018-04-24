@@ -154,7 +154,10 @@ export default class EventuateClient {
 
       let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
       if (options) {
-        urlPath += '?' + this.serialiseObject(options);
+        const urlParams = this.serialiseObject(options);
+        if (urlParams) {
+          urlPath += '?' + urlParams;
+        }
       }
 
       const requestOptions = { path: urlPath, method: 'GET', apiKey: this.apiKey, client: this };
@@ -391,7 +394,7 @@ export default class EventuateClient {
   addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
 
     //add new subscription if not exists
-    if (typeof this.subscriptions[subscriberId] == 'undefined') {
+    if (typeof this.subscriptions[subscriberId] === 'undefined') {
       this.subscriptions[subscriberId] = {};
     }
 
@@ -551,7 +554,7 @@ export default class EventuateClient {
 
   addReceipt(receipt, clientSubscribeCallback) {
 
-    if (typeof this.receipts[receipt] == 'undefined') {
+    if (typeof this.receipts[receipt] === 'undefined') {
       this.receipts[receipt] = {};
     }
 
