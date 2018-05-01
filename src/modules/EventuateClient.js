@@ -103,11 +103,8 @@ export default class EventuateClient {
       options = rest;
 
       let events = this.prepareEvents(_events);
-
-      if (encryptionKeyId && this.encryption) {
-        // Encrypt event data;
-        events = this.encryptEvens(encryptionKeyId, events);
-      }
+      // Encrypt event data if needed
+      events = this.encryptEvents(encryptionKeyId, events);
 
       const jsonData = { entityTypeName, events };
       this.addBodyOptions(jsonData, options);
@@ -198,10 +195,8 @@ export default class EventuateClient {
       options = rest;
 
       let events = this.prepareEvents(_events);
-      if (encryptionKeyId && this.encryption) {
-        // Encrypt event data;
-        events = this.encryptEvens(encryptionKeyId, events);
-      }
+      // Encrypt event data if needed
+      events = this.encryptEvents(encryptionKeyId, events);
       const jsonData = {
         entityId,
         entityVersion,
@@ -597,9 +592,7 @@ export default class EventuateClient {
       const { id: eventId, eventType, entityId, entityType, swimlane, eventToken } = parsedEvent;
       let { eventData: eventDataStr } = parsedEvent;
 
-      if (this.encryption && eventDataStr.includes(this.encryption.prefix)) {
-        eventDataStr = this.encryption.decrypt(eventDataStr);
-      }
+      eventDataStr = this.decrypt(eventDataStr);
       const eventData = JSON.parse(eventDataStr);
 
       const event = {
@@ -725,21 +718,33 @@ export default class EventuateClient {
     });
   }
 
-  encryptEvens(encryptionKeyId, events) {
-     return events.map(({ eventData, ...rest }) => {
-       eventData = this.encryption.encrypt(encryptionKeyId, eventData);
-       return { eventData, ...rest };
+  encryptEvents(encryptionKeyId, events) {
+    return events.map(({ eventData, ...rest }) => {
+      eventData = this.encrypt(encryptionKeyId, eventData);
+      return { eventData, ...rest };
     });
   }
 
   decryptEvens(events) {
-     return events.map(({ eventData, ...rest }) => {
-       if (eventData.includes(this.encryption.prefix)) {
-         eventData = this.encryption.decrypt(eventData);
-       }
+   return events.map(({ eventData, ...rest }) => {
+     eventData = this.decrypt(eventData);
+     return { eventData, ...rest };
+   });
+  }
 
-       return { eventData, ...rest };
-    });
+  encrypt(encryptionKeyId, eventData) {
+    if (encryptionKeyId && this.encryption) {
+      eventData = this.encryption.encrypt(encryptionKeyId, eventData);
+    }
+    return eventData;
+  }
+
+  decrypt(eventDataStr) {
+    if (this.encryption && this.encryption.isEncrypted(eventDataStr)) {
+      return this.encryption.decrypt(eventDataStr);
+    }
+
+    return eventDataStr;
   }
 }
 

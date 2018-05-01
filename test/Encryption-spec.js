@@ -20,6 +20,17 @@ describe('Encryption', () => {
     expect(encryption.decrypt).to.be.a('function');
     expect(encryption.cipher).to.be.a('function');
     expect(encryption.decipher).to.be.a('function');
+    expect(encryption.isEncrypted).to.be.a('function');
+  });
+
+  it('isEncrypted() should return true', () => {
+    const str = encryptedPrefix + 'abcde';
+    expect(encryption.isEncrypted(str)).to.be.true;
+  });
+
+  it('isEncrypted() should return true', () => {
+    const str = 'abcde';
+    expect(encryption.isEncrypted(str)).to.be.false;
   });
 
   it('should cipher and decipher', () => {

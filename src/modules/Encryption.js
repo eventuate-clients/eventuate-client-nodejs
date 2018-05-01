@@ -31,4 +31,8 @@ export default class Encryption {
   findKey(id) {
     return this.encryptionKeyStore[id];
   }
+
+  isEncrypted(eventDataStr) {
+    return eventDataStr.includes(this.prefix);
+  }
 }
