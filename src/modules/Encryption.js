@@ -9,13 +9,19 @@ export default class Encryption {
   }
 
   encrypt(encryptionKeyId, eventData) {
-    const cipher = this.cipher(this.findKey(encryptionKeyId), eventData);
-    return `${this.prefix}${JSON.stringify({encryptionKeyId, data: cipher})}`;
+    return this.findKey(encryptionKeyId)
+      .then(key => {
+        const cipher = this.cipher(key, eventData);
+        return `${this.prefix}${JSON.stringify({encryptionKeyId, data: cipher})}`;
+      });
   }
 
   decrypt(encryptedEventData) {
     const { encryptionKeyId, data } = JSON.parse(encryptedEventData.split(this.prefix)[1]);
-    return this.decipher(this.findKey(encryptionKeyId), data);
+    return this.findKey(encryptionKeyId)
+      .then(key => {
+        return this.decipher(key, data);
+      });
   }
 
   cipher(key, text) {
@@ -29,7 +35,7 @@ export default class Encryption {
   }
 
   findKey(id) {
-    return this.encryptionKeyStore[id];
+    return this.encryptionKeyStore.get(id);
   }
 
   isEncrypted(eventDataStr) {

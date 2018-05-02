@@ -103,16 +103,19 @@ export default class EventuateClient {
       options = rest;
 
       let events = this.prepareEvents(_events);
+
       // Encrypt event data if needed
-      events = this.encryptEvents(encryptionKeyId, events);
+      this.encryptEvents(encryptionKeyId, events)
+        .then(events => {
+          console.log('events:', events);
+          const jsonData = { entityTypeName, events };
+          this.addBodyOptions(jsonData, options);
 
-      const jsonData = { entityTypeName, events };
-      this.addBodyOptions(jsonData, options);
+          const urlPath = path.join(this.baseUrlPath, this.spaceName);
+          const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-      const urlPath = path.join(this.baseUrlPath, this.spaceName);
-      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
-
-      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this });
+        })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           const { entityId, entityVersion, eventIds } = jsonBody;
@@ -163,12 +166,10 @@ export default class EventuateClient {
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           let { events } = jsonBody;
-          if (this.encryption) {
-            events = this.decryptEvens(events);
-          }
-
-          events = this.eventDataToObject(events);
-          result.success(events);
+          return this.decryptEvens(events);
+        })
+        .then(events => {
+          result.success(this.eventDataToObject(events));
         })
         .catch(err => {
           result.failure(err);
@@ -195,21 +196,19 @@ export default class EventuateClient {
       options = rest;
 
       let events = this.prepareEvents(_events);
+
       // Encrypt event data if needed
-      events = this.encryptEvents(encryptionKeyId, events);
-      const jsonData = {
-        entityId,
-        entityVersion,
-        events
-      };
+      this.encryptEvents(encryptionKeyId, events)
+        .then(events => {
 
-      this.addBodyOptions(jsonData, options);
+          const jsonData = { entityId, entityVersion, events };
+          this.addBodyOptions(jsonData, options);
 
-      const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+          const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+          const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
-
-      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           const { entityId, entityVersion, eventIds} = jsonBody;
@@ -371,16 +370,16 @@ export default class EventuateClient {
 
       body.forEach(eventStr => {
 
-        const { error, event } = this.makeEvent(eventStr, headers.ack);
-
-        if (error) {
-          throw new Error(error);
-        }
-
-        eventHandler(event)
-          .then(acknowledge)
-          .catch(err => {
-            logger.error('eventHandler error', err);
+        this.makeEvent(eventStr, headers.ack)
+          .then(event => {
+            eventHandler(event)
+              .then(acknowledge)
+              .catch(err => {
+                logger.error('eventHandler error', err);
+              });
+          })
+          .catch(error => {
+            throw new Error(error);
           });
       });
     }
@@ -587,29 +586,31 @@ export default class EventuateClient {
   }
 
   makeEvent(eventStr, ack) {
+
     try {
       const parsedEvent = JSON.parse(eventStr);
       const { id: eventId, eventType, entityId, entityType, swimlane, eventToken } = parsedEvent;
       let { eventData: eventDataStr } = parsedEvent;
-
-      eventDataStr = this.decrypt(eventDataStr);
-      const eventData = JSON.parse(eventDataStr);
-
-      const event = {
-        eventId,
-        eventType,
-        entityId,
-        swimlane,
-        eventData,
-        eventToken,
-        ack,
-        entityType: entityType.split('/').pop(),
-      };
-
-      return { event };
-    } catch (error) {
-      return { error };
+    } catch (err) {
+      return Promise.reject(err);
     }
+
+    return this.decrypt(eventDataStr)
+      .then(decryptedEventDataStr => {
+        const eventData = JSON.parse(decryptedEventDataStr);
+
+        return {
+          eventId,
+          eventType,
+          entityId,
+          swimlane,
+          eventData,
+          eventToken,
+          ack,
+          entityType: entityType.split('/').pop(),
+        };
+      });
+
   }
 
   serialiseObject(obj) {
@@ -719,39 +720,53 @@ export default class EventuateClient {
   }
 
   encryptEvents(encryptionKeyId, events) {
-    return events.map(({ eventData, ...rest }) => {
-      eventData = this.encrypt(encryptionKeyId, eventData);
-      return { eventData, ...rest };
+    const promises = events.map(({ eventData }) => {
+      return this.encrypt(encryptionKeyId, eventData);
     });
+    return Promise.all(promises)
+      .then(encryptedEventDataArr => {
+        return events.map(({ eventData, ...rest }, index) => {
+          return {
+            eventData: encryptedEventDataArr[index],
+            ...rest
+          };
+        })
+      });
   }
 
   decryptEvens(events) {
-   return events.map(({ eventData, ...rest }) => {
-     eventData = this.decrypt(eventData);
-     return { eventData, ...rest };
-   });
+    const promises = events.map(({ eventData }) => {
+      return this.decrypt(eventData);
+    });
+    return Promise.all(promises)
+      .then(decryptedEventDataArr => {
+        return events.map(({ eventData, ...rest }, index) => {
+          return {
+            eventData: decryptedEventDataArr[index],
+            ...rest
+          };
+        })
+      });
   }
 
   encrypt(encryptionKeyId, eventData) {
     if (encryptionKeyId && this.encryption) {
-      eventData = this.encryption.encrypt(encryptionKeyId, eventData);
+      return this.encryption.encrypt(encryptionKeyId, eventData);
     }
-    return eventData;
+    return Promise.resolve(eventData);
   }
 
   decrypt(eventDataStr) {
     if (this.encryption && this.encryption.isEncrypted(eventDataStr)) {
       return this.encryption.decrypt(eventDataStr);
     }
-
-    return eventDataStr;
+    return Promise.resolve(eventDataStr);
   }
 }
 
 function statusCodeError(statusCode, message) {
 
   if (statusCode !== 200) {
-
     return new EventuateServerError({
       error: `Server returned status code ${statusCode}`,
       statusCode,

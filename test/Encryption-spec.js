@@ -4,10 +4,20 @@ const Encryption = require('../dist/modules/Encryption');
 
 const keyId = 'id';
 const keySecret = 'secret';
-const encryptionKeyStore = { [keyId]: keySecret };
+class EncryptionStore {
+  constructor(keys) {
+    this.keys = keys;
+  }
+
+  get(encryptionKeyId) {
+    return Promise.resolve(this.keys[encryptionKeyId]);
+  }
+}
+const encryptionKeyStore = new EncryptionStore({ [keyId]: keySecret });
 const encryptedPrefix = '__ENCRYPTED__';
 
 const encryption = new Encryption(encryptionKeyStore);
+
 describe('Encryption', () => {
   it('should check structure', () => {
     console.log('encryption:', encryption);
@@ -21,6 +31,7 @@ describe('Encryption', () => {
     expect(encryption.cipher).to.be.a('function');
     expect(encryption.decipher).to.be.a('function');
     expect(encryption.isEncrypted).to.be.a('function');
+    expect(encryption.findKey).to.be.a('function');
   });
 
   it('isEncrypted() should return true', () => {
@@ -28,27 +39,43 @@ describe('Encryption', () => {
     expect(encryption.isEncrypted(str)).to.be.true;
   });
 
-  it('isEncrypted() should return true', () => {
+  it('isEncrypted() should return false', () => {
     const str = 'abcde';
     expect(encryption.isEncrypted(str)).to.be.false;
   });
 
+  it('should find encryption key', done => {
+    encryption.findKey(keyId)
+      .then(key => {
+        expect(key).to.equal(keySecret);
+        done();
+      })
+      .catch(done);
+  });
+
   it('should cipher and decipher', () => {
     const text = 'secret text';
-    const cipher = encryption.cipher(encryptionKeyStore[keyId], text);
-    const decipher = encryption.decipher(encryptionKeyStore[keyId], cipher);
+    const cipher = encryption.cipher(keySecret, text);
+    const decipher = encryption.decipher(keySecret, cipher);
     expect(decipher).to.equal(text);
   });
 
-  it('should encrypt and decrypt', () => {
+  it('should encrypt and decrypt', done => {
     const eventData = { a: '1', b: 2 };
     const eventDataString = JSON.stringify(eventData);
-    const encryptedEventData = encryption.encrypt(keyId, eventDataString);
-    const cipher = encryption.cipher(encryptionKeyStore[keyId], eventDataString);
-    expect(encryptedEventData).to.equal(`${encryptedPrefix}${JSON.stringify({ encryptionKeyId: keyId, data: cipher })}`);
+    encryption.encrypt(keyId, eventDataString)
+      .then(encryptedEventData => {
+        const cipher = encryption.cipher(keySecret, eventDataString);
+        expect(encryptedEventData).to.equal(`${encryptedPrefix}${JSON.stringify({ encryptionKeyId: keyId, data: cipher })}`);
 
-    const decryptedEventData = encryption.decrypt(encryptedEventData);
-    expect(decryptedEventData).to.equal(eventDataString);
+        return encryption.decrypt(encryptedEventData);
+      })
+      .then(decryptedEventData => {
+        expect(decryptedEventData).to.equal(eventDataString);
+        done();
+      })
+      .catch(done);
+
   });
 });
 

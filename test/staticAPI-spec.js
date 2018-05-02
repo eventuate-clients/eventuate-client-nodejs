@@ -1,8 +1,8 @@
 'use strict';
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
-const escapeStr = require('../dist/modules/specialChars').escapeStr;
-const retryNTimes = require('../dist/modules/utils').retryNTimes;
+const { escapeStr } = require('../dist/modules/specialChars');
+const { retryNTimes } = require('../dist/modules/utils');
 const timeout = 15000;
 
 const eventuateClient = helpers.createEventuateClient();
@@ -16,19 +16,23 @@ describe('Test static API ', () => {
       expect(eventuateClient.makeEvent).to.be.a('Function');
     });
 
-    it('should return error for empty string', () => {
-      const result = eventuateClient.makeEvent('');
-      expect(result).to.have.property('error');
-      expect(result.error).to.be.instanceof(Error);
+    it('should return error for empty string', done => {
+      eventuateClient.makeEvent('')
+        .catch(error => {
+          expect(error).to.be.instanceof(Error);
+          done();
+        });
     });
 
     it('should return error for event with empty eventData', () => {
 
       const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
 
-      const result = eventuateClient.makeEvent(eventStr);
-      expect(result).to.have.property('error');
-      expect(result.error).to.be.instanceof(Error);
+      eventuateClient.makeEvent('')
+        .catch(error => {
+          expect(error).to.be.instanceof(Error);
+          done();
+        });
     });
 
     it('should parse event', done => {
@@ -50,15 +54,12 @@ describe('Test static API ', () => {
           eventId: '00000151e8f6932d-0242ac1100320002',
           eventType: 'net.chrisrichardson.eventstore.example.MyEntityWasCreated' } };
 
-      const result = eventuateClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)));
+     eventuateClient.makeEvent(eventStr, escapeStr(JSON.stringify(ack)))
+       .then(event => {
+         helpers.expectEvent(event, done);
+       })
+       .catch(done);
 
-      if (result.error) {
-        return done(result.error);
-      }
-
-      expect(result).to.have.property('event');
-      const event = result.event;
-      helpers.expectEvent(event, done);
     });
   });
 

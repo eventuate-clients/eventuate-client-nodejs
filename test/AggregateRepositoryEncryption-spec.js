@@ -12,7 +12,18 @@ const EntityClass = require('./lib/EncryptedEntityClass');
 const { CreatedEntityCommand, UpdateEntityCommand, FailureCommand } = EntityClass;
 const encryptionKeyId = 'id';
 const keySecret = 'secret';
-const encryptionKeyStore = { [encryptionKeyId]: keySecret };
+
+class EncryptionStore {
+  constructor(keys) {
+    this.keys = keys;
+  }
+
+  get(encryptionKeyId) {
+    return Promise.resolve(this.keys[encryptionKeyId]);
+  }
+}
+
+const encryptionKeyStore = new EncryptionStore({ [encryptionKeyId]: keySecret });
 const encryption = new Encryption(encryptionKeyStore);
 
 const eventuateClient = createEventuateClient(encryption);

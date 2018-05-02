@@ -6,7 +6,16 @@ const Encryption = require('../dist/modules/Encryption');
 
 const encryptionKeyId = 'id';
 const keySecret = 'secret';
-const encryptionKeyStore = { [encryptionKeyId]: keySecret };
+class EncryptionStore {
+  constructor(keys) {
+    this.keys = keys;
+  }
+
+  get(encryptionKeyId) {
+    return Promise.resolve(this.keys[encryptionKeyId]);
+  }
+}
+const encryptionKeyStore = new EncryptionStore({ [encryptionKeyId]: keySecret });
 const encryption = new Encryption(encryptionKeyStore);
 
 const eventuateClient = helpers.createEventuateClient(encryption);
