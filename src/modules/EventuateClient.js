@@ -166,7 +166,7 @@ export default class EventuateClient {
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           let { events } = jsonBody;
-          return this.decryptEvens(events);
+          return this.decryptEvents(events);
         })
         .then(events => {
           result.success(this.eventDataToObject(events));
@@ -732,7 +732,7 @@ export default class EventuateClient {
       });
   }
 
-  decryptEvens(events) {
+  decryptEvents(events) {
     const promises = events.map(({ eventData }) => {
       return this.decrypt(eventData);
     });

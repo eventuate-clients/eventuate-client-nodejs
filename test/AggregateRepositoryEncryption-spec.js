@@ -246,13 +246,13 @@ describe('EventuateSubscriptionManager with encryption', function () {
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber1',
+      subscriberId: 'test-AggregateRepositoryEncryption-subscriber1',
       eventHandlers: entityCreatedEventHandlers,
       executor
     });
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber2',
+      subscriberId: 'test-AggregateRepositoryEncryption-subscriber2',
       eventHandlers: entityUpdatedEventHandlers,
       executor
     });
@@ -304,7 +304,7 @@ describe('EventuateSubscriptionManager with encryption', function () {
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-SubscriptionManager-subscriber1',
+      subscriberId: 'test-SubscriptionManagerEncryption-subscriber1',
       eventHandlers: entityCreatedEventHandlers1,
       executor
     });
@@ -316,7 +316,7 @@ describe('EventuateSubscriptionManager with encryption', function () {
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-SubscriptionManager-subscriber2',
+      subscriberId: 'test-SubscriptionManagerEncryption-subscriber2',
       eventHandlers: entityCreatedEventHandlers2,
       executor
     });
