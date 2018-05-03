@@ -589,28 +589,26 @@ export default class EventuateClient {
 
     try {
       const parsedEvent = JSON.parse(eventStr);
-      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken } = parsedEvent;
-      let { eventData: eventDataStr } = parsedEvent;
+      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData: eventDataStr } = parsedEvent;
+
+      return this.decrypt(eventDataStr)
+        .then(decryptedEventDataStr => {
+          const eventData = JSON.parse(decryptedEventDataStr);
+
+          return {
+            eventId,
+            eventType,
+            entityId,
+            swimlane,
+            eventData,
+            eventToken,
+            ack,
+            entityType: entityType.split('/').pop(),
+          };
+        });
     } catch (err) {
       return Promise.reject(err);
     }
-
-    return this.decrypt(eventDataStr)
-      .then(decryptedEventDataStr => {
-        const eventData = JSON.parse(decryptedEventDataStr);
-
-        return {
-          eventId,
-          eventType,
-          entityId,
-          swimlane,
-          eventData,
-          eventToken,
-          ack,
-          entityType: entityType.split('/').pop(),
-        };
-      });
-
   }
 
   serialiseObject(obj) {
