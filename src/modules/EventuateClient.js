@@ -5,6 +5,7 @@ import http from 'http';
 import https from 'https';
 import path from 'path';
 import invariant from 'invariant';
+import util from 'util';
 
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
@@ -18,7 +19,7 @@ const logger = getLogger({ title: 'EventuateClient' });
 
 export default class EventuateClient {
 
-  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber }) {
+  constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber, encryption }) {
 
     this.apiKey = apiKey;
     this.url =  url;
@@ -46,9 +47,10 @@ export default class EventuateClient {
     this.connectionCount = 0;
     this._connPromise = null;
 
-
     this.maxRetryNumber = maxRetryNumber;
     this.retryDelay = 1000;
+
+    this.encryption = encryption;
   }
 
   determineIfSecure() {
@@ -83,11 +85,10 @@ export default class EventuateClient {
     }
   }
 
-  create(entityTypeName, _events, options, callback) {
-
+  create(entityTypeName, _events, options = {}, callback) {
     return new Promise((resolve, reject) => {
 
-      if (!callback && typeof options == 'function') {
+      if (!callback && typeof options === 'function') {
         callback = options;
       }
 
@@ -98,19 +99,23 @@ export default class EventuateClient {
         return result.failure(new Error('Incorrect input parameters for create()'));
       }
 
-      const events = this.prepareEvents(_events);
-      const jsonData = {
-        entityTypeName,
-        events
-      };
+      const { encryptionKeyId, ...rest } = options;
+      options = rest;
 
-      this.addBodyOptions(jsonData, options);
+      let events = this.prepareEvents(_events);
 
-      const urlPath = path.join(this.baseUrlPath, this.spaceName);
+      // Encrypt event data if needed
+      this.encryptEvents(encryptionKeyId, events)
+        .then(events => {
+          console.log('events:', events);
+          const jsonData = { entityTypeName, events };
+          this.addBodyOptions(jsonData, options);
 
-      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
+          const urlPath = path.join(this.baseUrlPath, this.spaceName);
+          const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this });
+        })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           const { entityId, entityVersion, eventIds } = jsonBody;
@@ -131,15 +136,11 @@ export default class EventuateClient {
         .catch(err => {
           result.failure(err);
         });
-
     });
-
   }
 
-  loadEvents(entityTypeName, entityId, options, callback) {
-
+  loadEvents(entityTypeName, entityId, options = {}, callback) {
     return new Promise((resolve, reject) => {
-
       if (!callback && typeof options === 'function') {
         callback = options;
       }
@@ -152,9 +153,11 @@ export default class EventuateClient {
       }
 
       let urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
-
       if (options) {
-        urlPath += '?' + this.serialiseObject(options);
+        const urlParams = this.serialiseObject(options);
+        if (urlParams) {
+          urlPath += '?' + urlParams;
+        }
       }
 
       const requestOptions = { path: urlPath, method: 'GET', apiKey: this.apiKey, client: this };
@@ -162,9 +165,11 @@ export default class EventuateClient {
       this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
-          const events = this.eventDataToObject(jsonBody.events);
-
-          result.success(events);
+          let { events } = jsonBody;
+          return this.decryptEvents(events);
+        })
+        .then(events => {
+          result.success(this.eventDataToObject(events));
         })
         .catch(err => {
           result.failure(err);
@@ -173,8 +178,7 @@ export default class EventuateClient {
     });
   }
 
-  update(entityTypeName, entityId, entityVersion, _events, options, callback) {
-
+  update(entityTypeName, entityId, entityVersion, _events, options = {}, callback) {
     return new Promise((resolve, reject) => {
 
       if (!callback && typeof options === 'function') {
@@ -188,20 +192,23 @@ export default class EventuateClient {
         return result.failure(new Error('Incorrect input parameters for update()'));
       }
 
-      const events = this.prepareEvents(_events);
-      const jsonData = {
-        entityId,
-        entityVersion,
-        events
-      };
+      const { encryptionKeyId, ...rest } = options;
+      options = rest;
 
-      this.addBodyOptions(jsonData, options);
+      let events = this.prepareEvents(_events);
 
-      const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+      // Encrypt event data if needed
+      this.encryptEvents(encryptionKeyId, events)
+        .then(events => {
 
-      const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
+          const jsonData = { entityId, entityVersion, events };
+          this.addBodyOptions(jsonData, options);
 
-      this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+          const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
+          const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
+
+          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+        })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
           const { entityId, entityVersion, eventIds} = jsonBody;
@@ -363,16 +370,16 @@ export default class EventuateClient {
 
       body.forEach(eventStr => {
 
-        const { error, event } = this.makeEvent(eventStr, headers.ack);
-
-        if (error) {
-          throw new Error(error);
-        }
-
-        eventHandler(event)
-          .then(acknowledge)
-          .catch(err => {
-            logger.error('eventHandler error', err);
+        this.makeEvent(eventStr, headers.ack)
+          .then(event => {
+            eventHandler(event)
+              .then(acknowledge)
+              .catch(err => {
+                logger.error('eventHandler error', err);
+              });
+          })
+          .catch(error => {
+            throw new Error(error);
           });
       });
     }
@@ -381,7 +388,7 @@ export default class EventuateClient {
   addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
 
     //add new subscription if not exists
-    if (typeof this.subscriptions[subscriberId] == 'undefined') {
+    if (typeof this.subscriptions[subscriberId] === 'undefined') {
       this.subscriptions[subscriberId] = {};
     }
 
@@ -541,7 +548,7 @@ export default class EventuateClient {
 
   addReceipt(receipt, clientSubscribeCallback) {
 
-    if (typeof this.receipts[receipt] == 'undefined') {
+    if (typeof this.receipts[receipt] === 'undefined') {
       this.receipts[receipt] = {};
     }
 
@@ -581,32 +588,32 @@ export default class EventuateClient {
   makeEvent(eventStr, ack) {
 
     try {
+      const parsedEvent = JSON.parse(eventStr);
+      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData: eventDataStr } = parsedEvent;
 
-      const { id: eventId, eventType, entityId, entityType, eventData: eventDataStr, swimlane, eventToken } = JSON.parse(eventStr);
+      return this.decrypt(eventDataStr)
+        .then(decryptedEventDataStr => {
+          const eventData = JSON.parse(decryptedEventDataStr);
 
-      const eventData = JSON.parse(eventDataStr);
-
-      const event = {
-        eventId,
-        eventType,
-        entityId,
-        swimlane,
-        eventData,
-        eventToken,
-        ack,
-        entityType: entityType.split('/').pop(),
-      };
-
-      return { event };
-    } catch (error) {
-      return { error };
+          return {
+            eventId,
+            eventType,
+            entityId,
+            swimlane,
+            eventData,
+            eventToken,
+            ack,
+            entityType: entityType.split('/').pop(),
+          };
+        });
+    } catch (err) {
+      return Promise.reject(err);
     }
-
   }
 
   serialiseObject(obj) {
 
-    if (typeof obj == 'object') {
+    if (typeof obj === 'object') {
       return Object.keys(obj)
         .map(key => {
           return `${key}=${obj[key]}`;
@@ -617,7 +624,7 @@ export default class EventuateClient {
 
   addBodyOptions (jsonData, options) {
 
-    if (typeof options == 'object') {
+    if (typeof options === 'object') {
       Object.keys(options).reduce((jsonData, key) => {
 
         jsonData[key] = options[key];
@@ -631,7 +638,7 @@ export default class EventuateClient {
 
     return events.map(({ eventData, ...rest } = event) => {
 
-      if (typeof eventData == 'object') {
+      if (typeof eventData === 'object') {
         eventData = JSON.stringify(eventData);
       }
 
@@ -648,7 +655,7 @@ export default class EventuateClient {
 
       const event = Object.assign({}, e);
 
-      if (typeof event.eventData != 'string') {
+      if (typeof event.eventData !== 'string') {
         return event;
       }
 
@@ -686,7 +693,7 @@ export default class EventuateClient {
 
       let ed;
 
-      if (typeof eventData == 'string') {
+      if (typeof eventData === 'string') {
 
         ed = eventData;
         //try to parse eventData
@@ -695,7 +702,7 @@ export default class EventuateClient {
         } catch(e) {
           return false;
         }
-      } else if (typeof eventData == 'object') {
+      } else if (typeof eventData === 'object') {
         ed = Object.assign({}, eventData);
       } else {
         return false;
@@ -709,12 +716,55 @@ export default class EventuateClient {
 
     });
   }
+
+  encryptEvents(encryptionKeyId, events) {
+    const promises = events.map(({ eventData }) => {
+      return this.encrypt(encryptionKeyId, eventData);
+    });
+    return Promise.all(promises)
+      .then(encryptedEventDataArr => {
+        return events.map(({ eventData, ...rest }, index) => {
+          return {
+            eventData: encryptedEventDataArr[index],
+            ...rest
+          };
+        })
+      });
+  }
+
+  decryptEvents(events) {
+    const promises = events.map(({ eventData }) => {
+      return this.decrypt(eventData);
+    });
+    return Promise.all(promises)
+      .then(decryptedEventDataArr => {
+        return events.map(({ eventData, ...rest }, index) => {
+          return {
+            eventData: decryptedEventDataArr[index],
+            ...rest
+          };
+        })
+      });
+  }
+
+  encrypt(encryptionKeyId, eventData) {
+    if (encryptionKeyId && this.encryption) {
+      return this.encryption.encrypt(encryptionKeyId, eventData);
+    }
+    return Promise.resolve(eventData);
+  }
+
+  decrypt(eventDataStr) {
+    if (this.encryption && this.encryption.isEncrypted(eventDataStr)) {
+      return this.encryption.decrypt(eventDataStr);
+    }
+    return Promise.resolve(eventDataStr);
+  }
 }
 
 function statusCodeError(statusCode, message) {
 
   if (statusCode !== 200) {
-
     return new EventuateServerError({
       error: `Server returned status code ${statusCode}`,
       statusCode,
@@ -725,7 +775,6 @@ function statusCodeError(statusCode, message) {
 }
 
 function retryConditionFn (err) {
-
   if (err.statusCode === 503) {
     return true;
   }

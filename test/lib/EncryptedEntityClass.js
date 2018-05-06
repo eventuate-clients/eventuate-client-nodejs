@@ -1,29 +1,29 @@
 'use strict';
 
-const { entityTypeName, MyEntityCreateEvent, MyEntityWasCreatedEvent, MyEntityWasUpdatedEvent } = require('./eventConfig');
+const { MyEncryptedEntityTypeName, MyEncryptedEntityCreateEvent, MyEncryptedEntityWasCreatedEvent, MyEncryptedEntityWasUpdatedEvent } = require('./eventConfig');
 
-class EntityClass {
+class EncryptedEntityClass {
   constructor() {
-    this.entityTypeName = entityTypeName;
+    this.entityTypeName = MyEncryptedEntityTypeName;
     this.timestamp = null;
   }
 
-  applyMyEntityCreateEvent(event) {
-    console.log('applyMyEntityCreateEvent()');
+  applyMyEncryptedEntityCreateEvent(event) {
+    console.log('applyMyEncryptedEntityCreateEvent()');
     const { eventData: { timestamp } } = event;
     this.timestamp = timestamp;
     return this;
   }
 
-  applyMyEntityWasCreatedEvent(event) {
-    console.log('applyMyEntityWasCreatedEvent()');
+  applyMyEncryptedEntityWasCreatedEvent(event) {
+    console.log('applyMyEncryptedEntityWasCreatedEvent()');
     const { eventData: { timestamp } } = event;
     this.timestamp = timestamp;
     return this;
   }
 
-  applyMyEntityWasUpdatedEvent(event) {
-    console.log('applyMyEntityWasUpdatedEvent()');
+  applyMyEncryptedEntityWasUpdatedEvent(event) {
+    console.log('applyMyEncryptedEntityWasUpdatedEvent()');
     const { eventData: { timestamp } } = event;
     this.timestamp = timestamp;
     return this;
@@ -43,7 +43,7 @@ class EntityClass {
   processCreateEntityCommand(command) {
     return [
       {
-        eventType: MyEntityCreateEvent,
+        eventType: MyEncryptedEntityCreateEvent,
         eventData: {
           timestamp: command.createTimestamp
         }
@@ -54,7 +54,7 @@ class EntityClass {
   processCreatedEntityCommand(command) {
     return [
       {
-        eventType: MyEntityWasCreatedEvent,
+        eventType: MyEncryptedEntityWasCreatedEvent,
         eventData: {
           timestamp: command.createdTimestamp
         }
@@ -65,7 +65,7 @@ class EntityClass {
   processUpdateEntityCommand(command) {
     return [
       {
-        eventType: MyEntityWasUpdatedEvent,
+        eventType: MyEncryptedEntityWasUpdatedEvent,
         eventData: {
           timestamp: command.updateTimestamp
         }
@@ -96,4 +96,4 @@ class EntityClass {
   }
 }
 
-module.exports = EntityClass;
+module.exports = EncryptedEntityClass;

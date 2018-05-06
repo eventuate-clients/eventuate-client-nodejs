@@ -2,15 +2,31 @@
 const { expect } = require('chai');
 const helpers = require('./lib/helpers');
 const { AggregateRepository, EventuateSubscriptionManager } = require('../dist');
-const { Executor: ExecutorClass, HandlersManager } = helpers;
+const { Executor: ExecutorClass, HandlersManager, createEventuateClient } = helpers;
 const executor = new ExecutorClass();
+const Encryption = require('../dist/modules/Encryption');
 
-const { entityTypeName, anotherEntityTypeName, MyEntityWasCreatedEvent, MyEntityWasUpdatedEvent } = require('./lib/eventConfig');
+const { MyEncryptedEntityTypeName: entityTypeName, anotherEntityTypeName, MyEncryptedEntityWasCreatedEvent, MyEncryptedEntityWasUpdatedEvent } = require('./lib/eventConfig');
 
-const EntityClass = require('./lib/EntityClass');
+const EntityClass = require('./lib/EncryptedEntityClass');
 const { CreatedEntityCommand, UpdateEntityCommand, FailureCommand } = EntityClass;
+const encryptionKeyId = 'id';
+const keySecret = 'secret';
 
-const eventuateClient = helpers.createEventuateClient();
+class EncryptionStore {
+  constructor(keys) {
+    this.keys = keys;
+  }
+
+  get(encryptionKeyId) {
+    return Promise.resolve(this.keys[encryptionKeyId]);
+  }
+}
+
+const encryptionKeyStore = new EncryptionStore({ [encryptionKeyId]: keySecret });
+const encryption = new Encryption(encryptionKeyStore);
+
+const eventuateClient = createEventuateClient(encryption);
 const aggregateRepository = new AggregateRepository({ eventuateClient, EntityClass });
 const subscriptionManager = new EventuateSubscriptionManager({ eventuateClient });
 
@@ -24,7 +40,7 @@ let myEntityWasCreatedEventId;
 let myEntityWasUpdatedEventId;
 let version;
 
-describe('AggregateRepository', function () {
+describe('AggregateRepository with encryption', function () {
   this.timeout(timeout);
 
   it('function createEntity() should return entityAndEventInfo object', done => {
@@ -34,9 +50,8 @@ describe('AggregateRepository', function () {
       createdTimestamp
     };
 
-    aggregateRepository.createEntity({ EntityClass, command })
+    aggregateRepository.createEntity({ EntityClass, command, options: { encryptionKeyId } })
       .then(createdEntityAndEventInfo => {
-
         helpers.expectCommandResult(createdEntityAndEventInfo);
         entityId = createdEntityAndEventInfo.entityIdTypeAndVersion.entityId;
         myEntityWasCreatedEventId = createdEntityAndEventInfo.eventIds[0];
@@ -48,7 +63,7 @@ describe('AggregateRepository', function () {
   it('function createEntity() should try to run FailureCommand and get error', done => {
     const command = { commandType: FailureCommand };
 
-    aggregateRepository.createEntity({ EntityClass, command })
+    aggregateRepository.createEntity({ EntityClass, command, options: { encryptionKeyId } })
       .then(() => {
         done(new Error('Command FailureCommand should return error'));
       })
@@ -67,7 +82,7 @@ describe('AggregateRepository', function () {
       updateTimestamp
     };
 
-    aggregateRepository.updateEntity({ EntityClass, entityId, command })
+    aggregateRepository.updateEntity({ EntityClass, entityId, command, options: { encryptionKeyId } })
       .then(updatedEntityAndEventInfo => {
         helpers.expectCommandResult(updatedEntityAndEventInfo);
         myEntityWasUpdatedEventId = updatedEntityAndEventInfo.eventIds[0];
@@ -82,7 +97,7 @@ describe('AggregateRepository', function () {
       updateTimestamp
     };
 
-    aggregateRepository.updateEntity({ EntityClass, entityId: '0000000000000001', command })
+    aggregateRepository.updateEntity({ EntityClass, entityId: '0000000000000001', command, options: { encryptionKeyId } })
       .then(() => {
         done(new Error('Should return error!'));
       })
@@ -100,10 +115,8 @@ describe('AggregateRepository', function () {
     expect(entityId).to.be.ok;
     const command = { commandType: FailureCommand };
 
-    aggregateRepository.updateEntity({ entityId, EntityClass, command })
-      .then(() => {
-        done(new Error('Command FailureCommand should return error'));
-      })
+    aggregateRepository.updateEntity({ entityId, EntityClass, command, options: { encryptionKeyId } })
+      .then(() => done(new Error('Command FailureCommand should return error')))
       .catch(err => {
         console.log(err);
         done();
@@ -114,7 +127,7 @@ describe('AggregateRepository', function () {
     expect(entityId).to.be.ok;
     const entity = new EntityClass();
 
-    aggregateRepository.loadEvents({ entityTypeName, entityId })
+    aggregateRepository.loadEvents({ entityTypeName, entityId, options: { encryptionKeyId } })
       .then(loadedEvents => {
         helpers.expectLoadedEvents(loadedEvents);
 
@@ -161,7 +174,7 @@ describe('AggregateRepository', function () {
   });
 
   it('Method find() should return updated Aggregate instance', done => {
-    aggregateRepository.find({ EntityClass, entityId })
+    aggregateRepository.find({ EntityClass, entityId, options: { encryptionKeyId } })
       .then(entity => {
         expect(entity).to.be.instanceOf(EntityClass);
         expect(entity.timestamp).to.equal(updateTimestamp);
@@ -172,7 +185,7 @@ describe('AggregateRepository', function () {
 
   it('Method find() should return updated Aggregate instance for a version', done => {
     expect(version).to.be.ok;
-    aggregateRepository.find({ EntityClass, entityId, options: { version } })
+    aggregateRepository.find({ EntityClass, entityId, options: { version, encryptionKeyId } })
       .then(entity => {
         expect(entity).to.be.instanceOf(EntityClass);
         expect(entity.timestamp).to.equal(createdTimestamp);
@@ -183,7 +196,7 @@ describe('AggregateRepository', function () {
 
   it('Method find() should return "false" for not existing entityId', done => {
     const entityId = new Date().getTime().toString();
-    aggregateRepository.find({ EntityClass, entityId })
+    aggregateRepository.find({ EntityClass, entityId, options: { encryptionKeyId } })
       .then(entity => {
         expect(entity).to.be.equal(false);
         done();
@@ -192,7 +205,7 @@ describe('AggregateRepository', function () {
   });
 });
 
-describe('EventuateSubscriptionManager', function () {
+describe('EventuateSubscriptionManager with encryption', function () {
   this.timeout(timeout);
 
   it('should subscribe two subscribers and receive events', done => {
@@ -200,7 +213,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasCreatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasCreatedEvent()');
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasCreatedEvent');
@@ -209,7 +222,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasUpdatedEvent = helpers.createEventHandler((event) => {
       console.log('handleMyEntityWasUpdatedEvent()');
-      expect(event.eventType).to.equal(MyEntityWasUpdatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasUpdatedEvent);
 
       if (myEntityWasUpdatedEventId === event.eventId) {
         handlersManager.setCompleted('handleMyEntityWasUpdatedEvent');
@@ -222,24 +235,24 @@ describe('EventuateSubscriptionManager', function () {
 
     const entityCreatedEventHandlers = {
       [entityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent
       }
     };
 
     const entityUpdatedEventHandlers = {
       [entityTypeName]: {
-        [MyEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
+        [MyEncryptedEntityWasUpdatedEvent]: handleMyEntityWasUpdatedEvent
       }
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber1',
+      subscriberId: 'test-AggregateRepositoryEncryption-subscriber1',
       eventHandlers: entityCreatedEventHandlers,
       executor
     });
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-AggregateRepository-subscriber2',
+      subscriberId: 'test-AggregateRepositoryEncryption-subscriber2',
       eventHandlers: entityUpdatedEventHandlers,
       executor
     });
@@ -254,7 +267,7 @@ describe('EventuateSubscriptionManager', function () {
     const handlersManager = new HandlersManager({ done });
     const handleMyEntityWasCreatedEvent1 = helpers.createEventHandler((event) => {
 
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
         processedEventsNumber1++;
@@ -269,7 +282,7 @@ describe('EventuateSubscriptionManager', function () {
 
     const handleMyEntityWasCreatedEvent2 = helpers.createEventHandler((event) => {
 
-      expect(event.eventType).to.equal(MyEntityWasCreatedEvent);
+      expect(event.eventType).to.equal(MyEncryptedEntityWasCreatedEvent);
 
       if (myEntityWasCreatedEventIds.indexOf(event.eventId) >= 0) {
         processedEventsNumber2++;
@@ -286,32 +299,32 @@ describe('EventuateSubscriptionManager', function () {
 
     const entityCreatedEventHandlers1 = {
       [anotherEntityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent1
       }
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-SubscriptionManager-subscriber1',
+      subscriberId: 'test-SubscriptionManagerEncryption-subscriber1',
       eventHandlers: entityCreatedEventHandlers1,
       executor
     });
 
     const entityCreatedEventHandlers2 = {
       [anotherEntityTypeName]: {
-        [MyEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent2
+        [MyEncryptedEntityWasCreatedEvent]: handleMyEntityWasCreatedEvent2
       }
     };
 
     subscriptionManager.subscribe({
-      subscriberId: 'test-SubscriptionManager-subscriber2',
+      subscriberId: 'test-SubscriptionManagerEncryption-subscriber2',
       eventHandlers: entityCreatedEventHandlers2,
       executor
     });
 
-    const events = helpers.makeEventsArr({ size: expectedEventsNumber, entityType: anotherEntityTypeName, eventType: MyEntityWasCreatedEvent });
+    const events = helpers.makeEventsArr({ size: expectedEventsNumber, entityType: anotherEntityTypeName, eventType: MyEncryptedEntityWasCreatedEvent });
 
     setTimeout(() => {
-      eventuateClient.create(anotherEntityTypeName, events)
+      eventuateClient.create(anotherEntityTypeName, events, { encryptionKeyId })
         .then(createdEntityAndEventInfo => {
           console.log('Entity created');
           console.log(createdEntityAndEventInfo);

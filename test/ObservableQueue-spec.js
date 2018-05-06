@@ -40,7 +40,6 @@ describe('ObservableQueue', function () {
 
     events.forEach((event) => {
       new Promise((resolve, reject) => {
-
         queue.queueEvent({ event, resolve, reject });
       });
     });
@@ -52,7 +51,6 @@ describe('ObservableQueue', function () {
     const stop = 3;
 
     const eventHandler = event => {
-
       return new Promise((resolve, reject) => {
 
         processedEvents++;
@@ -80,12 +78,8 @@ describe('ObservableQueue', function () {
 
     events.forEach((event) => {
       new Promise((resolve, reject) => {
-
         queue.queueEvent({ event, resolve, reject });
       });
     });
-
-
   });
-
 });

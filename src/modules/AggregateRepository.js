@@ -1,11 +1,12 @@
 import { getLogger } from './logger';
 import { retryNTimes } from './utils';
+import util from 'util';
 
 const logger = getLogger({ title: 'AggregateRepository' });
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
 export default class AggregateRepository {
-    constructor({ eventuateClient = {}, EntityClass } = {}) {
+    constructor({ eventuateClient = {}, EntityClass, retryErrConditionFn } = {}) {
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
@@ -16,6 +17,9 @@ export default class AggregateRepository {
     }
 
     this.eventuateClient = eventuateClient;
+    let errConditionFn = retryErrConditionFn || function () {
+      return false;
+    };
 
     this.updateEntity = retryNTimes(
       {
@@ -57,7 +61,10 @@ export default class AggregateRepository {
                 return Promise.resolve(result);
               },
               error => {
-                logger.error(`Update entity failed: ${EntityClass.name} ${entityId}`);
+                logger.error(`Update entity failed!
+                Entity class: ${EntityClass.name}
+                entityId: ${entityId}
+                command: ${util.inspect(command, false, 20)}`);
                 logger.error(error);
 
                 if (error.statusCode === 409) {
@@ -90,24 +97,32 @@ export default class AggregateRepository {
                 return Promise.reject(error);
               }
             )
-        }
+        },
+        errConditionFn
       });
   }
 
   createEntity({ EntityClass, command, options }) {
-    const entity = this.createEntityInstance(EntityClass);
-    const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
-    const events = processCommandMethod.call(entity, command);
+    try {
+      const entity = this.createEntityInstance(EntityClass);
+      const processCommandMethod = this.getProcessCommandMethod(entity, command.commandType);
+      const events = processCommandMethod.call(entity, command);
 
-    return this.eventuateClient.create(entity.entityTypeName, events, options)
-      .then(result=> {
-        logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
-        return result;
-      },
-      err => {
-        logger.error(`Create entity failed: ${EntityClass.name}`);
-        return Promise.reject(err);
-      })
+      return this.eventuateClient.create(entity.entityTypeName, events, options)
+        .then(result=> {
+            logger.debug(`Created entity: ${EntityClass.name} ${result.entityIdTypeAndVersion.entityId} ${JSON.stringify(result)}`);
+            return result;
+          },
+          err => {
+            logger.error(`Create entity failed: ${EntityClass.name}`);
+            return Promise.reject(err);
+          })
+    } catch (err) {
+      logger.error(`Create entity failed!
+      Entity class: ${EntityClass.name}
+      command: ${util.inspect(command, false, 20)}`);
+      return Promise.reject(err);
+    }
   }
 
   loadEvents({ entityTypeName, entityId, options }) {
@@ -158,11 +173,18 @@ export default class AggregateRepository {
     });
   }
 
-  find({ EntityClass, entityId, options }) {
+  find({ EntityClass, entityId, options = {} }) {
     const entity = this.createEntityInstance(EntityClass);
     return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
       .then(loadedEvents => {
+        const { version } = options;
         if (loadedEvents.length > 0) {
+          if (version) {
+            loadedEvents = this.getEventsByVersion(loadedEvents, version);
+            if (!loadedEvents) {
+              return false;
+            }
+          }
           this.applyEntityEvents(loadedEvents, entity);
           return entity;
         }
@@ -181,5 +203,11 @@ export default class AggregateRepository {
     }
     return new this.EntityClass();
   }
-}
 
+  getEventsByVersion(loadedEvents, version) {
+    const index = loadedEvents.findIndex(({ id }) => id === version);
+    if (index >= 0) {
+      return loadedEvents.slice(0, index +1);
+    }
+  }
+}

@@ -2,7 +2,7 @@ import { parseIsTrue } from './utils';
 
 export default class EventuateClientConfiguration {
 
-  constructor({ debug = false, url, httpKeepAlive } = {}) {
+  constructor({ debug = false, url, httpKeepAlive, encryption } = {}) {
 
     const apiKey = {
       id: process.env.EVENTUATE_API_KEY_ID,
@@ -34,6 +34,7 @@ export default class EventuateClientConfiguration {
     }
 
     this.maxRetryNumber = process.env.EVENTUATE_RETRIES_NUMBER || 10;
+    this.encryption = encryption;
   }
 
   getConfig() {

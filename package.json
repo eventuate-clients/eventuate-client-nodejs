@@ -3,11 +3,12 @@
   "version": "1.0.19",
   "description": "NodeJS-based client for the Eventuate Platform",
   "main": "dist/index.js",
-  "repository" : { "type" : "git"
-  , "url" : "https://github.com/eventuate-clients/eventuate-client-nodejs.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eventuate-clients/eventuate-client-nodejs.git"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec --ui bdd test/*-spec.js",
+    "test": "cd ./test && ../node_modules/.bin/mocha --timeout 25000 --reporter spec --ui bdd staticAPI-spec.js specialChars-spec.js Encryption-spec.js EventuateServerError-spec.js EventuateClient-spec.js EventuateClientEncryption-spec.js EventuateClientPromises-spec.js EventuateClientPromisesRetry-spec.js EventuateClientTriggeringEventToken-spec.js AckOrderTracker-spec.js stomp-spec.js subscribe-spec.js subscribeEncrypted-spec.js subscribeManyEvents-spec.js subscribeTwoSubscribers-spec.js subscribeWithOptions-spec.js AggregateRepository-spec.js AggregateRepositoryEncryption-spec.js AggregateRepositoryWithTriggeringEventToken-spec.js ObservableQueue-spec.js EventTypeSwimlaneDispatcher-spec.js",
     "compile": "rm -fr dist/* && node_modules/babel-cli/bin/babel.js --presets es2015,stage-0 --plugins add-module-exports -d dist/ src/",
     "build-and-test": "npm run compile && npm test"
   },
@@ -15,14 +16,14 @@
   "license": "Apache License, Version 2",
   "dependencies": {
     "agentkeepalive": "^2.0.2",
-    "invariant": "^2.2.1",
+    "invariant": "^2.2.4",
     "log4js": "^0.6.38",
     "rx": "^2.4.1",
     "stomp": "^0.1.1",
     "uuid": "^2.0.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.9.0",
+    "babel-cli": "^6.26.0",
     "babel-plugin-add-module-exports": "^0.1.4",
     "babel-preset-es2015": "^6.3.13",
     "babel-preset-stage-0": "^6.3.13",
