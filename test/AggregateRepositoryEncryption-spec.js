@@ -4,7 +4,7 @@ const helpers = require('./lib/helpers');
 const { AggregateRepository, EventuateSubscriptionManager } = require('../dist');
 const { Executor: ExecutorClass, HandlersManager, createEventuateClient } = helpers;
 const executor = new ExecutorClass();
-const Encryption = require('../dist/modules/Encryption');
+const { Encryption } = require('../dist');
 
 const { MyEncryptedEntityTypeName: entityTypeName, anotherEntityTypeName, MyEncryptedEntityWasCreatedEvent, MyEncryptedEntityWasUpdatedEvent } = require('./lib/eventConfig');
 
