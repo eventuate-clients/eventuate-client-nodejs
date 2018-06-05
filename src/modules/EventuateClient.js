@@ -107,7 +107,6 @@ export default class EventuateClient {
       // Encrypt event data if needed
       this.encryptEvents(encryptionKeyId, events)
         .then(events => {
-          console.log('events:', events);
           const jsonData = { entityTypeName, events };
           this.addBodyOptions(jsonData, options);
 
@@ -345,14 +344,11 @@ export default class EventuateClient {
 
     const messageCallback = this.createMessageCallback(eventHandler);
 
-    this.connectToStompServer().then(
-      () => {
+    this.connectToStompServer()
+      .then(() => {
         this.addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, callback);
         this.doClientSubscribe(subscriberId);
-      },
-      callback
-    );
-
+      }, callback);
   }
 
   createMessageCallback(eventHandler) {
@@ -360,7 +356,6 @@ export default class EventuateClient {
     const ackOrderTracker = new AckOrderTracker();
 
     const acknowledge = (ack) => {
-
       ackOrderTracker.ack(ack).forEach(this.stompClient.ack.bind(this.stompClient));
     };
 
@@ -369,18 +364,40 @@ export default class EventuateClient {
       ackOrderTracker.add(headers.ack);
 
       body.forEach(eventStr => {
+          this.parseEvent(eventStr)
+            .then(parsedEvent => {
+              const { eventData: eventDataStr } = parsedEvent;
+              return this.decrypt(eventDataStr)
+                .then(decryptedEventData => {
+                  try {
+                    const eventData = JSON.parse(decryptedEventData);
+                    const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
+                    eventHandler(null, event)
+                      .then(acknowledge)
+                      .catch(err => {
+                        logger.error('Event handler error', err);
+                      });
+                  } catch(err) {
+                    return Promise.reject(err);
+                  }
+                })
+                .catch(err => {
+                  if (err.code === 'EntityDeletedException') {
+                    const event = Object.assign(parsedEvent, { ack: headers.ack });
+                    eventHandler(err, event)
+                      .then(acknowledge)
+                      .catch(err => {
+                        logger.error('Event handler error', err);
+                      });
+                    return;
+                  }
 
-        this.makeEvent(eventStr, headers.ack)
-          .then(event => {
-            eventHandler(event)
-              .then(acknowledge)
-              .catch(err => {
-                logger.error('eventHandler error', err);
-              });
-          })
-          .catch(error => {
-            throw new Error(error);
-          });
+                  return Promise.reject(err);
+                });
+            })
+            .catch(err => {
+              throw err;
+            })
       });
     }
   }
@@ -605,6 +622,25 @@ export default class EventuateClient {
             ack,
             entityType: entityType.split('/').pop(),
           };
+        });
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  }
+
+  parseEvent(eventStr) {
+    try {
+      const parsedEvent = JSON.parse(eventStr);
+      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
+
+        return Promise.resolve({
+          eventId,
+          eventType,
+          entityId,
+          swimlane,
+          eventData,
+          eventToken,
+          entityType: entityType.split('/').pop(),
         });
     } catch (err) {
       return Promise.reject(err);

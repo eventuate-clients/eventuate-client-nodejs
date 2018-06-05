@@ -35,7 +35,16 @@ export default class Encryption {
   }
 
   findKey(id) {
-    return this.encryptionKeyStore.get(id);
+    return this.encryptionKeyStore.get(id)
+      .then(key => {
+        if (!key) {
+          const err = new Error(`Encryption key "${id}" not found`);
+          err.code = 'EntityDeletedException';
+          return Promise.reject(err);
+        }
+
+        return key;
+      });
   }
 
   isEncrypted(eventDataStr) {

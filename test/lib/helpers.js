@@ -1,10 +1,10 @@
 'use strict';
 
 const expect = require('chai').expect;
-const EventuateClient = require('../../dist');
+const EventuateClient = require('../../src');
 const uuid = require('uuid');
 const specialChars = require('../../dist/modules/specialChars');
-const EventuateClientConfiguration = require('../../dist').EventuateClientConfiguration;
+const EventuateClientConfiguration = require('../../src').EventuateClientConfiguration;
 
 module.exports.removeEventsArrProperty = (eventsArr, propertyName) => {
   return eventsArr.map(item => {
@@ -202,4 +202,10 @@ module.exports.createEventHandler = (callback) => {
       callback(event);
     });
   }
+};
+
+module.exports.expectEntityDeletedError = (error) => {
+  expect(error).to.be.instanceOf(Error);
+  expect(error).to.haveOwnProperty('code');
+  expect(error.code).to.equal('EntityDeletedException');
 };

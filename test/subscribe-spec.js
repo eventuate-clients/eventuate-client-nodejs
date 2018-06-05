@@ -58,7 +58,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
         let processedMessagesNumber = 0;
 
-        const eventHandler = (event) => {
+        const eventHandler = (err, event) => {
 
           return new Promise((resolve, reject) => {
 
