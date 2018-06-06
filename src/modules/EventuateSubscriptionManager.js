@@ -45,7 +45,7 @@ export default class EventuateSubscriptionManager {
 
     this.logger.debug(`Subscribe "${subscriberId}" for:`, entityTypesAndEvents);
 
-    const eventHandler = (err, event) => {
+    const eventHandler = (event) => {
       this.logger.debug(`Event for subscriber "${subscriberId}":`, event);
 
       const dispatcher = this.dispatchers.get(subscriberId);

@@ -372,7 +372,7 @@ export default class EventuateClient {
                   try {
                     const eventData = JSON.parse(decryptedEventData);
                     const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
-                    eventHandler(null, event)
+                    eventHandler(event)
                       .then(acknowledge)
                       .catch(err => {
                         logger.error('Event handler error', err);
@@ -383,12 +383,7 @@ export default class EventuateClient {
                 })
                 .catch(err => {
                   if (err.code === 'EntityDeletedException') {
-                    const event = Object.assign(parsedEvent, { ack: headers.ack });
-                    eventHandler(err, event)
-                      .then(acknowledge)
-                      .catch(err => {
-                        logger.error('Event handler error', err);
-                      });
+                    acknowledge(headers.ack);
                     return;
                   }
 

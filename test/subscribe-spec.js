@@ -58,7 +58,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
         let processedMessagesNumber = 0;
 
-        const eventHandler = (err, event) => {
+        const eventHandler = (event) => {
 
           return new Promise((resolve, reject) => {
 
@@ -70,7 +70,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             if (eventIds.indexOf(event.eventId) >= 0 ) {
               processedMessagesNumber++;
 
-              if (processedMessagesNumber == shouldBeProcessedNumber) {
+              if (processedMessagesNumber === shouldBeProcessedNumber) {
                 done();
               }
             } else {

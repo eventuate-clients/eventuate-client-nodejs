@@ -1,7 +1,7 @@
 'use strict';
 const util = require('util');
 const helpers = require('./lib/helpers');
-const Encryption = require('../src/modules/Encryption');
+const Encryption = require('../dist/modules/Encryption');
 
 const encryptionKeyId = 'id';
 const keySecret = 'secret';
@@ -67,7 +67,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
         eventIds = eventIds.concat(updatedEntityAndEventInfo.eventIds);
         let processedMessagesNumber = 0;
 
-        const eventHandler = (err, event) => {
+        const eventHandler = (event) => {
           return new Promise((resolve, reject) => {
             if (err) {
               return done(err);
@@ -120,14 +120,8 @@ describe('Encryption when key not exists', () => {
   });
 
   it('should subscribe and get EntityDeleted error', done => {
-    const eventHandler = (err, event) => {
-      if (err) {
-        helpers.expectEntityDeletedError(err);
-        done();
-        return Promise.resolve(event.ack);
-      }
-
-      console.log('Event handler event:', event);
+    const eventHandler = (event) => {
+      done(new Error('Should not receive event'));
       return Promise.resolve(event.ack);
     };
 
@@ -137,6 +131,8 @@ describe('Encryption when key not exists', () => {
         return done(err);
       }
       console.log('The subscription has been established.');
+
+      setTimeout(done, 2000);
     });
   });
 });
