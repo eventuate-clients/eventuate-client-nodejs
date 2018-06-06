@@ -10,7 +10,7 @@ export default class ObservableQueue {
     this.eventHandlers = eventHandlers;
     this.executor = executor;
 
-    this.logger = getLogger({ title: `Queue-${this.entityType}-${this.swimlane}` });
+    this.logger = getLogger({ title: `EventuateClient:Queue-${this.entityType}-${this.swimlane}` });
 
     const observable = Rx.Observable.create(this.observableCreateFn.bind(this));
 
