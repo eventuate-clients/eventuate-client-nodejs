@@ -54,7 +54,7 @@ export default class EventuateClient {
   }
 
   determineIfSecure() {
-    this.useHttps = (this.urlObj.protocol == 'https:');
+    this.useHttps = (this.urlObj.protocol === 'https:');
   }
 
   setupHttpClient() {
@@ -363,37 +363,32 @@ export default class EventuateClient {
 
       ackOrderTracker.add(headers.ack);
 
-      body.forEach(eventStr => {
-          this.parseEvent(eventStr)
-            .then(parsedEvent => {
-              const { eventData: eventDataStr } = parsedEvent;
-              return this.decrypt(eventDataStr)
-                .then(decryptedEventData => {
-                  try {
-                    const eventData = JSON.parse(decryptedEventData);
-                    const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
-                    eventHandler(event)
-                      .then(acknowledge)
-                      .catch(err => {
-                        logger.error('Event handler error', err);
-                      });
-                  } catch(err) {
-                    return Promise.reject(err);
-                  }
-                })
-                .catch(err => {
-                  if (err.code === 'EntityDeletedException') {
-                    acknowledge(headers.ack);
-                    return;
-                  }
+      return Promise.all(body.map(async eventStr => {
+        const parsedEvent = await this.parseEvent(eventStr);
+        const { eventData: eventDataStr } = parsedEvent;
+        try {
+          const decryptedEventData = await this.decrypt(eventDataStr);
 
-                  return Promise.reject(err);
-                });
-            })
-            .catch(err => {
-              throw err;
-            })
-      });
+          try {
+            const eventData = JSON.parse(decryptedEventData);
+            const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
+            await eventHandler(event);
+            acknowledge();
+
+          } catch(err) {
+            logger.error('Event handler error', err);
+            throw err;
+          }
+        } catch (err) {
+          if (err.code === 'EntityDeletedException') {
+            acknowledge(headers.ack);
+            return;
+          }
+
+          throw err;
+        }
+
+      }));
     }
   }
 
