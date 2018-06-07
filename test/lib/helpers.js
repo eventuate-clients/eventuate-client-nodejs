@@ -203,3 +203,9 @@ module.exports.createEventHandler = (callback) => {
     });
   }
 };
+
+module.exports.expectEntityDeletedError = (error) => {
+  expect(error).to.be.instanceOf(Error);
+  expect(error).to.haveOwnProperty('code');
+  expect(error.code).to.equal('EntityDeletedException');
+};

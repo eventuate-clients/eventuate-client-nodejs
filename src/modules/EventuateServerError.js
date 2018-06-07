@@ -7,7 +7,7 @@ export default class EventuateServerError extends Error {
 
     this.name = 'ES Server Error';
 
-    if (typeof (jsonBody) == 'object') {
+    if (typeof (jsonBody) === 'object') {
 
       const { timestamp, status, statusCode, error, exception, message } = jsonBody;
 
@@ -17,7 +17,7 @@ export default class EventuateServerError extends Error {
       this.error = error;
       this.exception = exception;
 
-      if (typeof message == 'object') {
+      if (typeof message === 'object') {
         jsonBody.message = JSON.stringify(jsonBody.message);
       }
 

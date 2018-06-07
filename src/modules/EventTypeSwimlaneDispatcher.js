@@ -6,7 +6,7 @@ export default class EventTypeSwimlaneDispatcher {
   constructor({ eventHandlers, logger, executor = {} } = {}) {
 
     if (!logger) {
-      logger = getLogger({ title: 'EventTypeSwimlaneDispatcher' });
+      logger = getLogger({ title: 'EventuateClient:EventTypeSwimlaneDispatcher' });
     }
 
     Object.assign(this, { eventHandlers, logger, executor });

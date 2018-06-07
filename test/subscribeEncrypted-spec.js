@@ -14,13 +14,18 @@ class EncryptionStore {
   get(encryptionKeyId) {
     return Promise.resolve(this.keys[encryptionKeyId]);
   }
+
+  removeKey(encryptionKeyId) {
+    delete this.keys[encryptionKeyId];
+    return Promise.resolve();
+  }
 }
 
 const encryptionKeyStore = new EncryptionStore({ [encryptionKeyId]: keySecret });
 const encryption = new Encryption(encryptionKeyStore);
 
 const eventuateClient = helpers.createEventuateClient(encryption);
-const subscriberId = `subscriber-${helpers.getUniqueID()}`;
+const subscriberId1 = `subscriber-${helpers.getUniqueID()}`;
 const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
 const entityTypesAndEvents = {
   [entityTypeName]: [
@@ -28,7 +33,7 @@ const entityTypesAndEvents = {
     'net.chrisrichardson.eventstore.example.MyEntityNameChanged'
   ]
 };
-
+const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
 const shouldBeProcessedNumber = 2;
 let eventIds = [];
 
@@ -37,7 +42,6 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
   it('should create and update one uniquely named entity and subscribe for events', done => {
     //create events
-    const createEvents = [ { eventType:  'net.chrisrichardson.eventstore.example.MyEntityWasCreated', eventData: '{"name":"Fred"}' } ];
 
     eventuateClient.create(entityTypeName, createEvents, { encryptionKeyId }, (err, createdEntityAndEventInfo) => {
       if (err) {
@@ -65,13 +69,15 @@ describe('Create and update entity. Subscribe for 2 events', function () {
 
         const eventHandler = (event) => {
           return new Promise((resolve, reject) => {
-
-            console.log('event:' ,event);
-            resolve(event.ack);
+            if (err) {
+              return done(err);
+            }
+            console.log('Event handler event:' ,event);
 
             helpers.expectEvent(event);
+            resolve(event.ack);
 
-            if (eventIds.indexOf(event.eventId) >= 0 ) {
+            if (eventIds.indexOf(event.eventId) >= 0) {
               processedMessagesNumber++;
 
               if (processedMessagesNumber === shouldBeProcessedNumber) {
@@ -83,7 +89,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
           });
         };
         //subscribe for events
-        eventuateClient.subscribe(subscriberId, entityTypesAndEvents, eventHandler, err => {
+        eventuateClient.subscribe(subscriberId1, entityTypesAndEvents, eventHandler, err => {
           if (err) {
             return done(err)
           }
@@ -94,3 +100,40 @@ describe('Create and update entity. Subscribe for 2 events', function () {
     });
   });
 });
+
+describe('Encryption when key not exists', () => {
+  before(done => {
+    encryptionKeyStore.removeKey(encryptionKeyId)
+      .then(done)
+      .catch(done);
+  });
+
+  it('should try to create() and get EntityDeleted error', done => {
+    eventuateClient.create(entityTypeName, createEvents, { encryptionKeyId })
+      .then(() => {
+        done(new Error('Should get error'));
+      })
+      .catch(error => {
+        helpers.expectEntityDeletedError(error);
+        done();
+      });
+  });
+
+  it('should subscribe and get EntityDeleted error', done => {
+    const eventHandler = (event) => {
+      done(new Error('Should not receive event'));
+      return Promise.resolve(event.ack);
+    };
+
+    const subscriberId2 = `subscriber-${helpers.getUniqueID()}`;
+    eventuateClient.subscribe(subscriberId2, entityTypesAndEvents, eventHandler, err => {
+      if (err) {
+        return done(err);
+      }
+      console.log('The subscription has been established.');
+
+      setTimeout(done, 2000);
+    });
+  });
+});
+

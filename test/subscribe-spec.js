@@ -70,7 +70,7 @@ describe('Create and update entity. Subscribe for 2 events', function () {
             if (eventIds.indexOf(event.eventId) >= 0 ) {
               processedMessagesNumber++;
 
-              if (processedMessagesNumber == shouldBeProcessedNumber) {
+              if (processedMessagesNumber === shouldBeProcessedNumber) {
                 done();
               }
             } else {

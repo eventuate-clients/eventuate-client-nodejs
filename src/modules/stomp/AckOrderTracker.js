@@ -1,3 +1,4 @@
+import util from 'util';
 
 export default class AckOrderTracker {
 
@@ -17,7 +18,8 @@ export default class AckOrderTracker {
     });
 
     if (!pendingHeader) {
-      console.error(`ACK Header not found: ${ackHeader}`);
+      console.error(`ACK Header not found:
+        ${util.inspect(ackHeader, false, 20)}`);
       return [];
     }
 
