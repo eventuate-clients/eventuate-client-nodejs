@@ -363,7 +363,7 @@ export default class EventuateClient {
 
       ackOrderTracker.add(headers.ack);
 
-      return Promise.all(body.map(async eventStr => {
+      return body.map(async (eventStr) => {
         const parsedEvent = await this.parseEvent(eventStr);
         const { eventData: eventDataStr } = parsedEvent;
         try {
@@ -372,12 +372,13 @@ export default class EventuateClient {
           try {
             const eventData = JSON.parse(decryptedEventData);
             const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
-            await eventHandler(event);
-            acknowledge();
+            const eventResult = await eventHandler(event);
+            acknowledge(eventResult);
+          } catch(errInn) {
+            logger.error('Event handler error', errInn);
 
-          } catch(err) {
-            logger.error('Event handler error', err);
-            throw err;
+            return Promise.reject(errInn);
+            //throw errInn;
           }
         } catch (err) {
           if (err.code === 'EntityDeletedException') {
@@ -388,7 +389,7 @@ export default class EventuateClient {
           throw err;
         }
 
-      }));
+      });
     }
   }
 
@@ -618,23 +619,19 @@ export default class EventuateClient {
     }
   }
 
-  parseEvent(eventStr) {
-    try {
-      const parsedEvent = JSON.parse(eventStr);
-      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
+  async parseEvent(eventStr) {
+    const parsedEvent = JSON.parse(eventStr);
+    const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
 
-        return Promise.resolve({
-          eventId,
-          eventType,
-          entityId,
-          swimlane,
-          eventData,
-          eventToken,
-          entityType: entityType.split('/').pop(),
-        });
-    } catch (err) {
-      return Promise.reject(err);
-    }
+    return {
+      eventId,
+      eventType,
+      entityId,
+      swimlane,
+      eventData,
+      eventToken,
+      entityType: entityType.split('/').pop()
+    };
   }
 
   serialiseObject(obj) {
