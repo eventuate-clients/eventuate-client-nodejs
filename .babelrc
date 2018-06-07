@@ -1,9 +1,10 @@
 {
-  "presets": [
-    "es2015",
-    "stage-0"
-  ],
+  "presets": ["env"],
   "plugins": [
-    "add-module-exports"
+    "add-module-exports",
+    "transform-runtime",
+    "transform-export-extensions",
+    "transform-class-properties",
+    "transform-object-rest-spread"
   ]
 }

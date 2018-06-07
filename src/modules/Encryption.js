@@ -10,20 +10,16 @@ export default class Encryption {
     this.encryptionKeyStore = encryptionKeyStore;
   }
 
-  encrypt(encryptionKeyId, eventData) {
-    return this.findKey(encryptionKeyId)
-      .then(key => {
-        const cipher = this.cipher(key, eventData);
-        return `${this.prefix}${JSON.stringify({encryptionKeyId, data: cipher})}`;
-      });
+  async encrypt(encryptionKeyId, eventData) {
+    const key = await this.findKey(encryptionKeyId);
+    const cipher = this.cipher(key, eventData);
+    return `${this.prefix}${JSON.stringify({encryptionKeyId, data: cipher})}`;
   }
 
-  decrypt(encryptedEventData) {
+  async decrypt(encryptedEventData) {
     const { encryptionKeyId, data } = JSON.parse(encryptedEventData.split(this.prefix)[1]);
-    return this.findKey(encryptionKeyId)
-      .then(key => {
-        return this.decipher(key, data);
-      });
+    const key = await this.findKey(encryptionKeyId);
+    return this.decipher(key, data);
   }
 
   cipher(key, text) {
@@ -36,18 +32,15 @@ export default class Encryption {
     return decipher.update(text, 'hex', 'utf-8') + decipher.final('utf-8');
   }
 
-  findKey(id) {
-    return this.encryptionKeyStore.get(id)
-      .then(key => {
-        if (!key) {
-          const err = new Error(`Encryption key "${id}" not found`);
-          err.code = 'EntityDeletedException';
-          logger.error(err);
-          return Promise.reject(err);
-        }
-
-        return key;
-      });
+  async findKey(id) {
+    const key = await this.encryptionKeyStore.get(id);
+    if (key) {
+      return key;
+    }
+    const err = new Error(`Encryption key "${id}" not found`);
+    err.code = 'EntityDeletedException';
+    logger.error(err);
+    throw err;
   }
 
   isEncrypted(eventDataStr) {

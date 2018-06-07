@@ -1,6 +1,6 @@
 const http = require('http');
-const EventuateClient = require('../dist');
-const { EventuateClientConfiguration } = EventuateClient;
+const EventuateClient = require('../dist').default;
+const { EventuateClientConfiguration } = require('../dist');
 
 const timeout = 20000;
 
