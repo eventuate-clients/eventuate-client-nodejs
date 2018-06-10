@@ -34,7 +34,7 @@ describe('EventuateClient: function create()', function () {
       entityVersion = createdEntityAndEventInfo.eventIds[0];
 
       done();
-    })
+    }).catch(err => {});
   });
 
   it('should return error', done => {
@@ -43,7 +43,7 @@ describe('EventuateClient: function create()', function () {
 
       expect(err).to.be.instanceof(Error);
       done();
-    });
+    }).catch(err => {});
   });
 
 });
@@ -66,7 +66,7 @@ describe('EventuateClient: function update()', function () {
 
       helpers.expectCommandResult(updatedEntityAndEventInfo, done);
 
-    });
+    }).catch(err => {});;
   });
 
   it('should return error', done => {
@@ -75,7 +75,7 @@ describe('EventuateClient: function update()', function () {
 
       expect(err).to.be.instanceof(Error);
       done();
-    });
+    }).catch(err => {});;
   });
 });
 
@@ -98,7 +98,7 @@ describe('EventuateClient: function loadEvents()', function () {
       helpers.testLoadedEvents(loadedEvents, createEvents, updateEvents);
       done();
 
-    });
+    }).catch(err => {});;
   });
 
   it('should return error', done => {
@@ -107,7 +107,7 @@ describe('EventuateClient: function loadEvents()', function () {
 
       expect(err).to.be.instanceof(Error);
       done();
-    });
+    }).catch(err => {});;
   });
 
 });

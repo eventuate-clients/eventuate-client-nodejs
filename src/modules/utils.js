@@ -1,19 +1,16 @@
 import util from 'util';
 
-export const parseIsTrue = val => {
-  return /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
-};
+export const parseIsTrue = val => /^(?:t(?:rue)?|yes?|1+)$/i.test(val);
 
 export const retryNTimes = ({ times, fn, ctx, errConditionFn }) => {
 
-  return function () {
-    var args = [].slice.call(arguments);
+  return function (...args) {
 
     return new Promise((resolve, reject) => {
-      var count = times;
+      let count = times;
       let innerCtx = this || ctx;
 
-      var worker = function () {
+      const worker = function () {
         fn.apply(innerCtx, args)
           .then(result => {
             return resolve(result);
@@ -40,8 +37,4 @@ export const retryNTimes = ({ times, fn, ctx, errConditionFn }) => {
   };
 };
 
-export const delay = (timeout) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, timeout);
-  })
-};
+export const delay = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
