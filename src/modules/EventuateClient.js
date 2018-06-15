@@ -16,18 +16,6 @@ import { delay } from './utils';
 
 const logger = getLogger({ title: 'EventuateClient' });
 
-function safelyParseDecryptedData(input) {
-  try {
-    return JSON.parse(input);
-  }
-  catch (ex) {
-    if (`${ ex }`.indexOf('SyntaxError') >= 0) {
-      logger.warn(`JSON.parse() received this malformed string: '${ input }'. Assuming empty object: {}`)
-    }
-    return {};
-  }
-}
-
 export default class EventuateClient {
 
   constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber, encryption }) {
@@ -398,18 +386,17 @@ export default class EventuateClient {
           const { eventData: eventDataStr } = parsedEvent;
           const decryptedEventData = await this.decrypt(eventDataStr);
 
-          const eventData = safelyParseDecryptedData(decryptedEventData);
+          const eventData = parseEventDataWithSyntaxPeek(decryptedEventData);
           const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
           const eventResult = await eventHandler(event);
           acknowledge(eventResult);
-
         }
         catch (err) {
           if (err.code === 'EntityDeletedException') {
             acknowledge(headers.ack);
             return;
           } else {
-            console.error(err, `Event info: ${ eventStr }`)
+            console.debug(`Event info for re-thrown exception. Event string: '${ eventStr }', exception:`, err)
           }
 
           throw err;
@@ -769,10 +756,7 @@ export default class EventuateClient {
       } catch(err) {
         logger.error('encryptEvents error:', err);
         logger.debug('encryptEvents params:', { eventData, ...rest  }, idx);
-        return {
-          ...rest,
-          eventData
-        };
+        return null;
       }
     }).filter(Boolean));
   }
@@ -787,11 +771,8 @@ export default class EventuateClient {
         };
       } catch (err) {
         logger.error('decryptEvents error:', err);
-        logger.debug('decryptEvents params:', { eventData, ...rest  }, idx);
-        return {
-          ...rest,
-          eventData
-        };
+        logger.debug('decryptEvents params:', { eventData, ...rest  });
+        return null;
       }
     }).filter(Boolean));
   }
@@ -844,3 +825,16 @@ function retryConditionFn(err) {
     return true;
   }
 }
+
+function parseEventDataWithSyntaxPeek(input) {
+  try {
+    return JSON.parse(input);
+  }
+  catch (ex) {
+    if (`${ ex }`.indexOf('SyntaxError') >= 0) {
+      logger.warn(`JSON.parse() received this malformed string: '${ input }'. Assuming empty object: {}`)
+    }
+    throw ex;
+  }
+}
+
