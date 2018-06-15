@@ -173,28 +173,25 @@ export default class AggregateRepository {
     });
   }
 
-  find({ EntityClass, entityId, options = {} }) {
+  async find({ EntityClass, entityId, options = {} }) {
     const entity = this.createEntityInstance(EntityClass);
-    return this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options)
-      .then(loadedEvents => {
-        const { version } = options;
-        if (loadedEvents.length > 0) {
-          if (version) {
-            loadedEvents = this.getEventsByVersion(loadedEvents, version);
-            if (!loadedEvents) {
-              return false;
-            }
-          }
-          this.applyEntityEvents(loadedEvents, entity);
-          return entity;
-        }
-
+    try {
+      let loadedEvents = await this.eventuateClient.loadEvents(entity.entityTypeName, entityId, options);
+      if (!loadedEvents.length) {
         return false;
-      })
-      .catch(err => {
-        logger.debug('AggregateRepository error:', err);
-        return Promise.reject(err);
-    });
+      }
+      if (version) {
+        const loadedEvents = this.getEventsByVersion(loadedEvents, version);
+        if (!loadedEvents) {
+          return false;
+        }
+      }
+      this.applyEntityEvents(loadedEvents, entity);
+      return entity;
+    } catch (err) {
+      logger.debug('AggregateRepository error:', err);
+      throw err;
+    }
   }
 
   createEntityInstance(EntityClass) {

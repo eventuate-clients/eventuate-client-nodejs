@@ -16,6 +16,18 @@ import { delay } from './utils';
 
 const logger = getLogger({ title: 'EventuateClient' });
 
+function safelyParseDecryptedData(input) {
+  try {
+    return JSON.parse(input);
+  }
+  catch (ex) {
+    if (`${ ex }`.indexOf('SyntaxError') >= 0) {
+      logger.warn(`JSON.parse() received this malformed string: '${ input }'. Assuming empty object: {}`)
+    }
+    return {};
+  }
+}
+
 export default class EventuateClient {
 
   constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber, encryption }) {
@@ -380,28 +392,24 @@ export default class EventuateClient {
       ackOrderTracker.add(headers.ack);
 
       return body.map(async (eventStr) => {
-        const parsedEvent = await this.parseEvent(eventStr);
-        const { eventData: eventDataStr } = parsedEvent;
+
         try {
+          const parsedEvent = parseEvent(eventStr);
+          const { eventData: eventDataStr } = parsedEvent;
           const decryptedEventData = await this.decrypt(eventDataStr);
 
-          try {
-            const eventData = JSON.parse(decryptedEventData);
-            const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
-            const eventResult = await eventHandler(event);
-            acknowledge(eventResult);
-          }
-          catch (errInn) {
-            logger.error('Event handler error', errInn);
+          const eventData = safelyParseDecryptedData(decryptedEventData);
+          const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
+          const eventResult = await eventHandler(event);
+          acknowledge(eventResult);
 
-            return Promise.reject(errInn);
-            //throw errInn;
-          }
         }
         catch (err) {
           if (err.code === 'EntityDeletedException') {
             acknowledge(headers.ack);
             return;
+          } else {
+            console.error(err, `Event info: ${ eventStr }`)
           }
 
           throw err;
@@ -641,21 +649,6 @@ export default class EventuateClient {
     };
   }
 
-  async parseEvent(eventStr) {
-    const parsedEvent = JSON.parse(eventStr);
-    const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
-
-    return {
-      eventId,
-      eventType,
-      entityId,
-      swimlane,
-      eventData,
-      eventToken,
-      entityType: entityType.split('/').pop()
-    };
-  }
-
   serialiseObject(obj) {
 
     if (typeof obj === 'object') {
@@ -766,23 +759,41 @@ export default class EventuateClient {
   }
 
   encryptEvents(encryptionKeyId, events) {
-    return Promise.all(events.map(async ({ eventData, ...rest  }) => {
-      const encryptedEventData = await this.encrypt(encryptionKeyId, eventData);
-      return {
-        ...rest,
-        eventData: encryptedEventData
-      };
-    }));
+    return Promise.all(events.map(async ({ eventData, ...rest  }, idx) => {
+      try {
+        const encryptedEventData = await this.encrypt(encryptionKeyId, eventData);
+        return {
+          ...rest,
+          eventData: encryptedEventData
+        };
+      } catch(err) {
+        logger.error('encryptEvents error:', err);
+        logger.debug('encryptEvents params:', { eventData, ...rest  }, idx);
+        return {
+          ...rest,
+          eventData
+        };
+      }
+    }).filter(Boolean));
   }
 
   decryptEvents(events) {
     return Promise.all(events.map(async ({ eventData, ...rest  }) => {
-      const decryptedEventData = await this.decrypt(eventData);
-      return {
-        ...rest,
-        eventData: decryptedEventData
-      };
-    }));
+      try {
+        const decryptedEventData = await this.decrypt(eventData);
+        return {
+          ...rest,
+          eventData: decryptedEventData
+        };
+      } catch (err) {
+        logger.error('decryptEvents error:', err);
+        logger.debug('decryptEvents params:', { eventData, ...rest  }, idx);
+        return {
+          ...rest,
+          eventData
+        };
+      }
+    }).filter(Boolean));
   }
 
   encrypt(encryptionKeyId, eventData) {
@@ -792,12 +803,27 @@ export default class EventuateClient {
     return Promise.resolve(eventData);
   }
 
-  decrypt(eventDataStr) {
+  async decrypt(eventDataStr) {
     if (this.encryption && this.encryption.isEncrypted(eventDataStr)) {
-      return this.encryption.decrypt(eventDataStr);
+      return await this.encryption.decrypt(eventDataStr);
     }
-    return Promise.resolve(eventDataStr);
+    return eventDataStr;
   }
+}
+
+function parseEvent(eventStr) {
+  const parsedEvent = JSON.parse(eventStr);
+  const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
+
+  return {
+    eventId,
+    eventType,
+    entityId,
+    swimlane,
+    eventData,
+    eventToken,
+    entityType: entityType.split('/').pop()
+  };
 }
 
 function statusCodeError(statusCode, message) {
