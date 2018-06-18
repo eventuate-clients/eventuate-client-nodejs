@@ -5,7 +5,6 @@ import http from 'http';
 import https from 'https';
 import path from 'path';
 import invariant from 'invariant';
-import util from 'util';
 
 import Stomp from './stomp/Stomp';
 import AckOrderTracker from './stomp/AckOrderTracker';
@@ -22,7 +21,7 @@ export default class EventuateClient {
   constructor({ apiKey, url, stompHost, stompPort, spaceName, httpKeepAlive, debug, maxRetryNumber, encryption }) {
 
     this.apiKey = apiKey;
-    this.url =  url;
+    this.url = url;
     this.stompHost = stompHost;
     this.stompPort = stompPort;
     this.spaceName = spaceName;
@@ -95,7 +94,7 @@ export default class EventuateClient {
       const result = new Result({ resolve, reject, callback });
 
       //check input params
-      if(!entityTypeName || !this.checkEvents(_events)) {
+      if (!entityTypeName || !this.checkEvents(_events)) {
         return result.failure(new Error('Incorrect input parameters for create()'));
       }
 
@@ -113,7 +112,12 @@ export default class EventuateClient {
           const urlPath = path.join(this.baseUrlPath, this.spaceName);
           const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this });
+          return this.attemptOperation({
+            handler: this.httpRequest,
+            arg: requestOptions,
+            retryConditionFn,
+            context: this
+          });
         })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
@@ -206,11 +210,16 @@ export default class EventuateClient {
           const urlPath = path.join(this.baseUrlPath, this.spaceName, entityTypeName, entityId);
           const requestOptions = { path: urlPath, method: 'POST', apiKey: this.apiKey, jsonData, client: this };
 
-          return this.attemptOperation({ handler: this.httpRequest, arg: requestOptions, retryConditionFn, context: this })
+          return this.attemptOperation({
+            handler: this.httpRequest,
+            arg: requestOptions,
+            retryConditionFn,
+            context: this
+          })
         })
         .then(({ res: httpResponse, body: jsonBody }) => {
 
-          const { entityId, entityVersion, eventIds} = jsonBody;
+          const { entityId, entityVersion, eventIds } = jsonBody;
 
           if (!entityId || !entityVersion || !eventIds) {
             return result.failure({
@@ -237,14 +246,14 @@ export default class EventuateClient {
 
       const apiKey = this.apiKey;
       const headers = {
-        'Authorization' : `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`
+        'Authorization': `Basic ${new Buffer(`${apiKey.id}:${apiKey.secret}`).toString('base64')}`
       };
 
       let postData;
       if (method === 'POST') {
         postData = JSON.stringify(jsonData);
-        headers['Content-Type'] = 'application/json';
-        headers['Content-Length'] = Buffer.byteLength(postData, 'utf8');
+        headers[ 'Content-Type' ] = 'application/json';
+        headers[ 'Content-Length' ] = Buffer.byteLength(postData, 'utf8');
       }
 
       const options = {
@@ -272,11 +281,12 @@ export default class EventuateClient {
 
         res.on('end', () => {
 
-          if (/^application\/json/ig.test(res.headers['content-type'])) {
+          if (/^application\/json/ig.test(res.headers[ 'content-type' ])) {
 
             try {
               responseData = JSON.parse(responseData);
-            } catch (e) {
+            }
+            catch (e) {
               console.error('JSON.parse failed for:', responseData);
               console.error('JSON.parse failed with error:', e);
               return reject(e);
@@ -318,7 +328,13 @@ export default class EventuateClient {
 
             return delay(this.retryDelay)
               .then(() => {
-                return context.attemptOperation({ handler, arg, retryNumber: retryNumber + 1, retryConditionFn, context })
+                return context.attemptOperation({
+                  handler,
+                  arg,
+                  retryNumber: retryNumber + 1,
+                  retryConditionFn,
+                  context
+                })
               })
           }
         }
@@ -334,11 +350,11 @@ export default class EventuateClient {
       options = undefined;
     }
 
-    if (!subscriberId || !Object.keys(entityTypesAndEvents).length || ( typeof eventHandler !== 'function')) {
+    if (!subscriberId || !Object.keys(entityTypesAndEvents).length || (typeof eventHandler !== 'function')) {
       return callback(new Error('Incorrect input parameters'));
     }
 
-    if (this.subscriptions[subscriberId]) {
+    if (this.subscriptions[ subscriberId ]) {
       return callback(new Error(`The subscriberId "${subscriberId}" already used! Try another subscriberId.`))
     }
 
@@ -363,40 +379,38 @@ export default class EventuateClient {
 
       ackOrderTracker.add(headers.ack);
 
-      return Promise.all(body.map(async eventStr => {
-        const parsedEvent = await this.parseEvent(eventStr);
-        const { eventData: eventDataStr } = parsedEvent;
+      return body.map(async (eventStr) => {
+
         try {
+          const parsedEvent = parseEvent(eventStr);
+          const { eventData: eventDataStr } = parsedEvent;
           const decryptedEventData = await this.decrypt(eventDataStr);
 
-          try {
-            const eventData = JSON.parse(decryptedEventData);
-            const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
-            await eventHandler(event);
-            acknowledge();
-
-          } catch(err) {
-            logger.error('Event handler error', err);
-            throw err;
-          }
-        } catch (err) {
+          const eventData = parseEventDataWithSyntaxPeek(decryptedEventData);
+          const event = Object.assign(parsedEvent, { eventData }, { ack: headers.ack });
+          const eventResult = await eventHandler(event);
+          acknowledge(eventResult);
+        }
+        catch (err) {
           if (err.code === 'EntityDeletedException') {
             acknowledge(headers.ack);
             return;
+          } else {
+            console.debug(`Event info for re-thrown exception. Event string: '${ eventStr }', exception:`, err)
           }
 
           throw err;
         }
 
-      }));
+      });
     }
   }
 
   addSubscription(subscriberId, entityTypesAndEvents, messageCallback, options, clientSubscribeCallback) {
 
     //add new subscription if not exists
-    if (typeof this.subscriptions[subscriberId] === 'undefined') {
-      this.subscriptions[subscriberId] = {};
+    if (typeof this.subscriptions[ subscriberId ] === 'undefined') {
+      this.subscriptions[ subscriberId ] = {};
     }
 
     const destinationObj = {
@@ -423,7 +437,7 @@ export default class EventuateClient {
     //add to receipts
     this.addReceipt(receipt, clientSubscribeCallback);
 
-    this.subscriptions[subscriberId] = {
+    this.subscriptions[ subscriberId ] = {
       subscriberId,
       entityTypesAndEvents,
       messageCallback,
@@ -446,7 +460,7 @@ export default class EventuateClient {
 
       const { stompPort: port, stompHost: host, useHttps: ssl, debug } = this;
       const { id: login, secret: passcode } = this.apiKey;
-      const heartBeat = [5000, 5000];
+      const heartBeat = [ 5000, 5000 ];
       const timeout = 50000;
       const keepAlive = false;
 
@@ -500,7 +514,7 @@ export default class EventuateClient {
 
       if (this.subscriptions.hasOwnProperty(subscriberId)) {
         //call message callback;
-        this.subscriptions[subscriberId].messageCallback( body, headers);
+        this.subscriptions[ subscriberId ].messageCallback(body, headers);
       } else {
         logger.error(`Can't find massageCallback for subscriber: ${subscriberId}`);
       }
@@ -510,7 +524,7 @@ export default class EventuateClient {
 
       if (this.receipts.hasOwnProperty(receiptId)) {
         //call Client.subscribe callback
-        this.receipts[receiptId].clientSubscribeCallback(null, receiptId);
+        this.receipts[ receiptId ].clientSubscribeCallback(null, receiptId);
       }
     });
 
@@ -530,36 +544,36 @@ export default class EventuateClient {
       this.connectToStompServer()
         .then(() => {
 
-          //resubscribe
-          for (let subscriberId in this.subscriptions) {
-            if (this.subscriptions.hasOwnProperty(subscriberId)) {
-              this.doClientSubscribe(subscriberId);
+            //resubscribe
+            for (let subscriberId in this.subscriptions) {
+              if (this.subscriptions.hasOwnProperty(subscriberId)) {
+                this.doClientSubscribe(subscriberId);
+              }
+
+            }
+          },
+          error => {
+
+            //run subscription callback
+            for (let receipt in this.receipts) {
+              if (this.receipts.hasOwnProperty(receipt)) {
+                this.receipts[ receipt ].clientSubscribeCallback(error);
+              }
             }
 
           }
-        },
-        error => {
-
-          //run subscription callback
-          for (let receipt in this.receipts) {
-            if (this.receipts.hasOwnProperty(receipt)) {
-              this.receipts[receipt].clientSubscribeCallback(error);
-            }
-          }
-
-        }
-      );
+        );
     }, interval);
 
   }
 
   addReceipt(receipt, clientSubscribeCallback) {
 
-    if (typeof this.receipts[receipt] === 'undefined') {
-      this.receipts[receipt] = {};
+    if (typeof this.receipts[ receipt ] === 'undefined') {
+      this.receipts[ receipt ] = {};
     }
 
-    let receiptObj = this.receipts[receipt];
+    const receiptObj = this.receipts[ receipt ];
 
     receiptObj.clientSubscribeCallback = clientSubscribeCallback;
   }
@@ -570,7 +584,7 @@ export default class EventuateClient {
       return logger.error(new Error(`Can't find subscription for subscriber ${subscriberId}`));
     }
 
-    const subscription = this.subscriptions[subscriberId];
+    const subscription = this.subscriptions[ subscriberId ];
 
     this.stompClient.subscribe(subscription.headers);
   }
@@ -586,55 +600,40 @@ export default class EventuateClient {
     if (this.stompClient) {
       try {
         this.stompClient.disconnect();
-      } catch (e) {
+      }
+      catch (e) {
         logger.error(e);
       }
     }
   }
 
-  makeEvent(eventStr, ack) {
+  async makeEvent(eventStr, ack) {
 
-    try {
-      const parsedEvent = JSON.parse(eventStr);
-      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData: eventDataStr } = parsedEvent;
+    const parsedEvent = JSON.parse(eventStr);
+    const {
+      id: eventId,
+      eventType,
+      entityId,
+      entityType: entityTypeRaw,
+      swimlane,
+      eventToken,
+      eventData: eventDataStr
+    } = parsedEvent;
 
-      return this.decrypt(eventDataStr)
-        .then(decryptedEventDataStr => {
-          const eventData = JSON.parse(decryptedEventDataStr);
+    const decryptedEventDataStr = await this.decrypt(eventDataStr);
+    const eventData = JSON.parse(decryptedEventDataStr);
+    const entityType = entityTypeRaw.split('/').pop();
 
-          return {
-            eventId,
-            eventType,
-            entityId,
-            swimlane,
-            eventData,
-            eventToken,
-            ack,
-            entityType: entityType.split('/').pop(),
-          };
-        });
-    } catch (err) {
-      return Promise.reject(err);
-    }
-  }
-
-  parseEvent(eventStr) {
-    try {
-      const parsedEvent = JSON.parse(eventStr);
-      const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
-
-        return Promise.resolve({
-          eventId,
-          eventType,
-          entityId,
-          swimlane,
-          eventData,
-          eventToken,
-          entityType: entityType.split('/').pop(),
-        });
-    } catch (err) {
-      return Promise.reject(err);
-    }
+    return {
+      eventId,
+      eventType,
+      entityId,
+      swimlane,
+      eventData,
+      eventToken,
+      ack,
+      entityType
+    };
   }
 
   serialiseObject(obj) {
@@ -642,18 +641,18 @@ export default class EventuateClient {
     if (typeof obj === 'object') {
       return Object.keys(obj)
         .map(key => {
-          return `${key}=${obj[key]}`;
+          return `${key}=${obj[ key ]}`;
         })
         .join('&');
     }
   }
 
-  addBodyOptions (jsonData, options) {
+  addBodyOptions(jsonData, options) {
 
     if (typeof options === 'object') {
       Object.keys(options).reduce((jsonData, key) => {
 
-        jsonData[key] = options[key];
+        jsonData[ key ] = options[ key ];
 
         return jsonData;
       }, jsonData);
@@ -679,21 +678,25 @@ export default class EventuateClient {
 
     return events.map(e => {
 
-      const event = Object.assign({}, e);
+      const { eventData: eventDataStr, ...event } = e;
 
-      if (typeof event.eventData !== 'string') {
-        return event;
+      if (typeof eventDataStr !== 'string') {
+        return { ...e };
       }
 
+      let eventData = {};
       try {
-        event.eventData = JSON.parse(event.eventData);
-      } catch (err) {
-        logger.error('Can not parse eventData');
+        eventData = JSON.parse(eventDataStr);
+      }
+      catch (err) {
+        logger.error(`Cannot parse 'eventData' of an event: ${ JSON.stringify(e) }. `);
         logger.error(err);
-        event.eventData = {};
       }
 
-      return event;
+      return {
+        ...event,
+        eventData
+      };
     });
   }
 
@@ -705,7 +708,7 @@ export default class EventuateClient {
    * @param {string|Object} events[].eventData - The event data
    * @returns {Boolean}
    */
-   checkEvents (events) {
+  checkEvents(events) {
 
     if (!Array.isArray(events) || !events.length) {
       return false;
@@ -718,59 +721,60 @@ export default class EventuateClient {
       }
 
       let ed;
-
-      if (typeof eventData === 'string') {
-
-        ed = eventData;
-        //try to parse eventData
-        try {
-          ed = JSON.parse(ed);
-        } catch(e) {
+      switch (typeof eventData) {
+        case 'string':
+          ed = eventData;
+          //try to parse eventData
+          try {
+            ed = JSON.parse(ed);
+          }
+          catch (e) {
+            return false;
+          }
+          break;
+        case 'object':
+          ed = Object.assign({}, eventData);
+          break;
+        default:
           return false;
-        }
-      } else if (typeof eventData === 'object') {
-        ed = Object.assign({}, eventData);
-      } else {
-        return false;
       }
 
-      if (Object.keys(ed).length === 0 ) {
-        return false;
-      }
-
-      return true;
+      // eventData object bears _some_ data results in true
+      return Object.keys(ed).length !== 0;
 
     });
   }
 
   encryptEvents(encryptionKeyId, events) {
-    const promises = events.map(({ eventData }) => {
-      return this.encrypt(encryptionKeyId, eventData);
-    });
-    return Promise.all(promises)
-      .then(encryptedEventDataArr => {
-        return events.map(({ eventData, ...rest }, index) => {
-          return {
-            eventData: encryptedEventDataArr[index],
-            ...rest
-          };
-        })
-      });
+    return Promise.all(events.map(async ({ eventData, ...rest  }, idx) => {
+      try {
+        const encryptedEventData = await this.encrypt(encryptionKeyId, eventData);
+        return {
+          ...rest,
+          eventData: encryptedEventData
+        };
+      } catch(err) {
+        logger.error('encryptEvents error:', err);
+        logger.debug('encryptEvents params:', { eventData, ...rest  }, idx);
+        return null;
+      }
+    }).filter(Boolean));
   }
 
   decryptEvents(events) {
-    const promises = events.map(({ eventData }) => {
-      return this.decrypt(eventData);
-    });
-    return Promise.all(promises)
-      .then(decryptedEventDataArr => {
-        return events.map(({ eventData, ...rest }, index) => {
-          return {
-            eventData: decryptedEventDataArr[index],
-            ...rest
-          };
-        })
-      });
+    return Promise.all(events.map(async ({ eventData, ...rest  }) => {
+      try {
+        const decryptedEventData = await this.decrypt(eventData);
+        return {
+          ...rest,
+          eventData: decryptedEventData
+        };
+      } catch (err) {
+        logger.error('decryptEvents error:', err);
+        logger.debug('decryptEvents params:', { eventData, ...rest  });
+        return null;
+      }
+    }).filter(Boolean));
   }
 
   encrypt(encryptionKeyId, eventData) {
@@ -780,28 +784,57 @@ export default class EventuateClient {
     return Promise.resolve(eventData);
   }
 
-  decrypt(eventDataStr) {
+  async decrypt(eventDataStr) {
     if (this.encryption && this.encryption.isEncrypted(eventDataStr)) {
-      return this.encryption.decrypt(eventDataStr);
+      return await this.encryption.decrypt(eventDataStr);
     }
-    return Promise.resolve(eventDataStr);
+    return eventDataStr;
   }
+}
+
+function parseEvent(eventStr) {
+  const parsedEvent = JSON.parse(eventStr);
+  const { id: eventId, eventType, entityId, entityType, swimlane, eventToken, eventData } = parsedEvent;
+
+  return {
+    eventId,
+    eventType,
+    entityId,
+    swimlane,
+    eventData,
+    eventToken,
+    entityType: entityType.split('/').pop()
+  };
 }
 
 function statusCodeError(statusCode, message) {
 
-  if (statusCode !== 200) {
-    return new EventuateServerError({
-      error: `Server returned status code ${statusCode}`,
-      statusCode,
-      message
-    });
-
+  if (statusCode === 200) {
+    return;
   }
+
+  return new EventuateServerError({
+    error: `Server returned status code ${statusCode}`,
+    statusCode,
+    message
+  });
 }
 
-function retryConditionFn (err) {
+function retryConditionFn(err) {
   if (err.statusCode === 503) {
     return true;
   }
 }
+
+function parseEventDataWithSyntaxPeek(input) {
+  try {
+    return JSON.parse(input);
+  }
+  catch (ex) {
+    if (`${ ex }`.indexOf('SyntaxError') >= 0) {
+      logger.warn(`JSON.parse() received this malformed string: '${ input }'. Assuming empty object: {}`)
+    }
+    throw ex;
+  }
+}
+
