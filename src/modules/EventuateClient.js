@@ -756,7 +756,7 @@ export default class EventuateClient {
       } catch(err) {
         logger.error('encryptEvents error:', err);
         logger.debug('encryptEvents params:', { eventData, ...rest  }, idx);
-        return null;
+        throw err;
       }
     }).filter(Boolean));
   }
@@ -832,7 +832,7 @@ function parseEventDataWithSyntaxPeek(input) {
   }
   catch (ex) {
     if (`${ ex }`.indexOf('SyntaxError') >= 0) {
-      logger.warn(`JSON.parse() received this malformed string: '${ input }'. Assuming empty object: {}`)
+      logger.warn(`JSON.parse() received this malformed decryptedEventData string: '${ input }'.`)
     }
     throw ex;
   }

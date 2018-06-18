@@ -22,9 +22,6 @@ const encryption = new Encryption(encryptionKeyStore);
 describe('Encryption', () => {
   it('should check structure', () => {
     console.log('encryption:', encryption);
-    expect(encryption).to.have.ownProperty('alg');
-    expect(encryption).to.have.ownProperty('prefix');
-    expect(encryption.prefix).to.equal(encryptedPrefix);
     expect(encryption).to.have.ownProperty('encryptionKeyStore');
     expect(encryption.encryptionKeyStore).to.deep.equal(encryptionKeyStore);
     expect(encryption.encrypt).to.be.a('function');

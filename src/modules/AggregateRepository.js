@@ -180,8 +180,11 @@ export default class AggregateRepository {
       if (!loadedEvents.length) {
         return false;
       }
+
+      const { version } = options;
+
       if (version) {
-        const loadedEvents = this.getEventsByVersion(loadedEvents, version);
+        loadedEvents = this.getEventsByVersion(loadedEvents, version);
         if (!loadedEvents) {
           return false;
         }

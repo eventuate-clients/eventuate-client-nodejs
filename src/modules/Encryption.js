@@ -22,7 +22,8 @@ export default class Encryption {
       const key = await this.findKey(encryptionKeyId);
       return this.decipher(key, data);
     } catch (ex) {
-      logger.error(`Encryption::decrypt('${ encryptedEventData }')`, ex)
+      logger.error(`Encryption::decrypt('${ encryptedEventData }')`, ex);
+      return Promise.reject(ex);
     }
   }
 
