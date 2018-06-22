@@ -2,7 +2,7 @@ import { getLogger } from './logger';
 import { retryNTimes } from './utils';
 import util from 'util';
 
-const logger = getLogger({ title: 'AggregateRepository' });
+const logger = getLogger({ title: 'EventuateClient:AggregateRepository' });
 const EVENT_STORE_UTILS_RETRIES_COUNT = process.env.EVENT_STORE_UTILS_RETRIES_COUNT || 10;
 
 export default class AggregateRepository {

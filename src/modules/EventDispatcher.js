@@ -5,7 +5,7 @@ export default class EventDispatcher {
   constructor({ eventHandlers, logger = null, executor = {} } = {}) {
 
     if (!logger) {
-      logger = getLogger({ title: 'EventDispatcher' });
+      logger = getLogger({ title: 'EventuateClient:EventDispatcher' });
     }
 
     Object.assign(this, { eventHandlers, logger, executor });

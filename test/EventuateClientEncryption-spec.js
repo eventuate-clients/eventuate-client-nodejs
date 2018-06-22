@@ -2,7 +2,7 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const uuid = require('uuid');
-const Encryption = require('../dist/modules/Encryption');
+const { Encryption } = require('../dist');
 
 const encryptionKeyId = 'id';
 const keySecret = 'secret';

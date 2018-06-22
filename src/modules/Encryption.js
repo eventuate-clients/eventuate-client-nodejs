@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import { getLogger } from './logger';
+const logger = getLogger({ title: 'EventuateClient:Encryption' });
 
 export default class Encryption {
   alg = 'aes-256-cbc';
@@ -35,7 +37,17 @@ export default class Encryption {
   }
 
   findKey(id) {
-    return this.encryptionKeyStore.get(id);
+    return this.encryptionKeyStore.get(id)
+      .then(key => {
+        if (!key) {
+          const err = new Error(`Encryption key "${id}" not found`);
+          err.code = 'EntityDeletedException';
+          logger.error(err);
+          return Promise.reject(err);
+        }
+
+        return key;
+      });
   }
 
   isEncrypted(eventDataStr) {

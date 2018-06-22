@@ -1,5 +1,6 @@
 'use strict';
 const { expect } = require('chai');
+const helpers = require('./lib/helpers');
 const Encryption = require('../dist/modules/Encryption');
 
 const keyId = 'id';
@@ -75,7 +76,30 @@ describe('Encryption', () => {
         done();
       })
       .catch(done);
+  });
 
+  it('should try to encrypt with not existing key', done => {
+    const eventData = '{ "foo": "bar" }';
+    encryption.encrypt(eventData)
+      .then(() => {
+        done(new Error('Should return error'));
+      })
+      .catch(error => {
+        helpers.expectEntityDeletedError(error);
+        done();
+      })
+  });
+
+  it('should try to decrypt with not existing key', done => {
+    const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"notExistingKeyId","data":"7e735ffcb85082731198f779e9d5b180"}';
+    encryption.decrypt(encryptedEventData)
+      .then(() => {
+        done(new Error('Should return error'));
+      })
+      .catch(error => {
+        helpers.expectEntityDeletedError(error);
+        done();
+      });
   });
 });
 

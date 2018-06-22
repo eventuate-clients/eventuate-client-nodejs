@@ -6,7 +6,7 @@ export default class EventuateSubscriptionManager {
 
   constructor({ eventuateClient, logger } = {}) {
 
-    this.logger = logger || getLogger({ title: 'EventuateSubscriptionManager' });
+    this.logger = logger || getLogger({ title: 'EventuateClient:EventuateSubscriptionManager' });
 
     if (!eventuateClient) {
       throw new Error('The option `eventuateClient` is not provided.')
