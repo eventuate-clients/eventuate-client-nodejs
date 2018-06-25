@@ -12,7 +12,7 @@ export default class Encryption {
 
   async encrypt(encryptionKeyId, eventData) {
     const key = await this.findKey(encryptionKeyId);
-    const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);
+    const iv = crypto.randomBytes(16).toString('hex');
     const cipher = this.cipher(key, iv, eventData);
     return `${Encryption.prefix}${JSON.stringify({encryptionKeyId, data: cipher, salt: iv})}`;
   }
@@ -29,7 +29,8 @@ export default class Encryption {
   }
 
   cipher(key, iv, text) {
-    const encryptor = crypto.createCipheriv(Encryption.alg, key, iv);
+
+    const encryptor = crypto.createCipheriv(Encryption.alg, Buffer.from(key, 'hex'), Buffer.from(iv, 'hex'));
     encryptor.setEncoding('hex');
     encryptor.write(text);
     encryptor.end();
@@ -42,7 +43,7 @@ export default class Encryption {
     let decipher;
 
     if (iv) {
-      decipher = crypto.createDecipheriv(Encryption.alg, key, iv);
+      decipher = crypto.createDecipheriv(Encryption.alg, Buffer.from(key, 'hex'), Buffer.from(iv, 'hex'));
     } else {
       decipher = crypto.createDecipher(Encryption.alg, key);
     }

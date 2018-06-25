@@ -7,10 +7,6 @@ chai.use(require('chai-string'));
 const helpers = require('./lib/helpers');
 const Encryption = require('../src/modules/Encryption');
 
-const keyId = 'keyId';
-// const keySecret = crypto.randomBytes(16).toString('hex');
-const keySecret = '82ca495329e392e2984d2268ea9fda8c';
-console.log('keySecret:', keySecret);
 class EncryptionStore {
   constructor(keys) {
     this.keys = keys;
@@ -20,10 +16,18 @@ class EncryptionStore {
     return Promise.resolve(this.keys[encryptionKeyId]);
   }
 }
+
+
+const keyId16 = 'keyId16';
+const keyId32 = 'keyId32';
+const keySecret16 = '82ca495329e392e2984d2268ea9fda8c';
+const keySecret32 = '6c16456771d0766bcb4db4ff13a003c7fbe904d64d6b80c42982625795d47ee9';
+
 const encryptionKeyStore = new EncryptionStore({
-  [keyId]: keySecret,
   '1': '7057a813a76cae4e87de5bef7fc2f9950014f68f88c501de044a861f39d309c1',
-  '2': '666778b2a40a62284382c18976016d04a28cd0fc37beef04d00ec41512c4d7fd'
+  '2': '666778b2a40a62284382c18976016d04a28cd0fc37beef04d00ec41512c4d7fd',
+  [keyId16]: keySecret16,
+  [keyId32]: '6c16456771d0766bcb4db4ff13a003c7fbe904d64d6b80c42982625795d47ee9'
 });
 const encryptionPrefix = '__ENCRYPTED__';
 
@@ -53,9 +57,9 @@ describe('Encryption', () => {
   });
 
   it('should find encryption key', done => {
-    encryption.findKey(keyId)
+    encryption.findKey(keyId32)
       .then(key => {
-        expect(key).to.equal(keySecret);
+        expect(key).to.equal(keySecret32);
         done();
       })
       .catch(done);
@@ -63,9 +67,9 @@ describe('Encryption', () => {
 
   it('should cipher and decipher', () => {
     const text = 'secret text';
-    const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);
-    const cipher = encryption.cipher(keySecret, iv, text);
-    const decipher = encryption.decipher(keySecret, iv, cipher);
+    const iv = crypto.randomBytes(16).toString('hex');
+    const cipher = encryption.cipher(keySecret32, iv, text);
+    const decipher = encryption.decipher(keySecret32, iv, cipher);
     expect(decipher).to.equal(text);
   });
 
@@ -73,13 +77,13 @@ describe('Encryption', () => {
     const eventData = { a: '1', b: 2 };
     const eventDataString = JSON.stringify(eventData);
     console.log('Event data:', eventDataString);
-    encryption.encrypt(keyId, eventDataString)
+    encryption.encrypt(keyId32, eventDataString)
       .then(encryptedEventData => {
         console.log('encryptedEventData:', encryptedEventData);
         expect(encryptedEventData).startsWith(encryptionPrefix);
         const { salt } = JSON.parse(encryptedEventData.split(encryptionPrefix)[1]);
-        const cipher = encryption.cipher(keySecret, salt, eventDataString);
-        const expectedEncryptedEventData = `${encryptionPrefix}${JSON.stringify({ encryptionKeyId: keyId, data: cipher, salt })}`;
+        const cipher = encryption.cipher(keySecret32, salt, eventDataString);
+        const expectedEncryptedEventData = `${encryptionPrefix}${JSON.stringify({ encryptionKeyId: keyId32, data: cipher, salt })}`;
         expect(encryptedEventData).to.equal(expectedEncryptedEventData);
 
         return encryption.decrypt(encryptedEventData);
@@ -121,6 +125,7 @@ describe('Encryption', () => {
     encryption.decrypt(encryptedEventData)
       .then(decrypted => {
         console.log(decrypted);
+        expect(decrypted).to.equal('Encryption test data');
         done();
       })
       .catch(err => {
@@ -130,7 +135,7 @@ describe('Encryption', () => {
 
   it('should decrypt Java version event data without salt', done => {
 
-    const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"2","data":"a793ab10b5cb9c6e35780be18def1c1c2b64fb206a0aeb78664932fc98c36239"}';
+    const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"2","data": "a793ab10b5cb9c6e35780be18def1c1c2b64fb206a0aeb78664932fc98c36239"}';
     encryption.decrypt(encryptedEventData)
       .then(decrypted => {
         console.log(decrypted);
@@ -143,7 +148,7 @@ describe('Encryption', () => {
 
   it('should decrypt Node.js version event data without salt', done => {
 
-    const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"keyId","data":"9846141fa5f08f70b4f1f9c4d552ddb3"}';
+    const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"keyId16","data":"9846141fa5f08f70b4f1f9c4d552ddb3"}';
     encryption.decrypt(encryptedEventData)
       .then(decrypted => {
         console.log(decrypted);
@@ -153,13 +158,5 @@ describe('Encryption', () => {
         done(err)
       })
   });
-
-  it('should cipher simple string', () => {
-    const key = '1a1bc5648c0c95a095761a2e633b15ff';
-    const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);
-    const text = '1';
-    const encrypted = encryption.cipher(key, iv, text);
-    console.log('encrypted:', encrypted);
-  })
 });
 
