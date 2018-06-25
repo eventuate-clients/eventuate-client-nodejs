@@ -12,29 +12,42 @@ export default class Encryption {
 
   async encrypt(encryptionKeyId, eventData) {
     const key = await this.findKey(encryptionKeyId);
-    const cipher = this.cipher(key, eventData);
-    return `${Encryption.prefix}${JSON.stringify({encryptionKeyId, data: cipher})}`;
+    const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);
+    const cipher = this.cipher(key, iv, eventData);
+    return `${Encryption.prefix}${JSON.stringify({encryptionKeyId, data: cipher, salt: iv})}`;
   }
 
   async decrypt(encryptedEventData) {
     try {
-      const { encryptionKeyId, data } = JSON.parse(encryptedEventData.split(Encryption.prefix)[1]);
+      const { encryptionKeyId, salt, data } = JSON.parse(encryptedEventData.split(Encryption.prefix)[1]);
       const key = await this.findKey(encryptionKeyId);
-      return this.decipher(key, data);
+      return this.decipher(key, salt, data );
     } catch (ex) {
       logger.error(`Encryption::decrypt('${ encryptedEventData }')`, ex);
       return Promise.reject(ex);
     }
   }
 
-  cipher(key, text) {
-    const cipher = crypto.createCipher(Encryption.alg, key);
-    return cipher.update(text, 'utf-8', 'hex') + cipher.final('hex');
+  cipher(key, iv, text) {
+    const encryptor = crypto.createCipheriv(Encryption.alg, key, iv);
+    encryptor.setEncoding('hex');
+    encryptor.write(text);
+    encryptor.end();
+
+    return encryptor.read();
   }
 
-  decipher(key, text) {
-    const decipher = crypto.createDecipher(Encryption.alg, key);
-    return decipher.update(text, 'hex', 'utf-8') + decipher.final('utf-8');
+  decipher(key, iv = '', text) {
+
+    let decipher;
+
+    if (iv) {
+      decipher = crypto.createDecipheriv(Encryption.alg, key, iv);
+    } else {
+      decipher = crypto.createDecipher(Encryption.alg, key);
+    }
+
+    return decipher.update(text, 'hex') + decipher.final('utf-8');
   }
 
   async findKey(id) {
