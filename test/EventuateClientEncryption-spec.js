@@ -5,7 +5,7 @@ const uuid = require('uuid');
 const { Encryption } = require('../dist');
 
 const encryptionKeyId = 'id';
-const keySecret = 'secret';
+const keySecret = '6c16456771d0766bcb4db4ff13a003c7fbe904d64d6b80c42982625795d47ee9';
 class EncryptionStore {
   constructor(keys) {
     this.keys = keys;

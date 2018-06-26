@@ -5,7 +5,7 @@ const { expect } = chai;
 chai.use(require('chai-string'));
 
 const helpers = require('./lib/helpers');
-const Encryption = require('../src/modules/Encryption');
+const Encryption = require('../dist/modules/Encryption');
 
 class EncryptionStore {
   constructor(keys) {
@@ -133,7 +133,7 @@ describe('Encryption', () => {
       })
   });
 
-  it('should decrypt Java version event data without salt', done => {
+  xit('should decrypt Java version event data without salt', done => {
 
     const encryptedEventData = '__ENCRYPTED__{"encryptionKeyId":"2","data": "a793ab10b5cb9c6e35780be18def1c1c2b64fb206a0aeb78664932fc98c36239"}';
     encryption.decrypt(encryptedEventData)
@@ -152,6 +152,7 @@ describe('Encryption', () => {
     encryption.decrypt(encryptedEventData)
       .then(decrypted => {
         console.log(decrypted);
+        expect(decrypted).to.equal('{"a":"1","b":2}');
         done();
       })
       .catch(err => {
