@@ -4,7 +4,7 @@ const helpers = require('./lib/helpers');
 const Encryption = require('../dist/modules/Encryption');
 
 const encryptionKeyId = 'id';
-const keySecret = 'secret';
+const keySecret = Encryption.genEncryptionKey();
 
 class EncryptionStore {
   constructor(keys) {
