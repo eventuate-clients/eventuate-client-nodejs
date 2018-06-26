@@ -65,4 +65,8 @@ export default class Encryption {
   isEncrypted(eventDataStr) {
     return eventDataStr.indexOf(Encryption.prefix) === 0;
   }
+
+  static genEncryptionKey (size = 32) {
+    return crypto.randomBytes(size).toString('hex');
+  }
 }

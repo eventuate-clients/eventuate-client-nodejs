@@ -15,22 +15,32 @@ class EncryptionStore {
   get(encryptionKeyId) {
     return Promise.resolve(this.keys[encryptionKeyId]);
   }
+
+  put({ encryptionKeyId, encryptionKeySecret }) {
+    this.keys[encryptionKeyId] = encryptionKeySecret;
+  }
 }
 
 const keyId16 = 'keyId16';
 const keyId32 = 'keyId32';
 const keySecret16 = '82ca495329e392e2984d2268ea9fda8c';
-const keySecret32 = helpers.genEncryptionKey();
+let keySecret32;
 
 const encryptionKeyStore = new EncryptionStore({
   '1': '7057a813a76cae4e87de5bef7fc2f9950014f68f88c501de044a861f39d309c1',
   '2': '666778b2a40a62284382c18976016d04a28cd0fc37beef04d00ec41512c4d7fd',
-  [keyId16]: keySecret16,
-  [keyId32]: keySecret32
+  [keyId16]: keySecret16
 });
 const encryptionPrefix = '__ENCRYPTED__';
 
 const encryption = new Encryption(encryptionKeyStore);
+
+before(() => {
+  keySecret32 = Encryption.genEncryptionKey();
+  expect(keySecret32).to.be.a('String');
+  expect(keySecret32).to.have.lengthOf(64);
+  encryptionKeyStore.put({ encryptionKeyId: keyId32, encryptionKeySecret: keySecret32 });
+});
 
 describe('Encryption', () => {
   it('should check structure', () => {
@@ -63,6 +73,8 @@ describe('Encryption', () => {
       })
       .catch(done);
   });
+
+
 
   it('should cipher and decipher', () => {
     const text = 'secret text';

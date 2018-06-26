@@ -11,7 +11,7 @@ const { MyEncryptedEntityTypeName: entityTypeName, anotherEntityTypeName, MyEncr
 const EntityClass = require('./lib/EncryptedEntityClass');
 const { CreatedEntityCommand, UpdateEntityCommand, FailureCommand } = EntityClass;
 const encryptionKeyId = 'id';
-const keySecret = helpers.genEncryptionKey();
+const keySecret = Encryption.genEncryptionKey();
 
 class EncryptionStore {
   constructor(keys) {

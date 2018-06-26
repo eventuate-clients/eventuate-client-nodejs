@@ -210,7 +210,3 @@ module.exports.expectEntityDeletedError = (error) => {
   expect(error).to.haveOwnProperty('code');
   expect(error.code).to.equal('EntityDeletedException');
 };
-
-module.exports.genEncryptionKey = (size = 32) => {
-  return crypto.randomBytes(size).toString('hex');
-};
