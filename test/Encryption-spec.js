@@ -17,17 +17,16 @@ class EncryptionStore {
   }
 }
 
-
 const keyId16 = 'keyId16';
 const keyId32 = 'keyId32';
 const keySecret16 = '82ca495329e392e2984d2268ea9fda8c';
-const keySecret32 = '6c16456771d0766bcb4db4ff13a003c7fbe904d64d6b80c42982625795d47ee9';
+const keySecret32 = helpers.genEncryptionKey();
 
 const encryptionKeyStore = new EncryptionStore({
   '1': '7057a813a76cae4e87de5bef7fc2f9950014f68f88c501de044a861f39d309c1',
   '2': '666778b2a40a62284382c18976016d04a28cd0fc37beef04d00ec41512c4d7fd',
   [keyId16]: keySecret16,
-  [keyId32]: '6c16456771d0766bcb4db4ff13a003c7fbe904d64d6b80c42982625795d47ee9'
+  [keyId32]: keySecret32
 });
 const encryptionPrefix = '__ENCRYPTED__';
 
