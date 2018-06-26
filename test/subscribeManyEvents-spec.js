@@ -49,7 +49,7 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
           if (eventIds.indexOf(event.eventId) >= 0) {
             processedMessagesNumber++;
 
-            if (processedMessagesNumber == eventsNumber) {
+            if (processedMessagesNumber === eventsNumber) {
               done();
             }
           }

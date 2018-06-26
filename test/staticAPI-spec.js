@@ -24,11 +24,11 @@ describe('Test static API ', () => {
         });
     });
 
-    it('should return error for event with empty eventData', () => {
+    it('should return error for event with empty eventData', (done) => {
 
       const eventStr = '{"id":"00000151e8f00022-0242ac1100320002","entityId":"00000151e8f00021-0242ac1100160000","entityType":"d6bfa47c283f4fcfb23c49b2df8c10ed/default/net.chrisrichardson.eventstore.example.MyEntity1451312021100","eventData":"","eventType":"net.chrisrichardson.eventstore.example.MyEntityWasCreated"}';
 
-      eventuateClient.makeEvent('')
+      eventuateClient.makeEvent(eventStr)
         .catch(error => {
           expect(error).to.be.instanceof(Error);
           done();
@@ -151,16 +151,18 @@ describe('Test static API ', () => {
 
   describe('Test retryNTimes()', function () {
     this.timeout(timeout);
-    const times = 6;
 
+
+    const times = 6;
     it('should run a function 6 times and return "success"', done => {
 
       let i = 0;
-      function workerFn(b) {
+
+      function workerFn() {
         return new Promise((resolve, reject) => {
           if (i < 5) {
-            i = i + b;
-            return reject(new Error('Failure'));
+            i++;
+            return reject(new Error('Controlled Failure A'));
           }
 
           return resolve('success');
@@ -169,7 +171,7 @@ describe('Test static API ', () => {
       let errConditionFn = () => true;
 
       const retryA = retryNTimes({ times, fn: workerFn, errConditionFn });
-      retryA(1)
+      retryA()
         .then(result => {
           expect(result).to.equal('success');
           done();
@@ -178,9 +180,9 @@ describe('Test static API ', () => {
     });
 
     it('should return error', done => {
-      function workerFn(b) {
+      function workerFn() {
         return new Promise((resolve, reject) => {
-          reject(new Error('Failure'));
+          reject(new Error('Controlled Failure B'));
         });
       }
 
