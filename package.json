@@ -17,6 +17,7 @@
   "license": "Apache License, Version 2",
   "dependencies": {
     "agentkeepalive": "^2.0.2",
+    "babel-runtime": "^6.26.0",
     "invariant": "^2.2.4",
     "log4js": "^0.6.38",
     "rx": "^2.4.1",

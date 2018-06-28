@@ -1,8 +1,6 @@
 'use strict';
 const expect = require('chai').expect;
-const util = require('util');
 const helpers = require('./lib/helpers');
-const EsServerError = require('../dist/modules/EventuateServerError');
 
 const eventuateClient = helpers.createEventuateClient();
 

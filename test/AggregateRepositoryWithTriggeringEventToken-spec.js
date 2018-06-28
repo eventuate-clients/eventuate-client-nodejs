@@ -2,10 +2,7 @@
 const expect = require('chai').expect;
 const helpers = require('./lib/helpers');
 const AggregateRepository = require('../dist').AggregateRepository;
-const EventDispatcher = require('../dist').EventDispatcher;
 const EventuateSubscriptionManager = require('../dist').EventuateSubscriptionManager;
-const ExecutorClass = helpers.Executor;
-const executor = new ExecutorClass();
 
 const eventConfig = require('./lib/eventConfig');
 const entityTypeName = eventConfig.entityTypeName;

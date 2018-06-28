@@ -1,5 +1,4 @@
 'use strict';
-const util = require('util');
 const helpers = require('./lib/helpers');
 const Encryption = require('../dist/modules/Encryption');
 
