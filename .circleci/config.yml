@@ -21,4 +21,7 @@ jobs:
 
       # Download and cache dependencies
       # run tests!
+      - run: npm --version
+      - run: npm install npm@latest -g
+      - run: npm --version
       - run: npm run build-and-test-all
