@@ -1,6 +1,5 @@
 'use strict';
 const expect = require('chai').expect;
-const util = require('util');
 const helpers = require('./lib/helpers');
 const unEscapeStr = require('../dist/modules/specialChars').unEscapeStr;
 
