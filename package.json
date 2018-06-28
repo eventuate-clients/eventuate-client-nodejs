@@ -11,6 +11,7 @@
     "test": "cd ./test && ../node_modules/.bin/mocha --timeout 25000 --reporter spec --ui bdd staticAPI-spec.js specialChars-spec.js Encryption-spec.js EventuateServerError-spec.js EventuateClient-spec.js EventuateClientEncryption-spec.js EventuateClientPromises-spec.js EventuateClientPromisesRetry-spec.js EventuateClientTriggeringEventToken-spec.js AckOrderTracker-spec.js stomp-spec.js subscribe-spec.js subscribeEncrypted-spec.js subscribeManyEvents-spec.js subscribeTwoSubscribers-spec.js subscribeWithOptions-spec.js AggregateRepository-spec.js AggregateRepositoryEncryption-spec.js AggregateRepositoryWithTriggeringEventToken-spec.js ObservableQueue-spec.js EventTypeSwimlaneDispatcher-spec.js",
     "compile": "rm -fr dist/* && node_modules/babel-cli/bin/babel.js --presets env --plugins add-module-exports,transform-runtime,transform-export-extensions,transform-class-properties,transform-object-rest-spread -d dist/ src/",
     "build-and-test": "npm run compile && npm test",
+    "build-and-test-all": "rm -fr node_modules && npm install && npm run compile && npm test",
     "prepublish": "npm run compile"
   },
   "author": "",
