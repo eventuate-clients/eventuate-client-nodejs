@@ -1,7 +1,5 @@
 'use strict';
 
-const expect = require('chai').expect;
-const util = require('util');
 const helpers = require('./lib/helpers');
 
 const eventuateClient = helpers.createEventuateClient();
@@ -11,7 +9,7 @@ const subscriberId = 'subscribeManyEvents-test';
 const entityChangedEvent = 'net.chrisrichardson.eventstore.example.MyEntityChanged';
 const entityTypeName = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;
 const entityTypesAndEvents = {
-  [entityTypeName]: [ entityChangedEvent ]
+  [ entityTypeName ]: [ entityChangedEvent ]
 };
 
 const eventsNumber = 500;
@@ -24,7 +22,11 @@ describe('Create entity with ' + eventsNumber + ' events and subscribe', functio
   it('should create entity and subscribe for events', done => {
 
     //create events
-    const createEvents = helpers.makeEventsArr({ size: eventsNumber, entityType: entityTypeName, eventType: entityChangedEvent });
+    const createEvents = helpers.makeEventsArr({
+      size: eventsNumber,
+      entityType: entityTypeName,
+      eventType: entityChangedEvent
+    });
 
     eventuateClient.create(entityTypeName, createEvents, (err, createdEntityAndEventInfo) => {
 

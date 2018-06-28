@@ -5,14 +5,11 @@
 
 'use strict';
 
-const expect = require('chai').expect;
-const util = require('util');
 const helpers = require('./lib/helpers');
 
 const eventuateClient = helpers.createEventuateClient();
 
 const timeout = 25000;
-const timeStamp = new Date().getTime();
 
 const subscriberId1 = `subscriber-${helpers.getUniqueID()}`;
 const entityTypeName1 = `net.chrisrichardson.eventstore.example.MyEntity-${helpers.getUniqueID()}`;

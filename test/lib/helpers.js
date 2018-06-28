@@ -3,7 +3,6 @@
 const expect = require('chai').expect;
 const EventuateClient = require('../../dist').default;
 const uuid = require('uuid');
-const crypto = require('crypto');
 const specialChars = require('../../dist/modules/specialChars');
 const EventuateClientConfiguration = require('../../dist').EventuateClientConfiguration;
 
